@@ -1,0 +1,36 @@
+# Credenciais
+.env
+.env.local
+.mcp.json
+
+# Pasta de memoria do Claude
+.claude/
+
+# Respostas temporarias de API
+api_response.json
+put_result.json
+run_result.json
+update_response.json
+last_exec.json
+last_exec_full.json
+
+# Payloads temporarios
+*_payload.json
+final_payload.json
+minimal_payload.json
+payload.json
+
+# Backups de workflow gerados durante debug
+workflow_backup_*.json
+workflow_deactivate*.json
+workflow_minimal_update.json
+workflow_update_payload.json
+workflow_original.json
+workflow_updated.json
+workflow.json
+
+# Node/Python
+node_modules/
+__pycache__/
+*.pyc
+.venv/
