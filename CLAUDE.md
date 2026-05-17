@@ -28,6 +28,7 @@ MCPs configurados em `.mcp.json`:
 - **mercadolibre**: API ML via token em `access_token_ML` do Supabase. Plugin `ml-kit` atualiza token automaticamente no SessionStart.
 - **supabase**: MCP oficial Supabase para queries no banco.
 - **n8n** (opcional): MCP para gerenciar workflows n8n via API.
+- **olist-docs**: MCP de documentacao da API v3 Tiny (so consulta de doc, nao executor). Operacao real no Tiny continua via HTTP Request no n8n com OAuth2.
 
 Token ML expira em ~6h. Hook do plugin `ml-kit` puxa token fresco da tabela `access_token_ML` no SessionStart.
 

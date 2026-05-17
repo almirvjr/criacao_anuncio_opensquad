@@ -32,3 +32,40 @@
 
 ### Outros
 - Tabela `ml_tools.publicacoes` criada sem RLS - decisao consciente (uso interno, service_role only).
+
+## 2026-05-17 - Sessao: validacao do MCP Tiny + dry-run do workflow ML Publicar
+
+### MCP olist-docs adicionado
+- Novo MCP `olist-docs` (HTTP, https://api-docs.erp.olist.com/mcp) adicionado ao `.mcp.json`. E **MCP de documentacao** (Mintlify), nao executor. Expoe 2 tools: `search_olist_erp_api_v3` e `query_docs_filesystem_olist_erp_api_v3` (shell read-only com rg/grep/cat/jq no filesystem virtual da doc). Carrega apos reiniciar Claude Code.
+
+### Mapeamento da API v3 Tiny
+- Baixado swagger.json (~1MB) de `erp.tiny.com.br/public-api/v3/swagger/swagger.json`.
+- Total: 177 endpoints em 26 areas. Distribuicao: GET 72, POST 50, PUT 37, DELETE 18.
+- **Achado critico:** API v3 NAO tem endpoint para mapear anuncio Tiny↔MLB. Busca por "anuncio/marketplace/mlb/mercado/mapeamento" retorna ZERO em paths, summaries e schemas. API v2 documentada tambem nao tem endpoint publico para isso (`incluir-mapeamento-anuncio.php` e folclore de forum, sem doc oficial).
+- Confirmado via doc oficial e fontes terceiras (Arcos Scale, Marketfacil, suporte Olist): integracao nativa Tiny↔ML **nao cria anuncios novos** nem detecta MLBs criados via API externa. So gerencia anuncios ja existentes.
+- Memoria criada: `reference_olist_tiny_api_v3.md` com mapa completo (evita re-baixar swagger em sessoes futuras).
+
+### Workflow ML Publicar ajustado
+- **No `POST Tiny` removido.** Revoga decisao anterior (DECISOES.md 2026-05-16) - endpoint que ela assumia nao existe.
+- `Publicacao OK?` (branch true) agora liga direto em `Log Sucesso`.
+- `Log Sucesso` simplificado: status='success' fixo (so roda no branch ML 201).
+- `Respond Sucesso` agora retorna `tiny_sync: { status: "manual_pending", instrucao: "vincular SKU ao MLB no painel Tiny: Integracoes > ML PADRAO > Relacionar Anuncios" }`.
+- Workflow agora tem 12 nos (era 13), validacao OK 0 erros.
+
+### Montar Payload reforcado (pontos 4 e 5 da spec)
+- Ponto 5: injeta `{ id: 'SELLER_SKU', value_name: sku }` em `attributes` se nao vier (padrao ML moderno, complementa `seller_custom_field` legado).
+- Ponto 4: `listing_type_id` validado contra `['gold_special','gold_pro']` com fallback `gold_special` (antes era `||` cego que aceitaria qualquer string).
+
+### Bug estrutural corrigido em Buscar Publicacao Existente
+- Query antiga `SELECT mlb_id ... LIMIT 1` retornava 0 linhas quando SKU era novo. n8n descarta downstream nesses casos -> toda primeira publicacao morria silenciosamente.
+- Trocado por `SELECT COALESCE((subquery), '') AS mlb_id` que sempre retorna 1 linha (string vazia se SKU novo, MLB-id se existente). IF `notEmpty` continua roteando certo.
+
+### Dry-run parcial executado com sucesso
+- 6 nos pos-`Montar Payload` desabilitados temporariamente para zero-risco (evita criar anuncio real no ML).
+- Webhook-test acionado via curl com payload dummy (SKU `TEST-DRY-RUN-001`).
+- Execution 118607: webhook -> Buscar Publicacao -> Ja Publicado? (false, mlb_id='') -> Buscar Token -> Montar Payload. Payload final validado: SELLER_SKU injetado, listing_type validado, description sanitizada, pictures shape correto, shipping ME2 default.
+- 6 nos reabilitados ao final; workflow no mesmo estado funcional de antes (mais correto).
+
+### Memoria
+- `reference_olist_tiny_api_v3.md` criada (mapa API v3 + status do MCP olist-docs).
+- Plugin `github@claude-plugins-official` desabilitado (conta GitHub gratuita do Almir nao tem Copilot ativo; plugin nao essencial para o projeto).
