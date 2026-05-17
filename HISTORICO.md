@@ -69,3 +69,53 @@
 ### Memoria
 - `reference_olist_tiny_api_v3.md` criada (mapa API v3 + status do MCP olist-docs).
 - Plugin `github@claude-plugins-official` desabilitado (conta GitHub gratuita do Almir nao tem Copilot ativo; plugin nao essencial para o projeto).
+
+## 2026-05-17 - Sessao: producao de fotos - integracao do metodo StorySelling (GPT Himmel) na squad
+
+### Conceito absorvido
+- Estudado em detalhe a execucao completa do GPT externo "Cientific Selling: O anuncio bionico da Himmel" sobre lixeira inox 12L.
+- Metodo destilado: transforma reviews+FAQ de concorrentes ML em diagnostico psicologico (dor interna, only factor, ansiedades) e gera prompts JSON cinematograficos onde cada foto quebra uma objecao especifica. Usa codigos MECLABS (-a-f, +i+v) e image-to-image preservando produto real.
+- Outro GPT publico ("Gerador de Titulos ML") absorvido em parte: 3-5 titulos com scoring + inputs estruturados canonicos.
+
+### Frameworks de referencia criados (pipeline/data/)
+- `storyselling-framework.md` — equacao MECLABS (C = 4m + 3v + 2(i-f) - 2a), codigos psicologicos (`+m`, `-a-f`, etc), escada "E Dai?", StoryBrand adaptado, ONLY FACTOR, hierarquia das 10 fotos.
+- `objection-patterns.md` — catalogo de 10 familias de objecao tipicas de casa/decoracao (F1-F10) com gatilhos nos reviews/FAQ, slot de foto recomendado e template de headline.
+- `photo-templates.md` — 10 templates JSON parametrizados (CAPA_PURPLE_COW -> MACRO_YES_CTA_FINAL) com placeholders `{{...}}` que Felipe substitui.
+
+### Novo agente Helena Estrategista
+- `agents/helena-estrategista.agent.md` criado (icone 🎯).
+- `pipeline/steps/step-04-inteligencia-conversao.md` criado: faz scraping via Playwright dos 3 permalinks de concorrentes_top que Cibele coleta, gera diagnostico + briefing das 10 fotos por SKU.
+- Inserida em `squad.yaml` e `squad-party.csv`.
+
+### Skill nova: image-overlay
+- `skills/image-overlay/SKILL.md` criada. Aplica overlay de texto (headline, subheadline, badge, selos, CTA) sobre imagem gerada pela IA, via HTML/CSS renderizado por Playwright (depende de `image-creator`). 10 templates de posicionamento (1 por slot da hierarquia).
+
+### Felipe Fotos refatorado
+- `agents/felipe-fotos.agent.md` reescrito: vira EXECUTOR (nao decide mais o que cada foto mostra — consome brief da Helena). Usa Gemini 2.5 Flash Image (Nano Banana) em image-to-image preservando `foto_base_url`, depois aplica overlay.
+- Antigo `step-06-fotos.md` deletado, criado `step-07-fotos.md` (renumerado pelo step novo da Helena).
+
+### Renata atualizada (3-5 titulos com scoring + brief)
+- `agents/renata-redatora.agent.md` reescrito: gera 3-5 titulos por SKU, cada um com `score_busca` (0-10), `score_conversao` (0-10), `justificativa` e `recomendado`. Bloco 1 da descricao ancora na `dor_interna` do brief; bloco 3 segue `escada_e_dai` do brief.
+- Antigo `step-04-copywriting.md` deletado, criado `step-05-copywriting.md`.
+
+### Caio Curador ajustado (D8 - campos canonicos)
+- Adicionados `publico_genero` e `compatibilidade` ao schema do dossie (opcionais, `null` na maior parte do catalogo Terra Casa Decor).
+- Quality criteria e exemplos atualizados em `caio-curador.agent.md` e `step-02-curadoria-produtos.md`.
+
+### Checkpoint de copy reformulado
+- `step-06-checkpoint-copy.md` apresenta as 3-5 alternativas de titulo com scores e recomendacao. Modo `batch` default usa recomendacao da Renata; usuario pode selecionar outra ou editar livremente.
+
+### Pipeline renumerado de 10 para 11 steps
+- `pipeline.yaml` atualizado: novo step-04 (Helena) entre Cibele e Renata. Steps 5-11 sao os antigos 4-10 renumerados.
+- 7 arquivos antigos deletados; 4 novos criados; 4 renumerados (step-08-revisao, step-09-checkpoint-publicacao, step-10-publicacao, step-11-relatorio-final).
+- Checkpoints renumerados: `step-06-checkpoint-copy` e `step-09-checkpoint-publicacao`.
+
+### Quality criteria e anti-patterns atualizados
+- `quality-criteria.md`: novo bloco "Inteligência de Conversão" (Helena) + reforma do bloco "Mídia Visual StorySelling" (Felipe) + bloco "Títulos" multi-opção (Renata) + regra global de tamanho 1200x1200 destacada no inicio.
+- `anti-patterns.md`: novos anti-patterns para Helena (nao inventar dor interna sem evidencia), Felipe (nao embutir texto na imagem AI; nao salvar dimensao diferente de 1200x1200) e Renata (nao entregar 1 titulo so; nao marcar 2 recomendados).
+
+### Regra global 1200x1200 formalizada
+- Tamanho de foto agora e PADRAO FIXO (era "minimo"). Maior ou menor e veto automatico. Aplicado em 6 arquivos: quality-criteria, photo-templates (campo `dimensao` em todos os JSONs), felipe-fotos (principio + processo + checklist + anti-pattern), step-07-fotos, anti-patterns, image-overlay SKILL.
+
+### Plan file
+- Plano completo escrito em `~/.claude/plans/eu-tenho-um-gpt-delightful-thacker.md` e aprovado pelo Almir antes da execucao.

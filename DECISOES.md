@@ -84,3 +84,66 @@
 **Decisao:** adicionado ao `.mcp.json` como `olist-docs`. Para consulta de doc da API v3 Tiny (substitui ter que baixar swagger.json toda vez). NAO substitui chamada HTTP real ao Tiny - operacao real continua via HTTP Request node no n8n com OAuth2.
 
 **Motivo:** util como "enciclopedia" durante desenvolvimento. Nao existe MCP oficial executor da Olist publicado.
+
+### Metodo StorySelling absorvido na squad — fonte de reviews = concorrentes ML
+**Contexto:** absorvido conceito do GPT externo "Cientific Selling: O anuncio bionico da Himmel" — fotos baseadas em quebra de objecao a partir de reviews + FAQ. Squad ml-anuncios e para produtos NOVOS sem reviews proprios.
+
+**Decisao:** Helena Estrategista usa Playwright para scrapear reviews + FAQ dos 3 `concorrentes_top` (com `permalink`) que Cibele ja coleta no step-03. Amostra agregada (~50-100 reviews + 10-30 perguntas por SKU) alimenta diagnostico psicologico que vai gerar tanto a copy (Renata) quanto as fotos (Felipe).
+
+**Motivo:** concorrentes ML capturam linguagem real do mesmo publico-alvo brasileiro. Reaproveita estrutura existente (Cibele ja tem permalinks). Alternativas (reviews multi-marketplace, manual, hibrido) descartadas por complexidade vs ganho.
+
+### Helena Estrategista como agente novo separado (nao ampliar Felipe)
+**Contexto:** metodo StorySelling tem duas camadas — diagnostico psicologico e execucao do prompt cinematografico.
+
+**Decisao:** criar agente novo `helena-estrategista` (icone 🎯) para diagnostico; Felipe Fotos vira executor puro (consome brief, nao decide).
+
+**Motivo:** separacao de responsabilidade (preserva principio da squad). Brief da Helena tambem alimenta Renata (copy), entao precisa ser produto compartilhavel, nao logica interna do Felipe.
+
+### Texto em overlay pos-producao, nao embutido na imagem AI
+**Contexto:** metodo Himmel poe headline, badge, selos visualmente dentro da imagem. Modelos de IA renderizam texto inconsistente (fontes variam, letras erram).
+
+**Decisao:** modelo de IA (Gemini Nano Banana) gera imagem LIMPA. Skill nova `image-overlay` aplica todo o texto via HTML/CSS renderizado por Playwright (depende de `image-creator`).
+
+**Motivo:** tipografia consistente, edicao posterior facil, fonte controlada (Inter), zero risco de letra errada. Tradeoff aceito: 1 passo a mais no pipeline.
+
+### Image-to-image obrigatorio (foto base do dossie sagrada)
+**Contexto:** GPT Himmel insiste "USE A IMAGEM ANEXADA — NAO ALTERE O PRODUTO". Comprador recebe o produto real, nao versao reimaginada pela IA.
+
+**Decisao:** toda foto gerada e image-to-image sobre `foto_base_url` do dossie (capturada por Caio). Modelo so altera cenario e iluminacao. Se modelo distorce produto, retry 1 vez; ainda distorceu = veto.
+
+**Motivo:** fidelidade visual reduz devolucao. Text-to-image puro foi descartado (alto risco de produto entregue diferente da foto).
+
+### Modelo de IA = Gemini 2.5 Flash Image (Nano Banana)
+**Contexto:** GPT Himmel recomenda Gemini Pro. Skill `image-ai-generator` precisa de modelo image-to-image bom, barato, com API estavel.
+
+**Decisao:** padronizar em `gemini-2.5-flash-image` (Nano Banana) via Google AI Studio para todas as 10 fotos. Custo estimado ~$0.04/imagem ($0.40 por SKU).
+
+**Motivo:** image-to-image nativo bom, custo baixo, API estavel, aceita prompt JSON estruturado. GPT Image 1 (OpenAI) considerado mas image-to-image fraco e mais caro ($0.19).
+
+### Inteligencia de Conversao alimenta copy E fotos (step entre categorizacao e copywriting)
+**Contexto:** diagnostico psicologico das reviews tambem serve para Renata escrever titulo/descricao, nao so para Felipe gerar fotos.
+
+**Decisao:** novo step-04 (Inteligencia de Conversao) entre Cibele (step-03) e Renata (step-05). Brief estrategico compartilhado: Renata usa para copy, Felipe usa para fotos.
+
+**Motivo:** maxima sinergia — copy e fotos contam a mesma historia. Custo de scraping pago 1 vez por SKU, beneficio em 2 entregaveis. Pipeline cresceu de 10 para 11 steps.
+
+### Renata gera 3-5 titulos com scoring (D7 absorvido do GPT "Gerador de Titulos ML")
+**Contexto:** GPT publico "Gerador de Titulos ML" entrega 3-5 opcoes com explicacao de potencial. Versao anterior da Renata entregava 1 titulo.
+
+**Decisao:** Renata propõe 3-5 alternativas, cada uma com `score_busca` (0-10), `score_conversao` (0-10), `justificativa` e `recomendado` (1 por SKU). Checkpoint humano (step-06) escolhe.
+
+**Motivo:** reduz risco de "titulo unico ruim". Cria log de alternativas para iteracao. Casa com Himmel (que tambem gera 3 titulos SEO).
+
+### Caio Curador formaliza campos canonicos (D8)
+**Contexto:** Renata precisa de inputs estruturados previsiveis (produto, marca, modelo, categoria, especificacoes, publico, compatibilidade).
+
+**Decisao:** dossie do Caio sempre carrega `tipo`, `marca`, `modelo`, `categoria_sugerida_livre`, `publico_genero` e `compatibilidade` (mesmo que `null` para a maior parte do catalogo).
+
+**Motivo:** padroniza vocabulario downstream. `null` explicito > campo ausente. Inferir agora evita refator depois quando entrar categoria com gênero (roupas) ou compatibilidade (panela inducao).
+
+### Tamanho de foto 1200x1200 px e PADRAO FIXO (nao minimo)
+**Contexto:** versao anterior dizia "resolucao minima 1200x1200", o que permitia fotos maiores (ex: 1500x1500).
+
+**Decisao:** toda foto entregue tem dimensao EXATA 1200x1200. Maior OU menor e veto automatico. Felipe redimensiona se Nano Banana retornar diferente.
+
+**Motivo:** templates de overlay (image-overlay) assumem canvas 1200x1200 fixo — outras dimensoes quebram posicionamento de selos/headlines. Padronizacao visual no marketplace. Conformidade com tamanho recomendado pelo ML.
