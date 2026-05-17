@@ -23,6 +23,14 @@ Detalhes tecnicos de infraestrutura, MCPs, tabelas, RLS, skills, workflows.
 - API v3 Tiny: 177 endpoints em 26 areas (mapeado em memoria `reference_olist_tiny_api_v3.md`). Auth: OAuth2.
 - **Importante:** API v3 NAO tem endpoint para mapeamento Tiny↔MLB. Vinculo SKU↔MLB e manual no painel Tiny.
 
+### playwright (navegacao headless)
+- MCP oficial Playwright para automacao de browser headless.
+- Tools usadas: `browser_navigate`, `browser_resize`, `browser_take_screenshot`, `browser_evaluate`, `browser_snapshot`.
+- Usado em producao por:
+  - **Helena Estrategista** (squad ml-anuncios, step-04): scraping de reviews + FAQ + descricao dos 3 concorrentes top no Mercado Livre.
+  - **image-creator** (skill): renderiza HTML/CSS em PNG via headless browser.
+  - **image-overlay** (skill): aplica texto sobre imagem via HTML/CSS renderizado.
+
 ## Supabase
 
 - Project ID: ver `.env` -> `SUPABASE_PROJECT_ID`
@@ -59,5 +67,42 @@ Detalhes tecnicos de infraestrutura, MCPs, tabelas, RLS, skills, workflows.
 ## Skills da squad ml-anuncios
 
 - `image-fetcher` (hybrid, usa MCP playwright): busca/screenshot de fotos na web
-- `image-creator` (mcp playwright): renderiza HTML/CSS em imagem
-- `image-ai-generator` (script Python): gera imagens via OpenRouter (env `OPENROUTER_API_KEY`)
+- `image-creator` (mcp playwright): renderiza HTML/CSS em imagem (motor generico)
+- `image-ai-generator` (script Python): gera imagens AI. **Modelo padrao para esta squad: `gemini-2.5-flash-image` (Nano Banana) em modo image-to-image**, com a `foto_base_url` do dossie como referencia. Custo ~$0.04/imagem.
+- `image-overlay` (mcp playwright, depende de `image-creator`): aplica overlay de texto (headline, subheadline, badge, selos, CTA) sobre imagem gerada. Especializado nos 10 slots da hierarquia StorySelling. **Toda saida e 1200x1200 px exatos** (input tambem precisa ser 1200x1200; falha rapido se vier diferente).
+
+## Squad ml-anuncios — agentes e pipeline (11 steps)
+
+Agentes (em `squads/ml-anuncios/agents/`):
+
+| Agente | Papel | Skills |
+|---|---|---|
+| Caio Curador 📥 | Le planilha, enriquece dossie do produto | WebFetch, WebSearch |
+| Cibele Categoria 🗂️ | Descobre categoria ML + 3 concorrentes top com `permalink` | API ML publica |
+| Helena Estrategista 🎯 | Scrapea reviews+FAQ dos concorrentes, gera diagnostico StorySelling + briefing das 10 fotos | playwright |
+| Renata Redatora ✍️ | Gera 3-5 titulos com scoring + descricao + ficha tecnica, ancorada no brief da Helena | — |
+| Felipe Fotos 📸 | Executa as 10 fotos a partir do briefing da Helena (image-to-image + overlay) | image-ai-generator, image-overlay, image-creator |
+| Vinicius Validador ✅ | QA + compliance ML + bloco StorySelling | — |
+| Paula Publicacao 🚀 | Dispara webhook n8n "ML Publicar" + log no Supabase | — |
+
+Pipeline (11 steps, 2 checkpoints):
+1. step-01-leitura-planilha
+2. step-02-curadoria-produtos (Caio)
+3. step-03-categorizacao (Cibele)
+4. step-04-inteligencia-conversao (Helena) ← NOVO
+5. step-05-copywriting (Renata)
+6. step-06-checkpoint-copy (humano) ← apresenta 3-5 titulos com scoring
+7. step-07-fotos (Felipe)
+8. step-08-revisao (Vinicius)
+9. step-09-checkpoint-publicacao (humano)
+10. step-10-publicacao (Paula)
+11. step-11-relatorio-final
+
+Frameworks de referencia (em `squads/ml-anuncios/pipeline/data/`):
+- `storyselling-framework.md` — MECLABS (equacao C = 4m + 3v + 2(i-f) - 2a), codigos psicologicos (`+m`, `-a-f`, `+i+v`...), escada "E Dai?", StoryBrand adaptado, hierarquia das 10 fotos.
+- `objection-patterns.md` — 10 familias de objecao tipicas (F1-F10) com gatilhos e templates.
+- `photo-templates.md` — 10 templates JSON cinematograficos parametrizados (CAPA_PURPLE_COW -> MACRO_YES_CTA_FINAL).
+
+## Regra global de fotos da squad
+
+**1200x1200 px exatos.** Maior ou menor e veto automatico. Aplicado em todos os pontos da pipeline (Felipe, image-overlay, quality-criteria, anti-patterns). Motivo: templates de overlay assumem canvas 1200x1200 fixo; outras dimensoes quebram posicionamento de selos/headlines.

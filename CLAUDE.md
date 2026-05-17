@@ -29,8 +29,13 @@ MCPs configurados em `.mcp.json`:
 - **supabase**: MCP oficial Supabase para queries no banco.
 - **n8n** (opcional): MCP para gerenciar workflows n8n via API.
 - **olist-docs**: MCP de documentacao da API v3 Tiny (so consulta de doc, nao executor). Operacao real no Tiny continua via HTTP Request no n8n com OAuth2.
+- **playwright**: navegacao headless para scraping. Usado em producao pela Helena Estrategista (squad ml-anuncios) para coletar reviews + FAQ + descricao dos 3 anuncios concorrentes top de cada SKU. Tambem usado pelas skills `image-creator` e `image-overlay` para renderizar HTML/CSS em imagem.
 
 Token ML expira em ~6h. Hook do plugin `ml-kit` puxa token fresco da tabela `access_token_ML` no SessionStart.
+
+### Modelo de IA para imagens
+
+A skill `image-ai-generator` da squad ml-anuncios usa **Gemini 2.5 Flash Image (Nano Banana)** em modo image-to-image, com a `foto_base_url` do dossiê do produto como referência. Acesso via Google AI Studio. Custo estimado ~$0.04 por foto (~$0.40 por SKU com 10 fotos).
 
 ---
 
@@ -43,6 +48,8 @@ Token ML expira em ~6h. Hook do plugin `ml-kit` puxa token fresco da tabela `acc
 - **Tabelas novas por schema de dominio.** `public` e legado; preferir schemas como `ml_tools`, `tiny`, `integracao`.
 - **Validacao obrigatoria:** `validate_workflow` antes de todo `create_workflow` ou `update_workflow`.
 - **Expressoes n8n:** Sempre `{{ $json.fieldName }}` - nunca omitir as chaves duplas.
+- **Fotos do anuncio ML: tamanho FIXO 1200x1200 px.** Regra global do projeto. Maior (ex: 1500x1500) ou menor (ex: 1000x1000) e veto automatico — templates de overlay (skill `image-overlay`) assumem canvas 1200x1200 fixo. Felipe redimensiona se Nano Banana retornar dimensao diferente.
+- **Metodo StorySelling na squad ml-anuncios:** copy e fotos sao baseadas em diagnostico psicologico das reviews de concorrentes ML (feito pela Helena Estrategista no step-04). Helena precisa de `permalink` valido de pelo menos 2 concorrentes top da Cibele para funcionar. Frameworks de referencia em `squads/ml-anuncios/pipeline/data/storyselling-framework.md` (MECLABS, escada E dai, hierarquia das 10 fotos), `objection-patterns.md` (10 familias) e `photo-templates.md` (10 templates JSON parametrizados).
 
 ---
 
