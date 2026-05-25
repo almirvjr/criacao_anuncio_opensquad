@@ -68,7 +68,7 @@ Detalhes tecnicos de infraestrutura, MCPs, tabelas, RLS, skills, workflows.
 
 - `image-fetcher` (hybrid, usa MCP playwright): busca/screenshot de fotos na web
 - `image-creator` (mcp playwright): renderiza HTML/CSS em imagem (motor generico)
-- `image-ai-generator` (script Python): gera imagens AI. **Modelo padrao para esta squad: `gemini-2.5-flash-image` (Nano Banana) em modo image-to-image**, com a `foto_base_url` do dossie como referencia. Custo ~$0.04/imagem.
+- `image-ai-generator` (script Python): gera imagens AI **via OpenRouter** (`OPENROUTER_API_KEY`). **Modelo de producao: `google/gemini-3.1-flash-image-preview` (Nano Banana 2)** em modo image-to-image, com a `foto_base_url` do dossie como referencia. Modo `test`: `sourceful/riverflow-v2-fast`. Custo producao ~R$0,07-0,10/imagem. (NAO usa Google AI Studio direto — decisao 25/05.)
 - `image-overlay` (mcp playwright, depende de `image-creator`): aplica overlay de texto (headline, subheadline, badge, selos, CTA) sobre imagem gerada. Especializado nos 10 slots da hierarquia StorySelling. **Toda saida e 1200x1200 px exatos** (input tambem precisa ser 1200x1200; falha rapido se vier diferente).
 
 ## Squad ml-anuncios — agentes e pipeline (11 steps)

@@ -35,7 +35,7 @@ Token ML expira em ~6h. Hook do plugin `ml-kit` puxa token fresco da tabela `acc
 
 ### Modelo de IA para imagens
 
-A skill `image-ai-generator` da squad ml-anuncios usa **Gemini 2.5 Flash Image (Nano Banana)** em modo image-to-image, com a `foto_base_url` do dossiê do produto como referência. Acesso via Google AI Studio. Custo estimado ~$0.04 por foto (~$0.40 por SKU com 10 fotos).
+A skill `image-ai-generator` da squad ml-anuncios usa **Nano Banana 2 — `google/gemini-3.1-flash-image-preview`** em modo image-to-image, com a `foto_base_url` do dossiê do produto como referência. **Acesso via OpenRouter** (`OPENROUTER_API_KEY` no `.env`), não Google AI Studio direto. Modo `test` usa `sourceful/riverflow-v2-fast` (barato, pra iterar layout); modo `production` usa o Nano Banana 2. Custo de produção ~R$0,07-0,10 por foto. Decisão registrada em 25/05: ficar no OpenRouter (zero setup, sem throttling de tier grátis) e usar Nano Banana 2 nas 10 fotos — o texto (headline/selos/CTA) não é gerado pela IA, vem da skill `image-overlay`, então a IA só precisa preservar o produto.
 
 ---
 

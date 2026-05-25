@@ -119,3 +119,28 @@
 
 ### Plan file
 - Plano completo escrito em `~/.claude/plans/eu-tenho-um-gpt-delightful-thacker.md` e aprovado pelo Almir antes da execucao.
+
+## 2026-05-25 - Sessao: suporte a anuncios com variacoes (Fases 1-4 + v2) + base do 1o lote real (lixeiras Viel)
+
+### Base do 1o lote (lixeiras Viel)
+- Planilha padrao Tiny processada: 2 anuncios x 3 cores (Lixeira 5L R$150 / 8L R$200 Inox Tampa Pedal, Branco/Preto/Cinza).
+- `tools/tiny_to_esteira.py` (tradutor Tiny->esteira: agrupa pai/filho por "Codigo do pai", extrai cor de "Variacoes") + `tools/esteira/normalizer.py` -> emite `squads/ml-anuncios/output/anuncios-entrada.json`.
+- 17 fotos re-hospedadas do Google Drive no bucket `tcd-produtos` via `tools/rehost_fotos.py` (0 falhas, URLs publicas confirmadas; service_role obtida via API de gerencia so em memoria).
+- Dados ingeridos com ficha tecnica (marca Viel, material, dimensoes, capacidade). Typo do 8L ("Capacidade: 5 litros") corrigido pra 8 litros no dado de teste.
+
+### Suporte a variacoes - implementado (Fases 1-4)
+- Spec `docs/superpowers/specs/2026-05-25-suporte-variacoes-anuncio-design.md` + plano `docs/superpowers/plans/2026-05-25-suporte-variacoes-anuncio.md`. Abordagem A (unidade = anuncio; simples = N=1).
+- Fase 1: `tools/esteira/normalizer.py` (deteccao modo) + `payload_builder.py` (contrato ML pros 2 modos + `validate_anuncio`). 8 testes pytest verdes em `tools/esteira/tests/`.
+- Fase 2: step-01 detecta modo e usa o normalizer.
+- Fase 3: 6 agentes ajustados pra raciocinar por anuncio (Caio, Cibele resolve COLOR/value_id/cor_value_map, Renata titulo sem cravar cor, Felipe StorySelling compartilhada + ambientalizada por cor, Vinicius regras ML, Paula payload). Convencao canonica de artefatos (caminhos planos sob `output/`, chaveados por `pai_sku`).
+- Fase 4: migracao `ml_tools.publicacoes.modo`; workflow `ML Publicar` (0rzNJ7RLqLzMbKnf) monta `variations[]` (idempotencia por pai_sku/sku, picture_ids por cor, preco uniforme, available_quantity:1, SELLER_SKU/EAN por variacao). Validado 0 erros, INATIVO. `ml-api-reference.md` ganhou secao de variacoes.
+- 10 templates HTML do image-overlay versionados (`skills/image-overlay/references/templates/`).
+
+### v2: fonte de dados + checkpoint + foto tecnica
+- Modelo da "2a planilha de atributos" DESCARTADO. Info do produto vem da coluna "Descricao complementar" do Tiny (`descricao_complementar`, lido pelo tradutor).
+- Caio parseia a descricao complementar; Helena enriquece os campos pendentes a partir dos concorrentes top do ML + detecta divergencias + define `cor_heroi`.
+- Novo checkpoint humano `step-04b-checkpoint-dados` (entre Helena e copy): notifica Almir em lacuna/divergencia/sem-concorrente; gate duro das dimensoes do produto. Fonte unica do dado = `curadoria/dossies.json`.
+- Foto tecnica nova `FICHA_TECNICA_DIMENSOES` (dimensoes do produto). Profundidade OPCIONAL (produtos redondos = Altura x Diametro); gate exige so altura+largura.
+
+### Memoria
+- `criacao_anuncio_tiny_format_e_variacoes.md` criada (formato planilha Tiny pai/filho + suporte a variacoes + v2).

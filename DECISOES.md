@@ -113,12 +113,14 @@
 
 **Motivo:** fidelidade visual reduz devolucao. Text-to-image puro foi descartado (alto risco de produto entregue diferente da foto).
 
-### Modelo de IA = Gemini 2.5 Flash Image (Nano Banana)
+### Modelo de IA = Gemini 2.5 Flash Image (Nano Banana) — **ATUALIZADA em 2026-05-25**
 **Contexto:** GPT Himmel recomenda Gemini Pro. Skill `image-ai-generator` precisa de modelo image-to-image bom, barato, com API estavel.
 
 **Decisao:** padronizar em `gemini-2.5-flash-image` (Nano Banana) via Google AI Studio para todas as 10 fotos. Custo estimado ~$0.04/imagem ($0.40 por SKU).
 
 **Motivo:** image-to-image nativo bom, custo baixo, API estavel, aceita prompt JSON estruturado. GPT Image 1 (OpenAI) considerado mas image-to-image fraco e mais caro ($0.19).
+
+**ATUALIZADA:** o codigo nunca usou Google AI Studio direto nem o `gemini-2.5-flash-image`. Ver decisao "Geracao de imagem via OpenRouter + Nano Banana 2" em 2026-05-25 abaixo.
 
 ### Inteligencia de Conversao alimenta copy E fotos (step entre categorizacao e copywriting)
 **Contexto:** diagnostico psicologico das reviews tambem serve para Renata escrever titulo/descricao, nao so para Felipe gerar fotos.
@@ -147,3 +149,61 @@
 **Decisao:** toda foto entregue tem dimensao EXATA 1200x1200. Maior OU menor e veto automatico. Felipe redimensiona se Nano Banana retornar diferente.
 
 **Motivo:** templates de overlay (image-overlay) assumem canvas 1200x1200 fixo — outras dimensoes quebram posicionamento de selos/headlines. Padronizacao visual no marketplace. Conformidade com tamanho recomendado pelo ML.
+
+## 2026-05-25
+
+### Geracao de imagem via OpenRouter + Nano Banana 2 (substitui "Gemini 2.5 / Google AI Studio")
+**Contexto:** ao retomar os proximos passos, descobri divergencia entre doc e codigo. `CLAUDE.md`/`REFERENCIA.md`/DECISOES diziam `gemini-2.5-flash-image` via Google AI Studio (~$0.04/foto), mas o `generate.py` da skill `image-ai-generator` sempre usou **OpenRouter** (`OPENROUTER_API_KEY`), com producao em `google/gemini-3.1-flash-image-preview` (= Nano Banana 2) e teste em `sourceful/riverflow-v2-fast`.
+
+**Decisao:** manter **OpenRouter** como gateway e **Nano Banana 2** (`google/gemini-3.1-flash-image-preview`) nas 10 fotos. Docs alinhadas a essa realidade. Nano Banana Pro (`gemini-3-pro-image-preview`) fica de reserva para a capa caso queira mais fidelidade no futuro.
+
+**Motivo:** ja estava cabeado e funcionando (zero setup), mais barato (~R$0,07-0,10/foto) do que a estimativa Google da doc antiga, e OpenRouter pay-per-use evita throttling de tier gratis (problema que ja queimou o projeto reposicao no Groq). Nano Banana 2 e geracao mais nova que o "Nano Banana" original (2.5). O Pro nao compensa por ora: sua maior vantagem e renderizar texto na imagem, e aqui o texto vem do `image-overlay`, nao da IA — a IA so precisa preservar o produto. Almir confirmou a escolha em 25/05.
+
+### 10 templates HTML do image-overlay versionados (antes eram lazy)
+**Contexto:** a skill `image-overlay` previa gerar os 10 templates de slot sob demanda na primeira execucao; a pasta `references/templates/` estava vazia, bloqueando o teste E2E.
+
+**Decisao:** criar e versionar os 10 `{SLOT}.html` + README a partir da spec da SKILL.md (tabela de posicionamento + identidade Terra Casa Decor), com auto-ocultacao de campos vazios (`.classe:empty{display:none}`).
+
+**Motivo:** tira a aleatoriedade de "gerar na hora", deixa o layout auditavel/estavel e desbloqueia o E2E. Pendencia: ainda nao renderizados ponta a ponta com o `image-creator` (fonte Inter pode faltar no ambiente de render — validar na primeira execucao).
+
+### Suporte a variacoes = Abordagem A (unidade = anuncio; simples = N=1)
+**Contexto:** input real do Tiny e sempre pai (agrupamento) + filhos (cores). A esteira so fazia anuncio simples (1 SKU). Precisava fazer simples E com variacoes.
+
+**Decisao:** a unidade de trabalho da esteira passa a ser o ANUNCIO; "simples" e o caso N=1 (uma variacao, sem cor). Um caminho de codigo so; o `modo` (simples/variacoes) so muda o payload final ao ML. Alternativas B (adaptador so na publicacao) e C (esteira paralela) descartadas — B gera copy/fotos 3x; C diverge com o tempo.
+
+**Motivo:** sem duplicacao, custo controlado, manutencao simples.
+
+### Payload ML de variacoes (POST /items)
+**Contexto:** publicar 1 anuncio com 3 cores.
+
+**Decisao:** `variations[]` com `attribute_combinations` (`COLOR` value_id+value_name), `price` (uniforme entre variacoes — regra do ML), `available_quantity: 1` por variacao (Tiny e a fonte de estoque), `attributes` (SELLER_SKU + EAN por variacao), `picture_ids` por cor = [ambientalizada da cor] + [fotos compartilhadas]. `pictures` item-level = uniao de todas. Idempotencia por `pai_sku` (variacoes) ou `sku` (simples). Coluna `modo` em `ml_tools.publicacoes`.
+
+**Motivo:** COLOR e `defines_picture` (cada cor precisa de imagem distinta -> ambientalizada); ML exige preco uniforme; SKU vai em SELLER_SKU (nao seller_custom_field).
+
+### Fotos: 10 StorySelling compartilhadas + 1 ambientalizada por cor
+**Contexto:** num anuncio com 3 cores, gerar 10 fotos por cor (30) seria caro.
+
+**Decisao:** 10 fotos StorySelling geradas 1x por anuncio (na cor "heroi") + 1 foto AMBIENTALIZADA por cor (image-to-image, produto da cor num cenario) que e a imagem distinta/capa da variacao. ~13 fotos IA por anuncio.
+
+**Motivo:** controla custo; satisfaz o `defines_picture` do ML (cada cor com imagem distinta); beneficios do produto sao iguais entre cores.
+
+### v2 — Fonte de dados = "Descricao complementar" do Tiny (substitui "2a planilha")
+**Contexto:** primeiro plano previa uma 2a planilha de atributos (material/tamanho/caracteristicas).
+
+**Decisao:** DESCARTAR a 2a planilha. A info do produto vem da coluna "Descricao complementar" do proprio export Tiny (`descricao_complementar`, lido pelo tradutor). O que faltar, a Helena enriquece a partir dos anuncios concorrentes top de venda no ML (durante o scraping que ela ja faz). Fonte unica do dado consolidado = `curadoria/dossies.json`.
+
+**Motivo:** um arquivo so pro Almir (a planilha que ele ja baixa), menos friccao.
+
+### v2 — Checkpoint de dados (step-04b) + notificacao na esteira
+**Contexto:** o enriquecimento por concorrente pode faltar info, nao achar concorrente, ou divergir entre concorrentes.
+
+**Decisao:** novo checkpoint HUMANO `step-04b-checkpoint-dados` entre Helena (step-04) e copy (step-05). Pausa e notifica o Almir (na propria esteira, sem Telegram) pra decidir/completar. Gate duro: dimensoes do produto resolvidas antes das fotos.
+
+**Motivo:** o Almir quer decidir quando ha lacuna/divergencia; consistente com os checkpoints de copy/publicacao ja existentes.
+
+### v2 — Profundidade do produto e OPCIONAL (foto tecnica)
+**Contexto:** uma das fotos e a foto tecnica (slot novo `FICHA_TECNICA_DIMENSOES`) com as dimensoes do PRODUTO. Lixeiras sao redondas (Altura x Diametro, sem profundidade).
+
+**Decisao:** o gate exige apenas `altura` + `largura` (largura = diametro em produto redondo) com `status: ok`; `profundidade` e opcional (`nao_aplicavel` quando ausente, nao bloqueia). A foto tecnica esconde a linha de profundidade quando vazia.
+
+**Motivo:** exigir 3 medidas interromperia o fluxo a toa em produto redondo.
