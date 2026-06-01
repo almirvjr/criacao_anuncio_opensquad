@@ -1,6 +1,7 @@
-# Credenciais
+# Credenciais (so .env.example versiona)
 .env
-.env.local
+.env.*
+!.env.example
 .mcp.json
 
 # Pasta de memoria do Claude
@@ -34,3 +35,17 @@ node_modules/
 __pycache__/
 *.pyc
 .venv/
+
+# Outputs da squad (gerados pelo runner, podem ser grandes)
+squads/*/output/
+!squads/*/output/.gitkeep
+
+# Build artifacts da squad (intermediários da investigação)
+squads/*/_build/investigation/_raw/
+
+# Memória de runs (pode ter dados sensíveis de produtos)
+squads/*/_memory/runs.md
+
+# Logs
+_opensquad/logs/
+*.log
