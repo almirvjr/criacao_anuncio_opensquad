@@ -50,6 +50,8 @@ A skill `image-ai-generator` da squad ml-anuncios usa **Nano Banana 2 — `googl
 - **Expressoes n8n:** Sempre `{{ $json.fieldName }}` - nunca omitir as chaves duplas.
 - **Fotos do anuncio ML: tamanho FIXO 1200x1200 px.** Regra global do projeto. Maior (ex: 1500x1500) ou menor (ex: 1000x1000) e veto automatico — templates de overlay (skill `image-overlay`) assumem canvas 1200x1200 fixo. Felipe redimensiona se Nano Banana retornar dimensao diferente.
 - **Metodo StorySelling na squad ml-anuncios:** copy e fotos sao baseadas em diagnostico psicologico das reviews de concorrentes ML (feito pela Helena Estrategista no step-04). Helena precisa de `permalink` valido de pelo menos 2 concorrentes top da Cibele para funcionar. Frameworks de referencia em `squads/ml-anuncios/pipeline/data/storyselling-framework.md` (MECLABS, escada E dai, hierarquia das 10 fotos), `objection-patterns.md` (10 familias) e `photo-templates.md` (10 templates JSON parametrizados).
+- **Capa da variacao = ambientalizada SEM texto.** O overlay de texto vive SO nas 9 fotos StorySelling (compartilhadas entre cores, texto neutro de cor). `picture_ids` = 1 capa + 9 StorySelling = 10.
+- **Proporcao do produto nas fotos = ancorada em medidas reais do ambiente** (ex.: bancada de banheiro ~90cm). A IA NAO acerta escala "no olho" — a medida tem que ir explicita no prompt. Quando destaque do produto e escala 1/3 brigam, usar a **formula do gabinete cortado** (cortar a bancada fora do topo; o gabinete some pra cima e o produto fica no terco de baixo, lendo pequeno mesmo grande no frame). Props sempre coerentes com o ambiente (nada de toalha/vaso de mesa no chao). Receita completa em `squads/ml-anuncios/_memory/memories.md`; decisoes em `DECISOES.md` (2026-06-15).
 
 ---
 

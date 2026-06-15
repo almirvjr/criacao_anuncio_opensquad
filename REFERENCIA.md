@@ -105,4 +105,15 @@ Frameworks de referencia (em `squads/ml-anuncios/pipeline/data/`):
 
 ## Regra global de fotos da squad
 
-**1200x1200 px exatos.** Maior ou menor e veto automatico. Aplicado em todos os pontos da pipeline (Felipe, image-overlay, quality-criteria, anti-patterns). Motivo: templates de overlay assumem canvas 1200x1200 fixo; outras dimensoes quebram posicionamento de selos/headlines.
+**1200x1200 px exatos.** Maior ou menor e veto automatico. Aplicado em todos os pontos da pipeline (Felipe, image-overlay, quality-criteria, anti-patterns). Motivo: templates de overlay assumem canvas 1200x1200 fixo; outras dimensoes quebram posicionamento de selos/headlines. `generate.py` devolve 1024x1024 (as vezes JPEG com ext .png) -> normalizar pra 1200x1200 pos-geracao (PIL LANCZOS).
+
+## Receita de capa + proporcao (Felipe) — consolidado 2026-06-15
+
+Detalhes completos e reutilizaveis em `squads/ml-anuncios/_memory/memories.md`. Resumo:
+
+- **Capa = ambientalizada SEM texto**, angulo 3/4 (nao copiar o frontal da base), cores quentes, produto fiel a foto-base REAL de cada cor (bucket `tcd-produtos/<SKU_VARIACAO>/foto-01.jpg`), branco corrigido (a base vem azulada), pedal esbelto, abinha da tampa alinhada ao pedal. Texto/overlay so nas 9 StorySelling.
+- **Proporcao ancorada em medida real do ambiente** (bancada ~90cm). A IA nao obedece tamanho exato por prompt — expressar como fracao de uma medida-padrao do cenario.
+- **Formula do "gabinete cortado"** (destaque + escala 1/3 juntos): dar zoom no produto e cortar a bancada fora do topo do quadro; o gabinete sobe pra fora da imagem e o produto fica no terco de baixo. Evidencia vem de luz/foco/composicao, nao de tamanho. Quando nao ha conflito, mostrar o ambiente mais aberto.
+- **Coerencia de props:** cada objeto onde realmente ficaria (toalha no toalheiro, vaso pequeno na bancada; no chao so tapete/planta de piso/cesto).
+- **Dimensoes reais (corrigem o dossie):** lixeiras Viel 5L = 18x25cm; 8L = 18x34cm (mesma largura, so mais alta ~38% da bancada). Base do 8L e visualmente igual a 5L (fornecedor reusou) -> forcar a silhueta alta no prompt.
+- **`generate.py`:** wrapper trata a referencia como "the reference IS the exact product... you MAY place it at a different flattering angle" (antes era "logo/mascot", ruim p/ fidelidade).
