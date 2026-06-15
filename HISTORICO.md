@@ -144,3 +144,23 @@
 
 ### Memoria
 - `criacao_anuncio_tiny_format_e_variacoes.md` criada (formato planilha Tiny pai/filho + suporte a variacoes + v2).
+
+## 2026-06-15 - Sessao: redesenho completo das 6 capas (lixeiras Viel 5L/8L)
+
+### Capas finalizadas (6/6) — aprovadas pelo Almir
+- Retomada da Fase 5 (fotos), pausada em 26/05. Redesenhadas as 6 capas ambientalizadas (5L e 8L x Branco/Preto/Cinza), salvas em `fotos/VIE_1066-PAI/_final/capa-5L-*.jpg` e `fotos/VIE_1067-PAI/_final/capa-8L-*.jpg` (1200x1200).
+- ~25 iteracoes ate a formula final. Cada cor gerada da foto-base REAL (baixadas do bucket `tcd-produtos/<SKU_VARIACAO>/foto-01.jpg`, listadas no dossie) — nao "fingida" a partir da branca.
+
+### Correcoes tecnicas aplicadas
+- `skills/image-ai-generator/scripts/generate.py`: wrapper do prompt corrigido — antes embrulhava a referencia como "logo/mascote" (ruim p/ fidelidade); agora "the reference IS the exact product... you MAY place it at a different flattering angle". Liberou angulo 3/4 mantendo fidelidade.
+- Dimensoes REAIS do produto corrigidas (dossie tinha 5L 25x19 / 8L 35x22 errado): **5L = 18cm diam x 25cm alt**; **8L = 18cm diam x 34cm alt** (mesma largura da 5L, so mais alta). Anotado na memoria da squad.
+
+### Regras novas do agente Felipe (codificadas em `squads/ml-anuncios/_memory/memories.md`)
+1. Capa = ambientalizada SEM texto (texto migra para as 9 StorySelling).
+2. Fidelidade e de PRODUTO, nao de angulo; corrigir tonalidade adulterada (branco vinha azulado).
+3. Ancorar proporcao em medidas-padrao do ambiente (bancada ~90cm); a IA nao acerta escala "no olho".
+4. **Formula do "gabinete cortado"**: quando destaque do produto e escala 1/3 brigam, cortar a bancada fora do topo do quadro — o gabinete some pra cima e a lixeira fica no terco de baixo, lendo pequena mesmo grande no frame. Evidencia vem de luz/foco/composicao, nao de tamanho.
+5. Coerencia/harmonia dos props (toalha no toalheiro, vaso pequeno na bancada; no chao so tapete/planta de piso).
+
+### Pendente (proximo passo)
+- Redesenho do overlay das 9 fotos StorySelling (tipografia/cor/distribuicao profissionais — observacao 5 do Almir).

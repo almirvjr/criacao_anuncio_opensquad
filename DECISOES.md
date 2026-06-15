@@ -207,3 +207,40 @@
 **Decisao:** o gate exige apenas `altura` + `largura` (largura = diametro em produto redondo) com `status: ok`; `profundidade` e opcional (`nao_aplicavel` quando ausente, nao bloqueia). A foto tecnica esconde a linha de profundidade quando vazia.
 
 **Motivo:** exigir 3 medidas interromperia o fluxo a toa em produto redondo.
+
+## 2026-06-15
+
+### Capa = ambientalizada SEM texto (texto migra para as StorySelling)
+**Contexto:** o plano antigo (PROGRESSO 26/05) previa a capa = foto ambientalizada por cor COM overlay de texto. Ao revisar a 1a geracao, o overlay na capa ficou amador e o Almir definiu que a capa deve ser limpa.
+
+**Decisao:** a capa de cada variacao e a foto ambientalizada SEM nenhuma fonte escrita. Todo o texto/overlay vive nas 9 fotos StorySelling (fotos 2-10), que sao compartilhadas entre as cores (texto neutro de cor).
+
+**Motivo:** capa limpa converte melhor e evita o overlay amador; concentra o esforco de tipografia num lugar so. `picture_ids` por variacao continua = 1 ambientalizada (capa) + 9 StorySelling = 10.
+
+### Formula do "gabinete cortado" para conciliar destaque + escala 1/3
+**Contexto:** destaque do produto e prova da escala (lixeira = 1/3 da bancada de 90cm) brigam: pra PROVAR o 1/3 a bancada inteira tem que caber no quadro, o que deixa a lixeira pequena; trazer pra frente pra dar destaque estoura a escala. A IA tambem nao obedece tamanho exato por prompt (orbita ~40-50% por mais que se escreva "1/3").
+
+**Decisao:** quando os dois objetivos conflitam, NAO mostrar a bancada inteira. Dar zoom no produto (foreground hero) e CORTAR o tampo/bancada fora do topo do quadro — mostra so a parte de baixo de um gabinete alto que claramente sobe pra fora da imagem; a lixeira fica baixa contra ele (terco de baixo). O olho entende que e pequena mesmo grande no frame. Reforcar com pistas de tamanho que sobrevivem ao corte (piso, rodape, gaveta). Quando NAO ha conflito, mostrar o ambiente mais aberto.
+
+**Motivo:** sacada do Almir. Resolve a oscilacao "arruma um lado, desarruma o outro". Evidencia passa a vir de luz/foco/composicao, nao de tamanho.
+
+### Coerencia/harmonia dos objetos com o ambiente nas fotos
+**Contexto:** numa capa o cenario tinha toalha dobrada no chao e um vaso de mesa no chao — objetos fora do lugar real.
+
+**Decisao:** todo prop tem que estar onde realmente ficaria. Toalha = toalheiro/bancada (nunca no chao); vaso/planta pequena, sabonete, difusor = na bancada/prateleira; no chao so o que e de chao (tapete, planta de piso em vaso grande, cesto). Se a bancada esta cortada fora do quadro, OMITIR os itens de bancada (nao jogar no chao pra preencher).
+
+**Motivo:** coerencia visual = credibilidade. Regra geral pra qualquer produto da squad.
+
+### Dimensoes reais do produto vencem o dossie + bases reais por cor
+**Contexto:** o dossie do Caio trazia 5L 25x19 / 8L 35x22 (errado). A escala das fotos depende da medida real.
+
+**Decisao:** usar as medidas reais informadas pelo Almir: 5L 18x25, 8L 18x34 (mesma largura, 8L so mais alto ~38% da bancada). Gerar cada cor da foto-base REAL do bucket `tcd-produtos/<SKU_VARIACAO>/foto-01.jpg` (existem para as 6 variacoes), nao recolorir a branca. Quirk: a base do 8L e visualmente igual a da 5L (fornecedor reusou a imagem) — a silhueta mais alta do 8L tem que ser FORCADA no prompt.
+
+**Motivo:** fidelidade de produto e escala correta. Bases reais por cor garantem tom certo (ex.: "cinza" Viel e um taupe quente, nao cinza neutro).
+
+### generate.py: referencia tratada como "produto exato", nao "logo/mascote"
+**Contexto:** o wrapper do `image-ai-generator/scripts/generate.py` embrulhava todo prompt com referencia como "Generate an image using the logo/mascot shown in the reference" — pessimo para fidelidade de produto.
+
+**Decisao:** reescrito para "The reference image above IS the exact product to depict. Faithfully reproduce it... but you MAY place it at a different, more flattering camera angle and inside a new scene."
+
+**Motivo:** liberou usar angulo 3/4 / cenario novo SEM perder a fidelidade do produto (requisito no 1 do Almir). Mudanca afeta toda geracao image-to-image da squad.
