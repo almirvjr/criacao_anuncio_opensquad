@@ -164,3 +164,20 @@
 
 ### Pendente (proximo passo)
 - Redesenho do overlay das 9 fotos StorySelling (tipografia/cor/distribuicao profissionais — observacao 5 do Almir).
+
+## 2026-06-16/17 - Sessao: identidade da marca + redesenho do overlay + BLOCO 1 das StorySelling (5L)
+
+### Identidade da marca Terra Casa Decor (raspada)
+- Raspado site (terracasadecor.com.br) + Instagram (@terracasadecor, via espelho publico) com chrome-devtools. Doc completo em `squads/ml-anuncios/_memory/brand-identity.md`, evidencias em `_memory/brand-recon/`.
+- Fonte = **Montserrat** (nao Inter). Cores: **marrom #541D03** (primaria), **terracota #EBB28A** (assinatura), **verde #228D40** (CTA), amarelo #FED65E, preto #0F0F0F, creme. Logo = arvore line-art + "Terra" serifa; versao sem fundo pessego em `terra-logo-clean.png` (extraida por luminancia).
+
+### Overlay redesenhado (resolve "observacao 5" — tipografia/cor/distribuicao amadoras)
+- Arquetipo "faixa clara" on-brand: painel creme na base, filete terracota, eyebrow + destaque marrom, selos chip verde, **logo real a direita + slogan**, Montserrat, **sem abreviacoes**. Mix por slot.
+- **Render migrado pro Python/Pillow** (chrome-devtools no Windows fica dpr 0.5 / janela 1366x577 e corta — inviavel). Ferramentas novas em `skills/image-overlay/scripts/`: `render_faixa.py` (overlay, dim_style finas/modelo/cotas, badge/selos/faixa configuravel, modo tecnico), `fit_scale.py` (encolhe/sobe produto sobre creme reconstruido), `compose_two.py` (compoe lixeira+caixa sem recorte). Fonte `assets/fonts/Montserrat.ttf` (variavel).
+
+### Receita da base validada (v9) + correcoes do Almir
+- Base via Nano Banana 2 (image-to-image): **esbelta** (corpo ~1,4-1,5x, nunca squat — a branca tinha "never tall/slim" no prompt, removido), **reflexo do inox = estilo CAPA** (espelhado vidrado refletindo ambiente quente, nao fosco/nao faixa escura), **inox prata neutro** (creme puxa dourado), tampa/pedal branco puro.
+
+### BLOCO 1 (faixa-clara) do 5L — feito/aprovado em `VIE_1066-PAI/_final/`
+- `foto-09-sobrecorrecao.jpg` (5 selos), `foto-05-clareza.jpg` (lixeira esbelta + caixa kraft em pe proporcional, composta), `foto-03-tamanho.jpg` (**FOTO TECNICA** = cota de engenharia com linhas de chamada + seta dupla + largura diagonal; ref. base sem sombra; etiqueta "5 Litros"). Capa branca esbelta em `_redesign/capa-branco-slim.jpg` (pendente substituir).
+- Muitas iteracoes na foto tecnica ate igualar o modelo do Almir; aprendido: detectar a base com limiar alto pra ignorar a sombra.

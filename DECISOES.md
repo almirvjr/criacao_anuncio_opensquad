@@ -244,3 +244,25 @@
 **Decisao:** reescrito para "The reference image above IS the exact product to depict. Faithfully reproduce it... but you MAY place it at a different, more flattering camera angle and inside a new scene."
 
 **Motivo:** liberou usar angulo 3/4 / cenario novo SEM perder a fidelidade do produto (requisito no 1 do Almir). Mudanca afeta toda geracao image-to-image da squad.
+
+## 2026-06-16/17
+
+### Identidade da marca = Montserrat + marrom/terracota/verde (raspada do site/IG)
+**Contexto:** o overlay anterior usava Inter + verde-ML berrante (ficou amador — "observacao 5" do Almir).
+**Decisao:** ancorar todo o visual das fotos na identidade real da Terra Casa Decor (raspada em 16/06): fonte **Montserrat**; **marrom #541D03** (primaria/titulos), **terracota #EBB28A** (assinatura), **verde #228D40** (CTA/confirmacao), creme. Logo real (arvore) extraido sem fundo. Doc em `squads/ml-anuncios/_memory/brand-identity.md`.
+**Motivo:** consistencia com a marca; o overlay generico nao convertia/destoava.
+
+### Render do overlay = Python/Pillow, NAO browser
+**Contexto:** a skill image-overlay previa renderizar HTML via Playwright/chrome-devtools. No Windows o chrome-devtools fica com devicePixelRatio 0.5 e janela ~1366x577, cortando a imagem; Playwright local tem package.json corrompido.
+**Decisao:** renderizar o overlay deterministicamente em **Pillow** (`skills/image-overlay/scripts/render_faixa.py`, config JSON -> 1200x1200). Ferramentas auxiliares `fit_scale.py` e `compose_two.py`.
+**Motivo:** determinismo, zero dependencia de browser/viewport instavel, reutilizavel no lote.
+
+### Foto tecnica = cota de engenharia, referencia na BASE com limiar alto (ignora sombra)
+**Contexto:** as cotas (25cm altura x 19cm largura + selo 5L) precisam imitar o modelo de foto tecnica que o Almir ja usa: linhas de chamada, seta dupla, largura diagonal em perspectiva.
+**Decisao:** `render_faixa.py dim_style=finas` desenha cota de engenharia (linhas de chamada marcando limites, seta dupla, largura diagonal na base). A deteccao da base usa **limiar alto (diff>90)** pra excluir a sombra (limiar baixo lia a sombra como base e jogava a cota pra longe). Folga uniforme dos dois lados referenciada na base.
+**Motivo:** num cilindro (base alarga, sombra) a deteccao ingenua erra; uniforme + linhas de chamada = igual ao modelo do cliente.
+
+### Processo: rodar CHECKLIST das orientacoes antes de mandar imagem pra validacao
+**Contexto:** o Almir reclamou que eu mandava "aprova?" sem verificar todas as regras, e as vezes consertava um lado quebrando outro.
+**Decisao (regra de trabalho):** antes de apresentar qualquer imagem pra validacao, rodar o **checklist de TODAS as orientacoes do Almir** e reportar o status real de cada uma (medido, nao no olho). Se um ajuste quebrar outra regra, avisar e mostrar o resultado final — nunca apresentar como certo quando nao esta.
+**Motivo:** rigor; evita retrabalho e perda de confianca.
