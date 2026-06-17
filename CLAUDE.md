@@ -29,13 +29,21 @@ MCPs configurados em `.mcp.json`:
 - **supabase**: MCP oficial Supabase para queries no banco.
 - **n8n** (opcional): MCP para gerenciar workflows n8n via API.
 - **olist-docs**: MCP de documentacao da API v3 Tiny (so consulta de doc, nao executor). Operacao real no Tiny continua via HTTP Request no n8n com OAuth2.
-- **playwright**: navegacao headless para scraping. Usado em producao pela Helena Estrategista (squad ml-anuncios) para coletar reviews + FAQ + descricao dos 3 anuncios concorrentes top de cada SKU. Tambem usado pelas skills `image-creator` e `image-overlay` para renderizar HTML/CSS em imagem.
+- **playwright**: navegacao headless para scraping. Usado em producao pela Helena Estrategista (squad ml-anuncios) para coletar reviews + FAQ + descricao dos 3 anuncios concorrentes top de cada SKU. (A skill `image-overlay` NAO usa mais browser — migrou pra render Python/Pillow; ver abaixo.)
 
 Token ML expira em ~6h. Hook do plugin `ml-kit` puxa token fresco da tabela `access_token_ML` no SessionStart.
 
 ### Modelo de IA para imagens
 
 A skill `image-ai-generator` da squad ml-anuncios usa **Nano Banana 2 — `google/gemini-3.1-flash-image-preview`** em modo image-to-image, com a `foto_base_url` do dossiê do produto como referência. **Acesso via OpenRouter** (`OPENROUTER_API_KEY` no `.env`), não Google AI Studio direto. Modo `test` usa `sourceful/riverflow-v2-fast` (barato, pra iterar layout); modo `production` usa o Nano Banana 2. Custo de produção ~R$0,07-0,10 por foto. Decisão registrada em 25/05: ficar no OpenRouter (zero setup, sem throttling de tier grátis) e usar Nano Banana 2 nas 10 fotos — o texto (headline/selos/CTA) não é gerado pela IA, vem da skill `image-overlay`, então a IA só precisa preservar o produto.
+
+O **overlay de texto é render Python/Pillow** (`skills/image-overlay/scripts/render_faixa.py`), NÃO browser. Decisão de 25/05 sobre FLUX/Nano Pro segue valendo: avaliados em council (17/06) e **descartados** — não comprar (ver `DECISOES.md`).
+
+### Detecção de produto + gate de cor (cutout) — depende de `rembg`
+
+- **`skills/image-overlay/scripts/cutout.py`**: máscara/bbox do produto via **BiRefNet** (`rembg` + `onnxruntime`, modelo `birefnet-general`, roda offline/R$0). Substituiu a heurística frágil do pixel-de-canto em `render_faixa.py` (foto técnica), `fit_scale.py` e `compose_two.py`. **Fallback automático** pra heurística antiga se `rembg` faltar ou `CUTOUT_DISABLE=1`. Modelo configurável por `CUTOUT_MODEL`.
+- **`skills/image-overlay/scripts/inox_cast.py`**: quality-gate de cor — reprova foto de inox que ficou "dourada" (calor RGB `w_med>=14`), pra disparar retry. **Não** corrige em pós (achataria reflexos quentes desejados); regenera.
+- **Dependência nova:** `pip install rembg onnxruntime` (já instaladas no Windows atual). Sem elas, o pipeline funciona com qualidade antiga (fallback).
 
 ---
 

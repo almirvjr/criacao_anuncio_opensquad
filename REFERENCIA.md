@@ -29,7 +29,7 @@ Detalhes tecnicos de infraestrutura, MCPs, tabelas, RLS, skills, workflows.
 - Usado em producao por:
   - **Helena Estrategista** (squad ml-anuncios, step-04): scraping de reviews + FAQ + descricao dos 3 concorrentes top no Mercado Livre.
   - **image-creator** (skill): renderiza HTML/CSS em PNG via headless browser.
-  - **image-overlay** (skill): aplica texto sobre imagem via HTML/CSS renderizado.
+  - (A skill **image-overlay** NAO usa mais playwright — migrou pra render Python/Pillow em 16/06.)
 
 ## Supabase
 
@@ -69,7 +69,13 @@ Detalhes tecnicos de infraestrutura, MCPs, tabelas, RLS, skills, workflows.
 - `image-fetcher` (hybrid, usa MCP playwright): busca/screenshot de fotos na web
 - `image-creator` (mcp playwright): renderiza HTML/CSS em imagem (motor generico)
 - `image-ai-generator` (script Python): gera imagens AI **via OpenRouter** (`OPENROUTER_API_KEY`). **Modelo de producao: `google/gemini-3.1-flash-image-preview` (Nano Banana 2)** em modo image-to-image, com a `foto_base_url` do dossie como referencia. Modo `test`: `sourceful/riverflow-v2-fast`. Custo producao ~R$0,07-0,10/imagem. (NAO usa Google AI Studio direto — decisao 25/05.)
-- `image-overlay` (mcp playwright, depende de `image-creator`): aplica overlay de texto (headline, subheadline, badge, selos, CTA) sobre imagem gerada. Especializado nos 10 slots da hierarquia StorySelling. **Toda saida e 1200x1200 px exatos** (input tambem precisa ser 1200x1200; falha rapido se vier diferente).
+- `image-overlay` (**render Python/Pillow**, NAO mais playwright): aplica overlay de texto (headline, subheadline, badge, selos, CTA) sobre imagem gerada. Especializado nos 10 slots da hierarquia StorySelling. **Toda saida e 1200x1200 px exatos**. Scripts em `skills/image-overlay/scripts/`: `render_faixa.py` (overlay faixa-clara/foto tecnica, config JSON), `fit_scale.py`, `compose_two.py`, `cutout.py`, `inox_cast.py`.
+
+## Deteccao de produto + gate de cor (imagem) — depende de `rembg`
+
+- **`cutout.py`** (BiRefNet via `rembg`+`onnxruntime`, modelo `birefnet-general`, offline R$0): fonte de mascara/bbox do produto. Usado por `render_faixa.py` (foto tecnica: bbox/colunas/base), `fit_scale.py` (`product_bottom`) e `compose_two.py` (`bbox_of`). Substituiu a heuristica do pixel-de-canto (bake-off em `tests/cutout-bakeoff/`, 17/06). **Fallback** automatico pra heuristica antiga se rembg faltar ou `CUTOUT_DISABLE=1`; modelo via `CUTOUT_MODEL`.
+- **`inox_cast.py`**: quality-gate de cor do inox. Mede calor normalizado RGB `100*(R-B)/(R+G+B)` no corpo metalico (mask do cutout); `w_med>=14` ou `warm_frac>=0.5` = `dourado` (exit 2 -> retry). NAO usa LAB do Pillow (neste build nao centra a/b em 128). NAO corrigir em pos — regenerar.
+- **Dependencia de runtime:** `pip install rembg onnxruntime` (instaladas no Windows atual, Python 3.14). Sem elas, pipeline cai no fallback (qualidade antiga).
 
 ## Squad ml-anuncios — agentes e pipeline (11 steps)
 
