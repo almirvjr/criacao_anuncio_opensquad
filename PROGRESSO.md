@@ -10,6 +10,8 @@ Steps 02-06 concluídos (dossiê, categorização MLB33375, brief Helena, copy R
 ### Sistema de overlay (TRAVADO) — detalhe em HISTORICO 16/17-06 e memória
 - **Identidade da marca** em `_memory/brand-identity.md`: Montserrat + marrom #541D03 / terracota #EBB28A / verde #228D40 / creme. Logo real em `_memory/brand-recon/terra-logo-clean.png`.
 - **Render = Python/Pillow** (NÃO browser): `skills/image-overlay/scripts/render_faixa.py` (config JSON, `dim_style`, badge, selos, `band_h`, logo, modo técnico) + `fit_scale.py` + `compose_two.py`.
+- **Detecção de produto = BiRefNet** (`cutout.py`, rembg, offline R$0) nos 3 scripts; fallback p/ heurística se faltar (`CUTOUT_DISABLE=1`). Deps: `pip install rembg onnxruntime`.
+- **Gate de cor do inox** (`inox_cast.py`): reprova "dourado" (`w_med>=14`) → pedir retry. Rodar antes de aprovar foto de inox.
 - **Receita base (v9):** esbelta (~1,4-1,5×, nunca squat) + reflexo inox estilo CAPA (espelhado vidrado quente) + prata neutro.
 
 ### BLOCO 1 (faixa-clara) — `VIE_1066-PAI/_final/`
@@ -17,7 +19,7 @@ Steps 02-06 concluídos (dossiê, categorização MLB33375, brief Helena, copy R
 
 ## Próximas tarefas (retomar daqui)
 0. **Substituir capa:** `cp _redesign/capa-branco-slim.jpg _final/capa-5L-branco.jpg` (após OK).
-1. **BLOCO 2 — construir arquétipos scrim no render_faixa.py:** scrim-minimal (slots 6 pedal, 7 durabilidade), scrim imersivo (8 lifestyle), scrim+CTA (10 macro-yes), antes/depois (2). Cada: base Nano Banana (receita v9) + overlay. Conteúdo em `inteligencia/brief-VIE_1066-PAI.yaml`.
+1. **BLOCO 2 — construir arquétipos scrim no render_faixa.py:** scrim-minimal (slots 6 pedal, 7 durabilidade), scrim imersivo (8 lifestyle), scrim+CTA (10 macro-yes), antes/depois (2). Cada: base Nano Banana (receita v9) + overlay. **Rodar `inox_cast.py` em cada base nova** (retry se dourado). Conteúdo em `inteligencia/brief-VIE_1066-PAI.yaml`.
 2. Replicar as 9 pro **8L (VIE_1067)** (brief próprio). `picture_ids` = 1 capa + 9 StorySelling = 10. Subir ao bucket `tcd-produtos` (precisa SERVICE_ROLE).
 3. Step-08 Vinícius → Step-09 Checkpoint B (dry-run) → Step-10 publicar com OK.
 4. Após publicar: vincular SKU→MLB manual no Tiny.

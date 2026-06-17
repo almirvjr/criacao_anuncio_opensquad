@@ -181,3 +181,19 @@
 ### BLOCO 1 (faixa-clara) do 5L — feito/aprovado em `VIE_1066-PAI/_final/`
 - `foto-09-sobrecorrecao.jpg` (5 selos), `foto-05-clareza.jpg` (lixeira esbelta + caixa kraft em pe proporcional, composta), `foto-03-tamanho.jpg` (**FOTO TECNICA** = cota de engenharia com linhas de chamada + seta dupla + largura diagonal; ref. base sem sombra; etiqueta "5 Litros"). Capa branca esbelta em `_redesign/capa-branco-slim.jpg` (pendente substituir).
 - Muitas iteracoes na foto tecnica ate igualar o modelo do Almir; aprendido: detectar a base com limiar alto pra ignorar a sombra.
+
+## 2026-06-17 - Sessao: stack de imagem (council) + cutout BiRefNet + gate de cor do inox
+
+### Sincronizacao do agent file do Felipe com a realidade da Fase 5
+- `felipe-fotos.agent.md` estava desatualizado (descrevia render por browser/HTML e "Gemini 2.5"). Atualizado: render = Pillow (`render_faixa.py`), modelo = Nano Banana 2 (`google/gemini-3.1-flash-image-preview`), arquetipos faixa-clara/scrim, fonte Montserrat. Tambem refletido o cutout e o gate de cor (abaixo).
+
+### Council: avaliacao de comprar ferramentas novas de imagem (FLUX.1 Kontext / Nano Banana Pro / BiRefNet)
+- Rodado o llm-council sobre o stack sugerido em outra sessao. Veredito: NAO comprar FLUX nem Nano Banana Pro (texto por IA e irrelevante — overlay e Pillow; trocar modelo joga fora a receita v9). Unico upgrade defensavel: cutout real (BiRefNet), de graca.
+
+### Bake-off cutout: BiRefNet vs heuristica do pixel-de-canto (VALIDADO)
+- Teste em `tests/cutout-bakeoff/` (`heuristic_mask.py` vs `alpha_cutout.py`) com 5 fotos reais de inox. Heuristica falhava feio: inox espelhado em fundo branco apagava ~78% do produto; fundo cinza degrade estourava o bbox pra imagem inteira (0,0,1300,1300). BiRefNet: mascara solida + bbox justo em todas (cobertura ~85%). Custo R$0, offline.
+- **Integrado:** novo `skills/image-overlay/scripts/cutout.py` (BiRefNet via rembg, cache de sessao, fallback automatico pra heuristica antiga se rembg faltar ou `CUTOUT_DISABLE=1`). Plugado em `render_faixa.py` (foto tecnica: bbox/colunas/base), `fit_scale.py` (`product_bottom`) e `compose_two.py` (`bbox_of`). Verificado: base-cinza saiu de (0,0,1300,1300) pra (367,244,972,1126). Deps `rembg`+`onnxruntime` instaladas (Python 3.14).
+
+### Gate de cor do inox (lacuna #1 dourado) — detector, NAO correcao (VALIDADO)
+- Novo `skills/image-overlay/scripts/inox_cast.py`: mede calor normalizado RGB `100*(R-B)/(R+G+B)` no corpo metalico (mask do cutout). Limiar `w_med>=14` ou `warm_frac>=0.5` = `dourado` (exit 2 -> pedir retry). LAB do Pillow neste build NAO centra a/b em 128 (deu lixo) -> usar RGB.
+- Calibrado/validado 100% contra ground-truth visual (VIE_1066): fotos reais ~0; v3 neutro 3.9; bons 9-12; v5/v2/cinza dourados 15.7-19.1. Correcao em pos descartada (achataria reflexos quentes desejados) — caminho e regenerar. Gate entrou no step-07 do Felipe (item 6e).

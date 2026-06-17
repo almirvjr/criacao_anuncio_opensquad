@@ -266,3 +266,20 @@
 **Contexto:** o Almir reclamou que eu mandava "aprova?" sem verificar todas as regras, e as vezes consertava um lado quebrando outro.
 **Decisao (regra de trabalho):** antes de apresentar qualquer imagem pra validacao, rodar o **checklist de TODAS as orientacoes do Almir** e reportar o status real de cada uma (medido, nao no olho). Se um ajuste quebrar outra regra, avisar e mostrar o resultado final — nunca apresentar como certo quando nao esta.
 **Motivo:** rigor; evita retrabalho e perda de confianca.
+
+## 2026-06-17
+
+### NAO comprar FLUX.1 Kontext nem Nano Banana Pro (resultado do council)
+**Contexto:** outra sessao sugeriu um stack pago (driver Replicate/fal.ai + Nano Banana Pro pra texto + FLUX.1 Kontext pra restaging + remove.bg/BiRefNet pra cutout). Almir so quer pagar com melhoria comprovavel.
+**Decisao:** NAO adotar FLUX nem Nano Banana Pro. O texto por IA (pitch do Nano Pro) e irrelevante — overlay e Pillow de proposito. Trocar o gerador por FLUX jogaria fora a receita v9 (tunada por semanas) por ganho incerto. Unico upgrade aprovado: cutout real (gratis).
+**Motivo:** council (5 perspectivas + peer review) convergiu nisso; as 3 lacunas reais se resolvem sem custo recorrente.
+
+### Deteccao de produto = BiRefNet local (rembg), substitui a heuristica do pixel-de-canto
+**Contexto:** `render_faixa.py`/`fit_scale.py`/`compose_two.py` detectavam o produto por diff do pixel do canto — fragil (inox espelhado em fundo branco some; fundo degrade estoura o bbox pra imagem inteira). Bake-off em `tests/cutout-bakeoff/` comprovou.
+**Decisao:** novo `skills/image-overlay/scripts/cutout.py` (BiRefNet via `rembg`, modelo `birefnet-general`, offline R$0) vira a fonte de mascara/bbox dos 3 scripts. Fallback automatico pra heuristica antiga se rembg faltar ou `CUTOUT_DISABLE=1`. Deps: `pip install rembg onnxruntime`. **Supera** a deteccao por diff>90 da foto tecnica (decisao 2026-06-16/17 "Foto tecnica = ... limiar alto"): a mascara ja exclui a sombra.
+**Motivo:** detecção robusta em qualquer fundo; cobertura do produto subiu de ~22% pra ~85% nos casos de inox; resolve tambem a escala (vira bbox/alvo).
+
+### Lacuna #1 (inox dourado) = quality-gate de cor, NAO correcao em pos
+**Contexto:** Nano Banana 2 as vezes deixa o inox dourado/champanhe (creme/madeira puxam calor). A marca QUER reflexo quente pontual, mas nao o corpo todo dourado.
+**Decisao:** `skills/image-overlay/scripts/inox_cast.py` mede calor normalizado RGB (`100*(R-B)/(R+G+B)`) no corpo metalico (mask do cutout); `w_med>=14` ou `warm_frac>=0.5` = `dourado` -> pedir retry (instrucao reforcada). NAO corrigir o tom em pos (achataria os reflexos quentes desejados) — regenerar. Usar RGB, nao o `convert("LAB")` do Pillow (neste build nao centra a/b em 128 e da lixo).
+**Motivo:** validado 100% contra ground-truth visual (folga: bons<=12, ruins>=15); correcao automatica brigaria com a estetica aprovada.
