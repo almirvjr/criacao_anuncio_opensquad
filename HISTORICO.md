@@ -197,3 +197,26 @@
 ### Gate de cor do inox (lacuna #1 dourado) — detector, NAO correcao (VALIDADO)
 - Novo `skills/image-overlay/scripts/inox_cast.py`: mede calor normalizado RGB `100*(R-B)/(R+G+B)` no corpo metalico (mask do cutout). Limiar `w_med>=14` ou `warm_frac>=0.5` = `dourado` (exit 2 -> pedir retry). LAB do Pillow neste build NAO centra a/b em 128 (deu lixo) -> usar RGB.
 - Calibrado/validado 100% contra ground-truth visual (VIE_1066): fotos reais ~0; v3 neutro 3.9; bons 9-12; v5/v2/cinza dourados 15.7-19.1. Correcao em pos descartada (achataria reflexos quentes desejados) — caminho e regenerar. Gate entrou no step-07 do Felipe (item 6e).
+
+## 2026-06-18/19 - Sessao: BLOCO 2 das StorySelling (5L) + virada Gemini Pro + regra "sem marca"
+
+### Conjunto 5L fechado (exceto foto 10) em `VIE_1066-PAI/_final/` — todas SEM marca
+- **Capas** (3 cores) redesenhadas: lixeira ABERTA hero + "gabinete cortado" (bancada cortada no topo) p/ destaque + escala correta. Preto/cinza = recolor `faithful` da branca (cena/escala idênticas).
+- **Foto 2** antes/depois (DOR×DESEJO): esquerda bagunçada/fria + lixeira plástica barata; direita limpa/quente com a inox; headline no topo. 1 geração Gemini Pro.
+- **Foto 4** macro do corpo de inox (reflexo limpo do ambiente, recorte real + faithful).
+- **Foto 6** pedal (pé acionando, tampa aberta, scrim) — fechada 18/06.
+- **Foto 7** redesenhada = MACRO da dobradiça/mecanismo (recorte da foto real `16.48.40` + faithful recolor preto→branco); faixa-clara.
+- **Foto 8** lifestyle = banheiro aspiracional via Pro (escala ~1/3, coerência dos props OK).
+- Fotos 3/5/9 (faixa-clara) re-renderizadas sem marca.
+
+### Motor de imagem evoluído (`skills/image-overlay` + `image-ai-generator`)
+- `render_faixa.py`: novo `layout:"scrim"` (full-bleed + degradê numpy + texto branco, word-wrap, helpers `_wrap_segments`/`_draw_segment_lines`/`render_scrim`); cotas `dim_dashed`/`dim_label_box`/`dim_extension`; selo+CTA no scrim; logo centralizado no slogan; **gate `show_brand` (off) → não desenha marca**.
+- `generate.py`: modo **`faithful`** (recolor idêntico) + modo **`pro`** (`google/gemini-3-pro-image`) + constante **`SCENE_COHERENCE`** anexada auto a toda cena.
+- Novos: `compose_scale.py` (composição determinística de escala — usado só p/ "tamanho em contexto"), `zoom_out.py` (DEPRECADO — borra lateral), heros `branco-studio-fiel.jpg` (aberto) e `branco-studio-fiel-fechada.jpg` (fechado), logo branco `terra-logo-white.png`.
+- Histórico de imagens versionado em `_redesign-overlay/_historico/` (Almir exigiu).
+
+### Concorrência / Firecrawl
+- Raspagem dos 3 campeões: `firecrawl_scrape` FUNCIONA no ML; `firecrawl_extract` ALUCINA (URLs/reviews falsos) → usar scrape + grep das URLs reais `http2.mlstatic.com/D_...`. Galerias deles = genéricas (estúdio + lifestyle + fotos de cliente). Helena hoje usa Playwright (não hidrata JS do ML).
+
+### Pendente
+- Foto 10 (CTA) com Pro. Replicar 8L. Validar briefing Helena vs agente-referência (Almir envia respostas aos poucos).

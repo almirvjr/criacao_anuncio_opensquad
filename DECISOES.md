@@ -283,3 +283,26 @@
 **Contexto:** Nano Banana 2 as vezes deixa o inox dourado/champanhe (creme/madeira puxam calor). A marca QUER reflexo quente pontual, mas nao o corpo todo dourado.
 **Decisao:** `skills/image-overlay/scripts/inox_cast.py` mede calor normalizado RGB (`100*(R-B)/(R+G+B)`) no corpo metalico (mask do cutout); `w_med>=14` ou `warm_frac>=0.5` = `dourado` -> pedir retry (instrucao reforcada). NAO corrigir o tom em pos (achataria os reflexos quentes desejados) — regenerar. Usar RGB, nao o `convert("LAB")` do Pillow (neste build nao centra a/b em 128 e da lixo).
 **Motivo:** validado 100% contra ground-truth visual (folga: bons<=12, ruins>=15); correcao automatica brigaria com a estetica aprovada.
+
+## 2026-06-18/19
+
+### Gemini 3 Pro Image + geracao em 1 tacada (substitui composicao manual)
+- `generate.py` ganhou modo **`pro` = `google/gemini-3-pro-image`** (OpenRouter tem pro-image/-preview, 3.1-flash-image=Nano Banana 2, 2.5-flash-image). **Pro e MUITO mais fiel e acerta de 1a** que o Flash.
+- Cenas/lifestyle/antes-depois: **gerar a cena inteira numa tacada** a partir de prompt JSON rico (a IA integra o produto) — NAO compor recorte no Pillow (vira "figurinha"/adesivo) nem iterar 14×. Metodo veio do projeto-referencia do Almir; ja documentado em `pipeline/data/photo-templates.md`.
+- Por que o Pro perde fidelidade: (1) pedir tampa FECHADA com referencia ABERTA → reverte pro vies (tampa de inox abaulada) — FIX: ref no mesmo estado (`branco-studio-fiel-fechada.jpg`); (2) cena quente doura o aco — FIX: travar "cool neutral silver, neutral white balance" + medir cropando a regiao do produto.
+
+### Modo `faithful` na generate.py + heros fieis como referencia mestra
+- `faithful:true` reproduz a foto IDENTICA + so aplica a edicao (recolor/variacao). Usado p/ criar os heros fieis (recolor preto→branco da foto real) e os macros de detalhe (recorte da foto real + faithful = zero alucinacao). Gerar do zero perdia o produto.
+
+### SEM MARCA nas imagens do anuncio (DEFINITIVA)
+- Nenhuma foto leva logo Terra, slogan, nem se apoia nas cores da marca — pra nao prender a foto a um rebrand futuro. A marca vive no titulo/descricao. `render_faixa.py` nao desenha marca por padrao (gate `show_brand`, off).
+
+### Coerencia de cena = automatica + Escala MEDIDA
+- `generate.py` anexa `SCENE_COHERENCE` em toda geracao de cena (toalha no toalheiro/bancada NUNCA no chao; no chao so tapete/planta de piso/cesto; nada flutuando).
+- Escala: MEDIR lixeira÷bancada (chao→tampo) em px; alvo 5L ≈ 1/3 (~33%). NAO confundir com "% do frame". O Gemini tende a ~metade; cozinha incha mais que banheiro (5L e produto de banheiro). zoom_out.py (composicao) DEPRECADO — borra lateral; preferir gerar de novo.
+
+### Concorrencia: Firecrawl scrape (nao extract) + Helena
+- `firecrawl_scrape` funciona no ML; `firecrawl_extract` ALUCINA → usar scrape + grep das URLs reais mlstatic. Helena raspa via Playwright (nao hidrata JS do ML) — migrar p/ Firecrawl no futuro.
+
+### Validar briefing da Helena vs agente-referencia StorySelling
+- Almir vai enviando as respostas do agente-referencia (FASE 0 inteligencia, titulos, descricao, 10 imagens JSON) pra checar se a Helena traz o briefing certo; corrigir a Helena se divergir. Hierarquia difere: foto tecnica = nossa foto 3 (escolha do Almir) → imagem 3 do ref = nossa foto 8. NAO usar selo "+N avaliacoes" (era do concorrente; nosso produto e novo).
