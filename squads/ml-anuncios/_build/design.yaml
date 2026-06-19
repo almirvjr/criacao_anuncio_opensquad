@@ -1,0 +1,96 @@
+squad:
+  code: "ml-anuncios"
+  name: "Squad ML Anúncios"
+  description: "Cria, revisa e publica anúncios no Mercado Livre a partir de planilha de produtos, com sincronização no Tiny ERP."
+  icon: "🛒"
+  domain: "mixed"
+  language: "pt-BR"
+
+prerequisites:
+  - "Configurar MCP mercadolibre em .mcp.json (consulta de documentação da API ML)"
+  - "Token ML válido na tabela public.access_token_ML (app_name='pre-venda') no Supabase"
+  - "Token Tiny ERP configurado em .env (TINY_TOKEN ou similar)"
+  - "Skills instaladas: image-fetcher, image-ai-generator, image-creator"
+
+agents:
+  - id: "caio-curador"
+    name: "Caio Curador"
+    title: "Curador de Dados de Produto"
+    icon: "📥"
+    execution: "subagent"
+    responsibility: "Lê a planilha de entrada, valida colunas obrigatórias, enriquece informações faltantes pesquisando no site do fornecedor e na web, normaliza cada produto em um dossiê estruturado por SKU."
+    skills: ["web_search", "web_fetch"]
+    tools: ["Read", "Write", "WebFetch", "WebSearch", "Bash"]
+
+  - id: "cibele-categoria"
+    name: "Cibele Categoria"
+    title: "Especialista em Categorização ML"
+    icon: "🗂️"
+    execution: "subagent"
+    responsibility: "Para cada produto, descobre a categoria correta no Mercado Livre usando a API category_predictor, identifica os 3 concorrentes top-ranqueados na categoria e extrai padrões aplicáveis (palavras-chave, atributos comuns, range de preços)."
+    skills: ["web_search", "web_fetch"]
+    tools: ["Read", "Write", "WebFetch", "Bash"]
+
+  - id: "renata-redatora"
+    name: "Renata Redatora"
+    title: "Copywriter de Anúncios ML"
+    icon: "✍️"
+    execution: "subagent"
+    responsibility: "Gera para cada produto: título otimizado para ML (50-70 caracteres, padrão Categoria+Material+Capacidade+Features; sem citar a marca da loja), descrição persuasiva em 3 blocos (abertura com benefício / specs em bullets / features-benefícios + fechamento acolhedor SEM marca nem slogan — regra SEM MARCA, Almir 19/06) e ficha técnica preenchida com todos os atributos obrigatórios da categoria."
+    skills: []
+    tools: ["Read", "Write"]
+
+  - id: "felipe-fotos"
+    name: "Felipe Fotos"
+    title: "Curador Fotográfico de Anúncios"
+    icon: "📸"
+    execution: "subagent"
+    responsibility: "Monta pacote de 10 fotos por produto: busca fotos no site do fornecedor (image-fetcher), gera complementares com IA quando faltar (image-ai-generator), padroniza para fundo branco e ambientação Terra Casa Decor."
+    skills: ["image-fetcher", "image-ai-generator", "image-creator"]
+    tools: ["Read", "Write", "Bash"]
+
+  - id: "vinicius-validador"
+    name: "Vinicius Validador"
+    title: "Revisor de Qualidade e Compliance ML"
+    icon: "✅"
+    execution: "subagent"
+    responsibility: "Audita cada anúncio antes da publicação: compliance com regras do ML (caracteres proibidos, atributos obrigatórios da categoria), aderência ao tom Terra Casa Decor (casual e acolhedor), consistência técnica entre título/descrição/ficha, qualidade visual das 10 fotos."
+    skills: []
+    tools: ["Read", "Write"]
+
+  - id: "paula-publicacao"
+    name: "Paula Publicação"
+    title: "Publicadora ML e Sincronizadora Tiny"
+    icon: "🚀"
+    execution: "subagent"
+    responsibility: "Após aprovação humana, publica cada anúncio no Mercado Livre via API REST autenticada (POST /items), captura o MLB-id retornado, sincroniza o anúncio publicado com o produto correspondente no Tiny ERP e registra log de cada publicação no Supabase."
+    skills: []
+    tools: ["Read", "Write", "Bash", "WebFetch"]
+
+pipeline:
+  trigger: "manual"
+  approval_mode: "batch"
+  steps:
+    - { order: 1, id: "step-01-leitura-planilha", agent: "caio-curador", execution: "inline", description: "Lê a planilha de entrada e lista SKUs" }
+    - { order: 2, id: "step-02-curadoria-produtos", agent: "caio-curador", execution: "subagent", description: "Enriquece dados de cada produto via web research" }
+    - { order: 3, id: "step-03-categorizacao", agent: "cibele-categoria", execution: "subagent", description: "Categoriza e identifica concorrentes" }
+    - { order: 4, id: "step-04-copywriting", agent: "renata-redatora", execution: "subagent", description: "Gera título, descrição e ficha técnica" }
+    - { order: 5, id: "step-05-checkpoint-copy", type: "checkpoint", description: "Usuário aprova título/descrição/categoria antes de gerar fotos (passo caro)" }
+    - { order: 6, id: "step-06-fotos", agent: "felipe-fotos", execution: "subagent", description: "Busca e gera as 10 fotos por produto" }
+    - { order: 7, id: "step-07-revisao", agent: "vinicius-validador", execution: "subagent", description: "QA completo do anúncio" }
+    - { order: 8, id: "step-08-checkpoint-publicacao", type: "checkpoint", description: "Usuário aprova LOTE inteiro antes da publicação no ML" }
+    - { order: 9, id: "step-09-publicacao", agent: "paula-publicacao", execution: "subagent", description: "Publica no ML e sincroniza com Tiny" }
+    - { order: 10, id: "step-10-relatorio-final", agent: "paula-publicacao", execution: "inline", description: "Relatório final com MLB-ids" }
+
+skills:
+  - "image-fetcher"
+  - "image-ai-generator"
+  - "image-creator"
+
+data_files:
+  - "pipeline/data/research-brief.md"
+  - "pipeline/data/domain-framework.md"
+  - "pipeline/data/quality-criteria.md"
+  - "pipeline/data/output-examples.md"
+  - "pipeline/data/anti-patterns.md"
+  - "pipeline/data/ml-api-reference.md"
