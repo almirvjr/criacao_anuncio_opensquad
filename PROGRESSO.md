@@ -23,9 +23,10 @@
 
 ### ⚠️ Regras de trabalho (Almir)
 - **CHECKLIST medido ANTES de pedir aprovação** (`_memory/memories.md`): materiais (tampa/aro/pedal=plástico branco, só corpo=inox) · aba alinhada ao pedal · inox neutro (`inox_cast`) · **escala medida lixeira÷bancada ≈1/3** (não % do frame) · coerência dos props · sem marca · sem texto embutido.
-- **SEM MARCA nas imagens** (logo/slogan/cores) — a marca vive no título/descrição (não prender a um rebrand).
+- **SEM MARCA em todo o anúncio** (Almir 19/06) — nome "Terra Casa Decor" e slogan "O seu melhor lugar é a sua casa" NÃO entram em foto, título nem descrição (não prender a um rebrand). Só o tom/voz acolhedor permanece.
 
 ## Pendências
+- **Commitar 18 arquivos da squad** (renata/vinicius/steps/data) com a regra SEM MARCA — o `/save` só commita os 5 docs raiz.
 - **SUPABASE_SERVICE_ROLE** (`sb_secret_...`): re-fornecer ao retomar.
 - **Publicação (step-10):** `N8N_WEBHOOK_ML_PUBLICAR` ausente; workflow "ML Publicar" (`0rzNJ7RLqLzMbKnf`) INATIVO de propósito.
 - `generate.py` devolve 1024² → normalizar 1200² (PIL LANCZOS). `OPENROUTER_API_KEY` no `.env`.

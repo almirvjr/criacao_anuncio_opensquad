@@ -294,8 +294,9 @@
 ### Modo `faithful` na generate.py + heros fieis como referencia mestra
 - `faithful:true` reproduz a foto IDENTICA + so aplica a edicao (recolor/variacao). Usado p/ criar os heros fieis (recolor preto→branco da foto real) e os macros de detalhe (recorte da foto real + faithful = zero alucinacao). Gerar do zero perdia o produto.
 
-### SEM MARCA nas imagens do anuncio (DEFINITIVA)
-- Nenhuma foto leva logo Terra, slogan, nem se apoia nas cores da marca — pra nao prender a foto a um rebrand futuro. A marca vive no titulo/descricao. `render_faixa.py` nao desenha marca por padrao (gate `show_brand`, off).
+### SEM MARCA em TODO o anuncio (DEFINITIVA)
+- Nenhuma foto leva logo Terra, slogan, nem se apoia nas cores da marca — pra nao prender o anuncio a um rebrand futuro. `render_faixa.py` nao desenha marca por padrao (gate `show_brand`, off).
+- **Ampliacao (Almir 19/06, mesmo dia):** a regra passou a valer tambem para TITULO e DESCRICAO. Nome "Terra Casa Decor" e slogan "O seu melhor lugar e a sua casa" **nao aparecem em nenhuma parte do anuncio** (foto, titulo nem descricao). PMME do titulo so usa marca de FABRICANTE real (Tramontina etc.), nunca a loja; descricao fecha com frase acolhedora generica. So o **tom/voz** acolhedor permanece na copy. Propagado em: CLAUDE.md, renata-redatora, step-05-copywriting, vinicius-validador, research-brief, anti-patterns, storyselling-framework, output-examples, quality-criteria, design.yaml, photo-templates, felipe-fotos, step-07/08, brand-identity, memories.md. **Hook que exigia o slogan: RESOLVIDO 19/06** — era a feature de pattern-rules por-edicao do plugin `security-guidance` v2.0.6; desligada via `ENABLE_PATTERN_RULES=0` no bloco `env` do `~/.claude/settings.json` (mantem o review de seguranca no Stop e em commit/push; sobrevive a updates do plugin).
 
 ### Coerencia de cena = automatica + Escala MEDIDA
 - `generate.py` anexa `SCENE_COHERENCE` em toda geracao de cena (toalha no toalheiro/bancada NUNCA no chao; no chao so tapete/planta de piso/cesto; nada flutuando).

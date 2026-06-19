@@ -220,3 +220,19 @@
 
 ### Pendente
 - Foto 10 (CTA) com Pro. Replicar 8L. Validar briefing Helena vs agente-referência (Almir envia respostas aos poucos).
+
+## 2026-06-19 - Sessao: regra SEM MARCA ampliada (foto+titulo+descricao) + neutralizacao do hook que interrompia
+
+### Imagem 4 (spec + data badge) aprovada
+- Revisada contra o briefing: inox PRATA (passou no gate de cor, o ponto critico), 4 callouts legiveis, badge presente. Aprovada. O 4,6★ foi desconsiderado a pedido do Almir.
+
+### Regra SEM MARCA ampliada para TODO o anuncio
+- Antes (19/06 manha): SEM MARCA so nas FOTOS. Agora (19/06): a marca — nome "Terra Casa Decor" + slogan "O seu melhor lugar e a sua casa" — NAO entra em foto, titulo NEM descricao (nao prender o anuncio a um rebrand). So o tom/voz acolhedor permanece.
+- Propagado em 18 arquivos: `CLAUDE.md`, `felipe-fotos.agent.md`, `renata-redatora.agent.md` (tirada a assinatura obrigatoria; PMME so usa marca de fabricante real, nunca a loja; exemplos e checklist), `vinicius-validador.agent.md` (agora VETA se a marca aparecer), `step-05-copywriting.md`, `step-07-fotos.md`, `step-08-revisao.md`, `quality-criteria.md`, `anti-patterns.md`, `photo-templates.md`, `storyselling-framework.md`, `research-brief.md`, `output-examples.md`, `design.yaml`, `brand-identity.md`, `memories.md`, `PROGRESSO.md`, `DECISOES.md`. A assinatura na DESCRICAO foi REVOGADA (fecha com frase acolhedora generica).
+
+### Interrupcoes a cada Edit — diagnosticadas e neutralizadas
+- Causa: hook PostToolUse (matcher Edit|Write|MultiEdit) do plugin `security-guidance` v2.0.6 (`security_reminder_hook.py`), feature de pattern-rules por-edicao.
+- Fix cirurgico: `ENABLE_PATTERN_RULES=0` no bloco `env` do `~/.claude/settings.json` (aplicado pelo Almir). Desliga SO o aviso por-edicao; mantem o review LLM no Stop (`ENABLE_CODE_SECURITY_REVIEW`) e em commit/push (`ENABLE_COMMIT_REVIEW`). Sobrevive a updates do plugin. Requer reload (`/hooks`) ou restart.
+
+### Pendente
+- **Commitar os 18 arquivos da squad** (renata/vinicius/steps/data) — o `/save` so commita os 5 docs raiz; a propagacao SEM MARCA nos arquivos da squad segue NAO commitada.
