@@ -1,0 +1,37 @@
+{
+  "pai_sku": "VIE_1066-PAI",
+  "cor_heroi": "Branco",
+  "data_aprovacao": "2026-06-23",
+  "assets": {
+    "aberto": {
+      "hero_fonte": "squads/ml-anuncios/output/2026-05-26-091553/fotos/_redesign-overlay/branco-studio-fiel.jpg",
+      "png": "squads/ml-anuncios/pipeline/data/produtos-travados/VIE_1066-PAI_aberto.png",
+      "sha256": "94ee690a2805a1fa833c67a5c91c645f09d911e86a5eef5f16749a163b524d41",
+      "bbox_no_hero": [
+        305,
+        75,
+        890,
+        1153
+      ],
+      "hero_size": [
+        1200,
+        1200
+      ]
+    },
+    "fechado": {
+      "hero_fonte": "squads/ml-anuncios/output/2026-05-26-091553/fotos/_redesign-overlay/branco-studio-fiel-fechada.jpg",
+      "png": "squads/ml-anuncios/pipeline/data/produtos-travados/VIE_1066-PAI_fechado.png",
+      "sha256": "427584debd53f3157b898bc0fa589dc5e9b4187e54050dac79500b5bc78132a6",
+      "bbox_no_hero": [
+        313,
+        142,
+        911,
+        1012
+      ],
+      "hero_size": [
+        1200,
+        1200
+      ]
+    }
+  }
+}

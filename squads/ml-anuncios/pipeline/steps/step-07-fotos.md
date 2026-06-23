@@ -58,6 +58,12 @@ Para cada **anúncio** em `anuncios-entrada.json` cujo `pai_sku` conste em `brie
 
 3. **Criar estrutura de pasta**: `squads/ml-anuncios/output/fotos/{pai_sku}/`, com subpastas `prompts/`, `_overlay_html/`, `ambientalizadas/`.
 
+3b. **GATE anti-claim-falso (VETO — Fase 2 da blindagem)**: antes de gerar qualquer foto, rodar a guarda sobre o brief:
+   ```
+   python squads/ml-anuncios/pipeline/validators/validar_claims.py squads/ml-anuncios/output/inteligencia/brief-{pai_sku}.yaml
+   ```
+   Ela confere todo o texto de overlay (headline/subheadline/badge/cta/selos dos 10 slots) contra as `limitacoes[]`: **bloqueia se alguma foto AFIRMA uma feature que o produto não tem** (ex.: "balde interno removível" num produto sem balde) e **exige que cada limitação com `disclosure_foto` seja declarada** na foto certa (transparência). Se sair com código != 0 (`CLAIM REJEITADO`), **não gerar fotos**: o overlay falso vem do brief — retornar ao step-04 para a Helena corrigir. O Felipe **não inventa nem conserta claim**; ele só renderiza o que passou na guarda.
+
 4. **Para cada foto** do `briefing_fotos` (slots 1 a 10):
 
    a. **Selecionar template JSON** correspondente ao `funcao` do slot (ver `photo-templates.md`).
@@ -76,10 +82,37 @@ Para cada **anúncio** em `anuncios-entrada.json` cujo `pai_sku` conste em `brie
 
    c. **Salvar JSON** em `squads/ml-anuncios/output/fotos/{pai_sku}/prompts/foto-{NN}.json`.
 
-   d. **Chamar `image-ai-generator`** (modo `production`, Nano Banana 2 via OpenRouter):
-      - `base_image`: `fotos_bucket[0]` da cor herói (baixar localmente se necessário).
-      - `prompt`: JSON do passo c.
-      - `output_format`: PNG 1200×1200.
+   d. **Gerar a foto — ARQUITETURA PRODUTO-TRAVADO (council 23/06).** O produto **NÃO é re-renderizado pela IA** (isso causa o edit-drift do Nano Banana: corrigir 1 detalhe regride outros). A rota depende do slot:
+
+      **Pré-requisito:** o produto travado tem que existir em `squads/ml-anuncios/pipeline/data/produtos-travados/{pai_sku}.json` (+ PNGs recortados). Se não existir, criar 1× a partir do hero fiel aprovado:
+      ```
+      python skills/image-overlay/scripts/lock_product.py --pai-sku {pai_sku} --cor-heroi {cor} \
+        --data-aprovacao {YYYY-MM-DD} --hero {hero_aberto.jpg} [--hero-fechado {hero_fechado.jpg}]
+      ```
+
+      **ROTA COMPOSIÇÃO (DEFAULT — slots studio/neutro: 3 tamanho, 4 material, 9 sobrecorreção, 10 macro):** fidelidade FORTE por construção.
+      - Fundo studio (degradê, **custo IA zero**) OU, p/ slot 3, régua de escala via `compose_scale.py`.
+      ```
+      python skills/image-overlay/scripts/compose.py --product produtos-travados/{pai_sku}_aberto.png \
+        --bg studio --out .../foto-{NN}.jpg --target-h <px> --x-frac 0.5 --base-y <px>
+      ```
+      - `compose.py` grava um sidecar `foto-{NN}.jpg.lock.json` (sha256 do produto) = a prova de fidelidade conferida no QA (passo 7b com `--lock`).
+
+      **ROTA LIFESTYLE HÍBRIDA (capa, 2 antes/depois, 5 emocional, 8 uso real):** o inox precisa refletir o ambiente.
+      - 1º tentar composição: gerar **cena vazia** (ambiente SEM produto, `--mode pro`, prosa 6-fatores) → `compose.py --bg cena.jpg --harmonize warm`.
+      - Se o reflexo "colar" feio, fallback **one-shot**: gerar a cena inteira do hero fiel numa tacada (`--mode pro`, **sem `--edit`**), com `--lock produtos-travados/{pai_sku}.json` (gate de produto após gravar).
+
+      **ROTA ONE-SHOT (slot 7 pedal — exige pé apertando o pedal, que não está no hero):**
+      ```
+      python skills/image-ai-generator/scripts/generate.py --mode pro --output .../foto-07.jpg \
+        --lock squads/ml-anuncios/pipeline/data/produtos-travados/{pai_sku}.json --prompt "<prosa 6-fatores>"
+      ```
+      - `--lock` roda o gate de produto após gravar (produto ausente → reprova + move pra `_rejeitado/`). Fidelidade fina = olho humano + inox_cast.
+
+      **REGRAS GERAIS:**
+      - `--prompt` sempre em PROSA 6-fatores (o `foto-NN.json` fica só como auditoria). Escala via framing de fotógrafo / gabinete cortado, NUNCA "1/3" em texto.
+      - **PROIBIDO `--edit` para corrigir o produto** (edit-drift). `--edit` só p/ ajuste de fundo/cena que não toque o produto.
+      - `output_format`: 1200×1200 (redimensionar se vier diferente).
 
    e. **Validar imagem gerada**:
       - Dimensão **exata 1200×1200 px**. Se diferente, redimensionar/recortar com produto centralizado.
@@ -134,6 +167,20 @@ Para cada **anúncio** em `anuncios-entrada.json` cujo `pai_sku` conste em `brie
    - `incompleto`: 2+ falhas (somando StorySelling e ambientalizadas) após retry.
    - `bloqueado_sem_foto_base`: foto base da cor herói indisponível.
    - `bloqueado_dimensoes_nao_resolvidas`: `dados_produto.dimensoes_produto.altura` ou `.largura` sem `status: "ok"` — gate pré-geração ativado (checkpoint step-04b não foi concluído). `profundidade` com `status: "nao_aplicavel"` não bloqueia.
+
+7a. **TRAVA de prompt preso ao template (Fase 3 da blindagem)**: depois de salvar os `prompts/foto-NN.json` (passo 4c) e antes de marcar `pronto`, rodar
+   ```
+   python squads/ml-anuncios/pipeline/validators/validar_prompts.py squads/ml-anuncios/output/fotos/{pai_sku}/prompts/
+   ```
+   Ela reprova prompt com `{{placeholder}}` não preenchido, `nome` que não bate com a função canônica do slot (improviso fora do template), ou slot fixo faltando. Código != 0 = corrigir o(s) prompt(s) a partir do template certo de `photo-templates.md` e rodar de novo. O Felipe não free-forma o prompt.
+
+7b. **AUTOCHECK de imagem (Fase 4 + 6 da blindagem)**: antes de marcar `pronto`, rodar (com `--lock` p/ conferir a proveniência das fotos compostas)
+   ```
+   python squads/ml-anuncios/pipeline/validators/qa_imagens.py squads/ml-anuncios/output/fotos/{pai_sku}/ \
+     --brief squads/ml-anuncios/output/inteligencia/brief-{pai_sku}.yaml \
+     --lock squads/ml-anuncios/pipeline/data/produtos-travados/{pai_sku}.json
+   ```
+   Ele abre cada JPG e reprova dimensão != 1200×1200, produto ausente/distorcido, **inox dourado** e **produto INFIEL** (`PRODUTO_INFIEL`: foto composta cujo sidecar `.lock.json` aponta sha fora do manifesto travado = produto trocado/adulterado). Fotos one-shot legítimas (sem sidecar) não são bloqueadas por proveniência — caem nos demais checks. Se reprovar, **regerar/recompor a(s) foto(s) apontada(s)** (dourado resolve regenerando "inox PRATA NEUTRO", nunca em pós) e rodar de novo até passar. Só marcar `pronto` com o QA em código 0.
 
 8. **Escrever `metadata.yaml` por anúncio** em `squads/ml-anuncios/output/fotos/{pai_sku}/metadata.yaml` + **resumo do lote** em `squads/ml-anuncios/output/fotos/metadata-fotos.yaml`.
 
@@ -209,6 +256,7 @@ Rejeitar e refazer se ALGUMA for verdadeira:
 5. Slot 9 (SOBRECORRECAO) sem selos visuais aplicados.
 6. Slot 10 (MACRO_YES) sem CTA. (NÃO exigir brand_signature — regra SEM MARCA, Almir 19/06.)
 6b. **Qualquer foto com logo, slogan, brand_signature ou cores da marca aplicados** (viola a regra SEM MARCA).
+6c. **GATE anti-claim-falso reprovado:** `validar_claims.py` saiu com código != 0 — alguma foto afirma feature que o produto não tem, ou uma limitação com `disclosure_foto` não foi declarada. Nenhuma foto é gerada até o brief passar na guarda.
 7. Faltam JSONs em `prompts/` (auditoria quebrada).
 8. Anúncio `modo: variacoes` sem ambientalizada para alguma variação onde `fotos_bucket[0]` estava acessível.
 9. `picture_ids` de alguma variação com ordem incorreta (ambientalizada não está na 1ª posição em `modo: variacoes`).

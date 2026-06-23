@@ -69,13 +69,24 @@ Detalhes tecnicos de infraestrutura, MCPs, tabelas, RLS, skills, workflows.
 - `image-fetcher` (hybrid, usa MCP playwright): busca/screenshot de fotos na web
 - `image-creator` (mcp playwright): renderiza HTML/CSS em imagem (motor generico)
 - `image-ai-generator` (script Python): gera imagens AI **via OpenRouter** (`OPENROUTER_API_KEY`). **Modelo de producao: `google/gemini-3.1-flash-image-preview` (Nano Banana 2)** em modo image-to-image, com a `foto_base_url` do dossie como referencia. Modo `test`: `sourceful/riverflow-v2-fast`. Custo producao ~R$0,07-0,10/imagem. (NAO usa Google AI Studio direto — decisao 25/05.)
-- `image-overlay` (**render Python/Pillow**, NAO mais playwright): aplica overlay de texto (headline, subheadline, badge, selos, CTA) sobre imagem gerada. Especializado nos 10 slots da hierarquia StorySelling. **Toda saida e 1200x1200 px exatos**. Scripts em `skills/image-overlay/scripts/`: `render_faixa.py` (overlay faixa-clara/foto tecnica, config JSON), `fit_scale.py`, `compose_two.py`, `cutout.py`, `inox_cast.py`.
+- `image-overlay` (**render Python/Pillow**, NAO mais playwright): aplica overlay de texto (headline, subheadline, badge, selos, CTA) sobre imagem gerada. Especializado nos 10 slots da hierarquia StorySelling. **Toda saida e 1200x1200 px exatos**. Scripts em `skills/image-overlay/scripts/`: `render_faixa.py` (overlay faixa-clara/foto tecnica, config JSON), `fit_scale.py`, `compose_two.py`, `compose_scale.py`, `compose.py` (composicao produto-travado), `lock_product.py` (trava produto), `cutout.py`, `inox_cast.py`. Ver secao "ARQUITETURA PRODUTO-TRAVADO" abaixo.
 
 ## Deteccao de produto + gate de cor (imagem) — depende de `rembg`
 
 - **`cutout.py`** (BiRefNet via `rembg`+`onnxruntime`, modelo `birefnet-general`, offline R$0): fonte de mascara/bbox do produto. Usado por `render_faixa.py` (foto tecnica: bbox/colunas/base), `fit_scale.py` (`product_bottom`) e `compose_two.py` (`bbox_of`). Substituiu a heuristica do pixel-de-canto (bake-off em `tests/cutout-bakeoff/`, 17/06). **Fallback** automatico pra heuristica antiga se rembg faltar ou `CUTOUT_DISABLE=1`; modelo via `CUTOUT_MODEL`.
 - **`inox_cast.py`**: quality-gate de cor do inox. Mede calor normalizado RGB `100*(R-B)/(R+G+B)` no corpo metalico (mask do cutout); `w_med>=14` ou `warm_frac>=0.5` = `dourado` (exit 2 -> retry). NAO usa LAB do Pillow (neste build nao centra a/b em 128). NAO corrigir em pos — regenerar.
 - **Dependencia de runtime:** `pip install rembg onnxruntime` (instaladas no Windows atual, Python 3.14). Sem elas, pipeline cai no fallback (qualidade antiga).
+
+## ARQUITETURA PRODUTO-TRAVADO (2026-06-23) — produto e composicao, nao geracao
+
+Mata o edit-drift do Nano Banana (`--edit` re-renderiza a cena toda e regride detalhes ja aprovados). O produto fiel **nunca e re-renderizado**: vira PNG travado, colado por codigo sobre a cena. Decisao em DECISOES.md (2026-06-23); plano `~/.claude/plans/bubbly-sleeping-ember.md`.
+
+- **`lock_product.py`** (`skills/image-overlay/scripts/`): trava o hero APROVADO → recorte BiRefNet (PNG RGBA) + sha256 + manifesto `pipeline/data/produtos-travados/{pai_sku}.json` (assets `aberto`/`fechado`). Reusavel: 1 trava por produto, serve o catalogo. CLI: `--pai-sku --cor-heroi --hero [--hero-fechado] --data-aprovacao`.
+- **`compose.py`** (`skills/image-overlay/scripts/`): entrada unica da composicao. Cola o PNG travado sobre `--bg studio` (degrade por codigo, custo IA 0) ou `--bg <cena.jpg>` (ambiente IA) + sombra de contato + `--harmonize warm` (lifestyle). Grava sidecar `<out>.lock.json` (sha do produto) = prova de fidelidade. Aceita PNG travado OU imagem a recortar. `compose_scale.py` segue p/ slot 3 (regua de escala).
+- **`fidelity.py`** (`skills/image-ai-generator/scripts/`): `verify_provenance(img, manifesto)` (rota composicao = garantia FORTE por hash do sidecar) + `disaster_check(img)` (rota one-shot = so produto ausente/area absurda; fidelidade fina = olho humano + inox_cast). CLI `--modo provenancia|disastre`.
+- **Gate embutido no `generate.py`** (`--lock <manifesto>`): roda `disaster_check` APOS gravar; produto ausente → move pra `_rejeitado/` + exit 3. Override `--no-qa`. Inpulavel (mesmo padrao do `prompt_lint`). Cobre `--prompt` e `--batch` (chave `lock` por item).
+- **`qa_imagens.py --lock <manifesto>`**: `check_produto_fiel` → `PRODUTO_INFIEL` se o sidecar de composicao tiver sha fora do manifesto travado. Fotos one-shot (sem sidecar) caem nos demais checks.
+- **Trava `produto_travado`** no `pipeline.yaml` (fase 6). Politica por slot: studio/neutro (3,4,9,10)=composicao; lifestyle (capa,2,5,8)=hibrido; slot 7 (pedal c/ pe)=one-shot `--lock`. **`--edit` PROIBIDO p/ corrigir produto** (so p/ fundo que nao toque o produto). Testes: `validators/tests/test_fidelity.py` + casos em `test_qa_imagens.py` (71 verdes no total).
 
 ## Squad ml-anuncios — agentes e pipeline (11 steps)
 

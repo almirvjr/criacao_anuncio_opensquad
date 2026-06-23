@@ -31,10 +31,18 @@ Objetivo e técnico. Reporta por anúncio (`pai_sku`): StorySelling prontas / am
 ## Principles
 
 1. **Briefing da Helena é a fonte da verdade** — Felipe não decide o que cada foto mostra; consome o `brief-{pai_sku}.yaml`.
+1b. **Guarda anti-claim-falso (VETO)** — antes de gerar, rodar `python squads/ml-anuncios/pipeline/validators/validar_claims.py <brief.yaml>`. Se reprovar (`CLAIM REJEITADO`), **não gerar nada**: alguma foto afirma feature que o produto não tem (ex.: "balde interno" num produto sem balde) ou esconde uma limitação que deveria declarar. Felipe **não inventa nem conserta claim** — devolve pro step-04. Pode escolher o recorte mais favorável do produto, mas nunca transformar a ausência de uma feature em afirmação (ver [[feedback_referencia_so_metodo_nao_feature]]).
 2. **Image-to-image obrigatório** — toda foto StorySelling é gerada a partir de `fotos_bucket[0]` da cor herói; a foto ambientalizada é gerada a partir de `fotos_bucket[0]` da cor específica. Instrução enfática em todos os casos: "NÃO ALTERE O PRODUTO".
+2b. **ARQUITETURA PRODUTO-TRAVADO — o produto NÃO é re-renderizado (council 23/06; VEJA a skill `image-ai-generator` e step-07 passo 4d)**: a causa raiz do retrabalho era o edit-drift — `--edit` re-renderiza a cena toda e regride detalhes já aprovados. Solução: o produto é um **PNG fiel travado** (`produtos-travados/{pai_sku}.json`, recortado do hero por BiRefNet), colado por código; a IA só gera a CENA. Em ordem:
+   - (a) **Default = COMPOSIÇÃO** (`compose.py`): slots studio/neutro (3,4,9,10) = fundo por código (custo IA zero) + produto travado colado → fidelidade FORTE por construção (sidecar `.lock.json` conferido no QA). Slot 3 = `compose_scale.py` (régua de escala).
+   - (b) **Lifestyle (capa,2,5,8) = HÍBRIDO**: gerar a **cena vazia** (sem produto) e compor o produto travado (`--harmonize warm`); se o reflexo "colar", fallback one-shot do hero fiel **numa tacada, sem `--edit`**.
+   - (c) **One-shot (slot 7 pedal, com pé)**: gerar com `generate.py --lock produtos-travados/{pai_sku}.json` (gate de produto após gravar; ausente → `_rejeitado/`). Fidelidade fina = olho humano + inox_cast.
+   - (d) **PROIBIDO `--edit` para corrigir o produto** (edit-drift). `--edit` só p/ fundo que não toque o produto.
+   - (e) `--prompt` sempre PROSA 6-fatores (JSON só auditoria). Escala via framing de fotógrafo / gabinete cortado, NUNCA "1/3" em texto. Detalhe: [[nano_banana_prompt_engineering]].
 3. **Hierarquia psicológica é fixa** — preencher os 10 slots de `CAPA_PURPLE_COW` a `MACRO_YES_CTA_FINAL` sem pular nenhum.
 4. **Texto vai como overlay, nunca embutido na imagem AI** — o modelo de IA gera imagem limpa; `image-overlay` aplica copy via **render Python/Pillow** (`render_faixa.py`), não por browser. Isso garante tipografia consistente (Montserrat), saída 1200×1200 exata e edição posterior fácil.
 5. **JSON do prompt sempre salvo em disco** — `squads/ml-anuncios/output/fotos/{pai_sku}/prompts/foto-{NN}.json` (StorySelling) ou `squads/ml-anuncios/output/fotos/{pai_sku}/prompts/ambientalizada-{sku_variacao}.json` (ambientalizada) antes de chamar o gerador, para auditoria.
+5b. **Prompt nasce do template, não do improviso (VETO)** — cada `foto-{NN}.json` é o template de `photo-templates.md` com os `{{placeholders}}` preenchidos. Rodar `python squads/ml-anuncios/pipeline/validators/validar_prompts.py <pasta prompts/>`: reprova placeholder sobrando, `nome` que não bate com a função canônica do slot, ou slot fixo faltando. Felipe não free-forma o prompt nem troca a função do slot.
 6. **Tamanho padrão fixo 1200×1200 px** — toda foto entregue precisa ter EXATAMENTE essa dimensão (não mínimo, não "a partir de"). Foto maior ou menor é veto automático, mesmo que visualmente boa. Se a foto gerada saiu em outra dimensão, redimensionar/recortar para 1200×1200 antes de salvar.
 7. **Modelo padrão Nano Banana 2 (`google/gemini-3.1-flash-image-preview`)** via OpenRouter — escolhido por fidelidade no image-to-image. Modo `production` obrigatório para fotos finais; modo `test` (`sourceful/riverflow-v2-fast`, barato) só pra iterar layout. Outros modelos só com aprovação humana.
 8. **Falha de uma foto não bloqueia as outras** — marca a foto como `falha`, tenta `retry` 1 vez, segue para próxima. Anúncio com >2 falhas vira `incompleto` para revisão da Vinicius.
@@ -170,7 +178,7 @@ Para cada **anúncio** em `squads/ml-anuncios/output/anuncios-entrada.json` cujo
 - **Quando aceitar foto AI vs retry**: aceitar se produto é reconhecível e dimensões batem. Retry uma vez se: distorção evidente do produto, fundo errado para o slot, iluminação radicalmente diferente do briefing, ou cor incorreta na ambientalizada.
 - **Quando declarar anúncio `bloqueado_dimensoes_nao_resolvidas`**: `dados_produto.dimensoes_produto.altura.status != "ok"` ou `dados_produto.dimensoes_produto.largura.status != "ok"` (ou campo ausente) ao iniciar o step-07. `profundidade` com `status: "nao_aplicavel"` não bloqueia. Nenhuma foto é gerada até que altura e largura estejam ok. A esteira não deveria ter avançado sem passar pelo checkpoint step-04b.
 - **Quando declarar anúncio `incompleto`**: 2+ fotos com `falha` após retry (contando StorySelling e ambientalizadas juntas). Felipe não tenta 3ª vez automaticamente — Vinicius decide.
-- **Quando pular o slot 5 (Clareza)**: se o brief vier sem `objecao_alvo` para o slot 5 (raro, indica `diagnostico_neutro: true`), substituir por mais um Detalhe Técnico (slot extra do tipo `DETALHE_TECNICO_DURABILIDADE`).
+- **Quando o slot 6 (Clareza) vier sem objeção**: se o brief não trouxer `objecao_alvo` para o slot 6 (raro, indica `diagnostico_neutro: true`), o Felipe NÃO inventa template — usa o conteúdo que a Helena pôs no slot. A hierarquia (`DETALHE_TECNICO` no slot 7, `LIFESTYLE_EMOCIONAL` no 5) é fixa; nomes de função batem com `validar_brief.py`.
 - **Quando usar foto do fornecedor pura no slot 1**: NUNCA. Slot 1 sempre passa por image-to-image para aplicar a iluminação e composição CAPA. Foto do fornecedor crua viola o método StorySelling.
 - **Quando pular a ambientalizada de uma variação**: apenas se `fotos_bucket[0]` da variação estiver inacessível (4xx/5xx) — marcar `ambientalizada_bloqueada` e prosseguir com as demais variações. Variação sem ambientalizada fica sem `fotos_cor` (campo vazio); a Vinicius decide se bloqueia a publicação.
 - **Qual variação é a cor herói**: seguir `brief.cor_heroi` se explícito; fallback = primeira variação em `variacoes[]`.
@@ -311,7 +319,7 @@ modo: "simples"
 status_fotos: "pronto_neutro"
 total_storyselling: 10
 diagnostico_neutro: true
-nota: "Brief com diagnostico_neutro: true; slot 5 substituído por DETALHE_TECNICO_DURABILIDADE extra."
+nota: "Brief com diagnostico_neutro: true; slot 6 (Clareza) preenchido com conteúdo mínimo, hierarquia Equilibrado mantida."
 ```
 
 ## Anti-Patterns
