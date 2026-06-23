@@ -2,6 +2,24 @@
 
 <!-- Tarefas concluidas (arquivo morto). Formato: data - resumo. -->
 
+## 2026-06-23 - Sessao: ARQUITETURA PRODUTO-TRAVADO (mata edit-drift) + slots 6 e 7 do ciclo 5L
+
+### Council + decisao (ver DECISOES.md 2026-06-23)
+- Diagnostico: `--edit` do Nano Banana re-renderiza a cena toda → corrigir 1 detalhe REGRIDE outros (slot 6 = 9 iteracoes/~US$1,80). Disciplina dependia da atencao do assistente, nao de codigo.
+- Council (llm-council, 5 conselheiros + revisao) + teste ao vivo decidiram: **produto NAO e re-renderizado, e COMPOSICAO**. Plano `~/.claude/plans/bubbly-sleeping-ember.md`.
+
+### Construido e testado (71 testes verdes; pytest em pipeline/validators/tests/)
+- `skills/image-overlay/scripts/lock_product.py` — trava hero→PNG recortado (BiRefNet)+manifesto sha256 em `pipeline/data/produtos-travados/{pai_sku}.json`. VIE_1066-PAI travado (aberto+fechado).
+- `skills/image-overlay/scripts/compose.py` — cola PNG travado sobre studio(codigo, custo IA 0)/cena IA + sombra + `--harmonize warm`; grava sidecar `.lock.json` (proveniencia).
+- `skills/image-ai-generator/scripts/fidelity.py` — `verify_provenance` (composicao, garantia forte por hash) + `disaster_check` (one-shot, so produto ausente).
+- Gate embutido no `generate.py` (`--lock`): roda disaster_check apos gravar, produto ausente → `_rejeitado/`+exit 3, override `--no-qa`. Inpulavel (igual prompt_lint).
+- `qa_imagens.py` ganhou `check_produto_fiel` (`--lock`) → `PRODUTO_INFIEL` se sha do sidecar fora do manifesto. Trava `produto_travado` no `pipeline.yaml`. Testes novos: `test_fidelity.py` + casos em `test_qa_imagens.py`.
+- Docs atualizados: `step-07-fotos.md` (passo 4d composicao-primeiro + 7b `--lock`), `felipe-fotos.agent.md` (principio 2b).
+
+### Ciclo conforme 5L (VIE_1066) — slots 6 e 7 aprovados
+- **Slot 6 (Clareza)** `foto-06-clareza.jpg`: studio, saco PRETO por dentro sob o aro branco, externa limpa, inox espelhado sem faixa preta, fundo limpo. 9 edits no metodo antigo (~US$1,80).
+- **Slot 7 (Pedal)** `foto-07-pedal.jpg`: primeiro slot pelo PIPELINE NOVO (one-shot com pe + `--lock`, gate passou, US$0,14). Aro encaixa sobre o corpo, interior vazio, sem artefato cor-de-pele. Faixa preta vertical do inox aceita como reflexo real.
+- Working versions em `output/2026-06-21-conforme-5L/fotos/VIE_1066-PAI/_historico/`.
 ## 2026-05-16 - Sessao: setup infra + revisao spec do workflow ML Publicar
 
 ### Infraestrutura criada

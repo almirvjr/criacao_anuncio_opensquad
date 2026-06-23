@@ -2,6 +2,15 @@
 
 <!-- Decisoes tecnicas importantes. Formato: data - contexto - decisao - motivo. -->
 
+## 2026-06-23
+
+### ARQUITETURA PRODUTO-TRAVADO — produto NAO e re-renderizado, e composto (council + teste ao vivo)
+**Contexto:** gerar as 10 fotos StorySelling via Nano Banana (Gemini 3 Pro Image / OpenRouter) virou caro e improdutivo. Causa raiz: o modo `--edit` **re-renderiza a cena inteira** a cada ajuste (amnesia) — corrigir 1 detalhe (ex.: geometria do aro) REGREDIA outros ja aprovados (some saco, muda reflexo, distorce pe). Slot 6 custou 9 iteracoes (~US$1,80). A disciplina (boas praticas + checklist) dependia da ATENCAO do assistente, nao de trava de maquina.
+
+**Decisao:** o produto fiel vira um **PNG travado** (recorte BiRefNet do hero aprovado, com sha256 num manifesto `pipeline/data/produtos-travados/{pai_sku}.json`) e e **colado por codigo** (`compose.py` + Pillow) sobre uma CENA — a unica coisa que a IA gera. Politica por slot: studio/neutro (3,4,9,10) = composicao (fundo por codigo, custo IA 0); lifestyle (capa,2,5,8) = hibrido (compor + harmonizar; fallback one-shot do hero fiel sem `--edit`); slot 7 (pedal c/ pe) = one-shot com `--lock`. **`--edit` PROIBIDO p/ corrigir o produto.** Fidelidade vira INVARIANTE de engenharia (hash/proveniencia na composicao; disaster-check + olho humano + inox_cast no one-shot), nao meta de otimizacao do modelo.
+
+**Motivo:** teste ao vivo (23/06) provou: composto studio = produto byte-a-byte fiel, drift zero, custo IA zero; recorte do inox espelhado pelo BiRefNet saiu impecavel. So o lifestyle tem o "vale da iluminacao" (inox reflete o estudio antigo) — dai o hibrido. Amarracao estrutural = gate embutido no `generate.py` (`--lock`, igual ao `prompt_lint`: inpulavel, override `--no-qa`) + `check_produto_fiel` no `qa_imagens.py` + trava `produto_travado` no `pipeline.yaml`. Custo/anuncio esperado: ~US$2-7 → <US$1. Bonus: o PNG travado e asset reutilizavel pro catalogo. Plano: `~/.claude/plans/bubbly-sleeping-ember.md`. 71 testes verdes.
+
 ## 2026-05-16
 
 ### Workflow "ML Publicar" hospedado em n8n cloud - estrategia de fotos
