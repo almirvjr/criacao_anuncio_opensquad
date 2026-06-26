@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>FICHA_TECNICA_DIMENSOES</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:1200px}
+  .canvas{position:relative;width:1200px;height:1200px;overflow:hidden;font-family:'Inter',system-ui,-apple-system,sans-serif;color:#1a1a1a}
+  .bg{position:absolute;inset:0;width:1200px;height:1200px;object-fit:cover;z-index:0}
+  .headline:empty,.dim-row:empty,.brand:empty{display:none!important}
+  /* Oculta a linha de profundidade quando o valor está vazio (produto sem profundidade, ex: lixeira redonda) */
+  .dim-row:has(.dim-value:empty){display:none!important}
+  /* FICHA_TECNICA_DIMENSOES: headline topo 40px, quadro de medidas canto inferior direito, brand rodapé */
+  /* Área do produto: o overlay não cobre a faixa central — quadro fica abaixo e à direita */
+  .layer-top{position:absolute;top:0;left:0;right:0;padding:48px;z-index:2}
+  .headline{font-size:40px;font-weight:800;color:#fff;line-height:1.1;text-shadow:0 2px 8px rgba(0,0,0,0.35)}
+  /* Quadro de medidas — painel branco semi-transparente no canto inferior direito */
+  .dim-panel{
+    position:absolute;
+    right:48px;
+    bottom:96px;
+    background:rgba(255,255,255,0.94);
+    border-radius:16px;
+    padding:24px 28px;
+    min-width:220px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.18);
+    z-index:3
+  }
+  .dim-title{font-size:18px;font-weight:700;color:#1a1a1a;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:14px;border-bottom:2px solid #e0dbd3;padding-bottom:8px}
+  .dim-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .dim-row:last-of-type{margin-bottom:0}
+  .dim-icon{width:8px;height:8px;border-radius:50%;background:#2d8a4a;flex-shrink:0}
+  .dim-label{font-size:17px;font-weight:500;color:#555;min-width:96px}
+  .dim-value{font-size:20px;font-weight:800;color:#1a1a1a}
+  .brand{position:absolute;bottom:48px;left:0;right:0;text-align:center;font-size:16px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,0.4);z-index:2}
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <img class="bg" src="{{BACKGROUND_IMAGE}}" alt="">
+    <div class="layer-top">
+      <div class="headline">{{HEADLINE}}</div>
+    </div>
+    <div class="dim-panel">
+      <div class="dim-title">Dimensões do Produto</div>
+      <div class="dim-row">
+        <div class="dim-icon"></div>
+        <div class="dim-label">Altura</div>
+        <div class="dim-value">{{DIM_ALTURA}}</div>
+      </div>
+      <div class="dim-row">
+        <div class="dim-icon"></div>
+        <div class="dim-label">Largura / Diâmetro</div>
+        <div class="dim-value">{{DIM_LARGURA}}</div>
+      </div>
+      <div class="dim-row">
+        <div class="dim-icon"></div>
+        <div class="dim-label">Profundidade</div>
+        <div class="dim-value">{{DIM_PROFUNDIDADE}}</div>
+      </div>
+      <!-- Quando {{DIM_PROFUNDIDADE}} for substituído por string vazia, .dim-row:has(.dim-value:empty) esconde esta linha -->
+    </div>
+    <div class="brand">{{BRAND_SIGNATURE}}</div>
+  </div>
+</body>
+</html>

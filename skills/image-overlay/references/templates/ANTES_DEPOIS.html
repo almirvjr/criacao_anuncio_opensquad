@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>ANTES_DEPOIS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:1200px}
+  .canvas{position:relative;width:1200px;height:1200px;overflow:hidden;font-family:'Inter',system-ui,-apple-system,sans-serif;color:#1a1a1a}
+  .bg{position:absolute;inset:0;width:1200px;height:1200px;object-fit:cover;z-index:0}
+  .headline:empty,.subheadline:empty,.brand:empty{display:none!important}
+  /* ANTES_DEPOIS: headline no centro (sobre a divisao) 48px, subheadline 24px abaixo */
+  .divider{position:absolute;top:0;bottom:0;left:50%;width:3px;background:rgba(255,255,255,0.6);transform:translateX(-50%);z-index:1}
+  .layer-center{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);padding:0 48px;text-align:center;z-index:2}
+  .headline{font-size:48px;font-weight:800;color:#fff;line-height:1.1;text-shadow:0 2px 8px rgba(0,0,0,0.45)}
+  .subheadline{font-size:24px;font-weight:500;color:#fff;margin-top:14px;text-shadow:0 2px 8px rgba(0,0,0,0.45)}
+  .brand{position:absolute;bottom:48px;left:0;right:0;text-align:center;font-size:16px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,0.4);z-index:2}
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <img class="bg" src="{{BACKGROUND_IMAGE}}" alt="">
+    <div class="divider"></div>
+    <div class="layer-center">
+      <div class="headline">{{HEADLINE}}</div>
+      <div class="subheadline">{{SUBHEADLINE}}</div>
+    </div>
+    <div class="brand">{{BRAND_SIGNATURE}}</div>
+  </div>
+</body>
+</html>

@@ -15,7 +15,8 @@ Load these files before executing:
 - `squads/ml-anuncios/output/inteligencia/briefs.yaml` — brief estratégico para validar coerência (Helena)
 - `squads/ml-anuncios/output/categorizacao/categorias.yaml` — atributos obrigatórios da categoria
 - `squads/ml-anuncios/output/curadoria/dossies.json` — verificar consistência técnica entre copy e dossiê
-- `squads/ml-anuncios/output/fotos/metadata-fotos.yaml` — checar quantidade/qualidade das fotos + objetivos MECLABS
+- `squads/ml-anuncios/output/fotos/metadata-fotos.yaml` — objetivos MECLABS por foto (NÃO é a fonte da revisão visual — ver abaixo)
+- **Os JPGs entregues em `squads/ml-anuncios/output/fotos/{pai_sku}/` — Vinicius ABRE e OLHA cada foto** (não revisa pelo metadata). Esta é a regra central da Fase 4 da blindagem: o que o Felipe escreveu sobre a foto não vale como prova; a prova é a imagem.
 - `squads/ml-anuncios/pipeline/data/quality-criteria.md` — checklist completo
 - `squads/ml-anuncios/pipeline/data/anti-patterns.md` — termos proibidos e CAPS LOCK
 - `squads/ml-anuncios/pipeline/data/storyselling-framework.md` — códigos MECLABS e hierarquia das 10 fotos
@@ -31,7 +32,23 @@ Load these files before executing:
    - **Cruzar dossiê x copy**: capacidade na descrição = capacidade na ficha = capacidade no dossiê; cor, material idem.
    - **Compliance ML**: caracteres proibidos no título (`!`, `?`, `*`, emojis), CAPS LOCK fora de siglas, atributos obrigatórios todos preenchidos.
    - **Tom Terra Casa Decor**: presença de pelo menos uma das palavras-âncora (`casa`, `lar`, `dia a dia`); ausência de termos proibidos (`melhor do mercado`, `imbatível`, `adquira`, `produto premium`).
-   - **Mídia visual + StorySelling**: 10 fotos no metadata, hierarquia respeitada (slots 1-10 correspondendo às funções canônicas). Foto 1 (CAPA) preserva o produto da foto base (image-to-image válido). Foto 9 tem 4-6 selos visuais aplicados. **Nenhuma foto leva logo/slogan/brand_signature ou cores da marca** (regra SEM MARCA, Almir 19/06). Cada foto tem `objetivo_meclabs` no metadata.
+   - **Mídia visual + StorySelling (QA que OLHA a imagem — Fase 4)**: a revisão visual tem DUAS partes, ambas obrigatórias e bloqueantes:
+
+     **(i) Gate determinístico** — rodar
+     ```
+     python squads/ml-anuncios/pipeline/validators/qa_imagens.py squads/ml-anuncios/output/fotos/{pai_sku}/ --brief squads/ml-anuncios/output/inteligencia/brief-{pai_sku}.yaml
+     ```
+     Ele abre cada JPG e trava: dimensão **1200×1200 exata**, **produto presente** (cutout achou o produto — pega geração que perdeu/distorceu o produto) e **cor do inox** (veredito `dourado` BLOQUEIA — acabou o "marca falha e segue"). Código != 0 = mídia visual reprovada.
+
+     **Override estreito do dourado:** o gate mede o cast quente dentro da máscara do produto. Se a foto tem um objeto NÃO-metálico dominante que a máscara pode pegar por engano (ex.: a caixa de papelão na foto de Clareza), o `dourado` pode ser falso-positivo. Nesse caso o Vinicius ABRE a imagem, confirma que o corpo de inox real está prata neutro, e **documenta o override** no parecer (`override_dourado: "papelao, nao o inox"`). Override só vale com a imagem aberta e justificativa escrita — nunca presumir.
+
+     **(ii) Inspeção visual do Vinicius** — ABRIR cada JPG e confirmar a olho o que a máquina não mede:
+     - cada foto **bate com a função do slot** e com a `headline` do brief (slot 1 capa ambientalizada com produto ao centro **e na diagonal/3-4, nunca frontal**, slot 9 com 4-6 selos, etc.);
+     - **escala lixeira ÷ bancada ≈ 1/3** nas cenas (capa/lifestyle/macro-yes) — medir proporção real, não "% do frame";
+     - **materiais corretos**: tampa + aro + pedal + base brancos, só o corpo cilíndrico em inox prata neutro; aba/dobradiça alinhada ao pedal;
+     - **SEM MARCA no pixel**: nenhuma foto tem logo, slogan, nome da loja ou assinatura embutidos na imagem (não só no overlay) — regra Almir 19/06.
+
+     Qualquer reprova (i ou ii) = bloco de mídia visual `ok: false` com a foto e o motivo; as fotos voltam pro Felipe. **Não aprovar mídia visual lendo o metadata.**
    - **StorySelling**: Bloco 1 da descrição ancora na `dor_interna` do brief (a menos que `diagnostico_neutro: true`). Pelo menos 2 frases da `linguagem_real_cliente` do brief aparecem na descrição. Bloco 3 segue a `escada_e_dai` do brief (cada bullet tem benefício emocional, não só técnico). `titulo_final` do SKU é coerente com o `only_factor` do brief.
 3. **[Modo variacoes] Rodar bloco 8 — Variações ML** (veto duro em cada critério):
    - **Preço uniforme**: comparar `preco_venda` de todas as entradas de `variacoes[]`. Qualquer divergência — mesmo de centavos — é veto. Registrar os valores encontrados e indicar qual é o correto.
@@ -110,6 +127,8 @@ Rejeitar e refazer se ALGUMA for verdadeira:
 2. Algum parecer `aprovado` com pelo menos um `checks.<bloco>.ok == false`.
 3. Algum parecer `reprovado` sem lista de `correcoes_necessarias` populada.
 4. Bloco de mídia visual `ok: true` para SKU que não tem 10 fotos no metadata.
+4b. **Mídia visual `ok: true` sem ter rodado `qa_imagens.py` (gate determinístico) E sem ter aberto os JPGs** — revisar a imagem pelo metadata é veto. Se `qa_imagens.py` saiu != 0 (dimensão errada, produto ausente ou cor dourada), mídia visual é `ok: false`.
+4c. **Mídia visual `ok: true` com marca/logo/slogan no pixel, materiais errados, ou escala fora de ~1/3 nas cenas** detectados na inspeção visual.
 5. Bloco StorySelling `ok: true` para SKU cujo bloco 1 da descrição não ancora na dor_interna (quando brief não é neutro).
 6. Mídia visual `ok: true` para SKU cujo slot 9 não tem selos visuais.
 7. **[Modo variacoes]** Parecer sem bloco `variacoes_ml` em anúncio com `modo: variacoes`.

@@ -1,0 +1,142 @@
+{
+  "_contrato": "Contrato do brief estrategico da Helena (Fase 1 da blindagem StorySelling). Documento LEGIVEL — a autoridade que BLOQUEIA e o validar_brief.py ao lado. Helena escreve o brief em YAML seguindo esta forma; o pipeline so avanca se validar_brief.py sair com codigo 0.",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "pai_sku", "nome_base", "confianca", "cor_heroi",
+    "dados_produto", "limitacoes", "diagnostico", "escada_e_dai", "briefing_fotos"
+  ],
+  "properties": {
+    "pai_sku": { "type": "string" },
+    "nome_base": { "type": "string" },
+    "confianca": { "enum": ["alta", "media", "baixa"] },
+    "cor_heroi": { "type": "string" },
+    "dados_produto": {
+      "type": "object",
+      "description": "Mapa de atributos do produto (material, dimensoes, caracteristicas). Fonte das limitacoes e dos claims permitidos."
+    },
+
+    "limitacoes": {
+      "type": "array",
+      "description": "OBRIGATORIO (Fase 1). O que o produto NAO tem ou seu ponto fraco real, puxado de dados_produto/reviews. Ex.: 'sem balde interno', 'haste do pedal em nylon'. Se vazia, exige 'limitacoes_nota' justificando. Vira selo de transparencia (foto 5/9), nunca buraco escondido.",
+      "items": {
+        "type": "object",
+        "required": ["texto"],
+        "properties": {
+          "texto": { "type": "string", "examples": ["Modelo sem balde interno (usa saco comum)"] },
+          "fonte": { "type": "string", "examples": ["ficha_tecnica", "review", "site_fornecedor"] },
+          "disclosure_foto": { "type": "integer", "description": "numero do slot que declara a limitacao (tipicamente 5 ou 9)" }
+        }
+      }
+    },
+    "limitacoes_nota": {
+      "type": "string",
+      "description": "So necessario se 'limitacoes' for lista vazia: justifica por que nenhuma limitacao foi identificada (forca decisao consciente)."
+    },
+
+    "diagnostico": {
+      "type": "object",
+      "required": ["dor_interna_mais_forte", "only_factor", "ansiedades", "persona"],
+      "properties": {
+        "dor_interna_mais_forte": {
+          "type": "object",
+          "required": ["texto", "evidencias"],
+          "properties": {
+            "texto": { "type": "string" },
+            "evidencias": {
+              "type": "array", "minItems": 1,
+              "description": "Trechos LITERAIS de review (>=12 chars). Cada um tem que EXISTIR no _raw/{mlb_id}.json — parafrase reprova.",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "only_factor": {
+          "type": "object", "required": ["texto"],
+          "properties": { "texto": { "type": "string" }, "justificativa": { "type": "string" } }
+        },
+        "ansiedades": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["texto", "evidencia"],
+            "properties": {
+              "texto": { "type": "string" },
+              "familia": { "type": "string" },
+              "impacto": { "enum": ["alto", "medio", "baixo"] },
+              "evidencia": { "type": "string", "description": "Trecho literal de review (>=12 chars), ancorado no _raw." }
+            }
+          }
+        },
+        "linguagem_real_cliente": { "type": "array", "items": { "type": "string" } },
+        "persona": { "type": "object", "required": ["texto"] }
+      }
+    },
+
+    "escada_e_dai": {
+      "type": "array", "minItems": 1,
+      "description": "Escada 'E dai?': cada feature tem feature -> beneficio logico -> beneficio emocional.",
+      "items": {
+        "type": "object",
+        "required": ["feature", "logico", "emocional"],
+        "properties": {
+          "feature": { "type": "string" },
+          "logico": { "type": "string" },
+          "emocional": { "type": "string" }
+        }
+      }
+    },
+
+    "briefing_fotos": {
+      "type": "array",
+      "description": "10 slots obrigatorios (numero 1..10) na hierarquia Equilibrado + slot 11 PROVA_SOCIAL OPCIONAL/dormente (so com review real). Ao mudar a hierarquia, atualizar SLOTS_CANONICOS no validar_brief.py (autoridade).",
+      "minItems": 10, "maxItems": 11,
+      "items": {
+        "type": "object",
+        "required": ["numero", "funcao", "objetivo_meclabs", "headline"],
+        "properties": {
+          "numero": { "type": "integer", "minimum": 1, "maximum": 11 },
+          "funcao": {
+            "enum": [
+              "CAPA_PURPLE_COW", "ANTES_DEPOIS", "BADGE_TAMANHO",
+              "ANTI_ANSIEDADE_MATERIAL", "LIFESTYLE_EMOCIONAL", "CLAREZA_ABSOLUTA",
+              "DETALHE_TECNICO", "LIFESTYLE_USO_REAL", "SOBRECORRECAO_ANSIEDADE",
+              "MACRO_YES_CTA_FINAL", "PROVA_SOCIAL"
+            ]
+          },
+          "objetivo_meclabs": {
+            "type": "string",
+            "description": "Tokens validos: +m +v +i -f -a (e combinacoes). PROIBIDO: +f +a -m -v -i."
+          },
+          "objecao_alvo": {
+            "type": ["string", "null"],
+            "description": "Obrigatorio (nao-null) nos slots 3, 4, 6."
+          },
+          "headline": { "type": "string" },
+          "subheadline": { "type": ["string", "null"] },
+          "badge": { "type": ["string", "null"] },
+          "cta": { "type": ["string", "null"] },
+          "selos_visuais": {
+            "type": "array",
+            "description": "Slot 9: 4 a 6 selos. Slot 10: >=1 selo.",
+            "items": { "type": "object", "required": ["texto"] }
+          }
+        }
+      }
+    }
+  },
+
+  "_hierarquia_canonica": {
+    "_nota": "Hierarquia Equilibrado (Almir 2026-06-21): ritmo emocional com lifestyle nos slots 5 e 8; detalhes tecnicos fundidos no 7.",
+    "1": "CAPA_PURPLE_COW (+m+v) [ambientalizada, produto ao centro, SEM texto]",
+    "2": "ANTES_DEPOIS (+v-a)",
+    "3": "BADGE_TAMANHO (-f) [exige objecao_alvo]",
+    "4": "ANTI_ANSIEDADE_MATERIAL (-a) [exige objecao_alvo; material + durabilidade]",
+    "5": "LIFESTYLE_EMOCIONAL (+m) [respiro emocional no meio do bloco racional]",
+    "6": "CLAREZA_ABSOLUTA (-a-f) [exige objecao_alvo; tipicamente declara a limitacao]",
+    "7": "DETALHE_TECNICO (-f+v) [funde det1+det2: pedal/mecanismo]",
+    "8": "LIFESTYLE_USO_REAL (+m)",
+    "9": "SOBRECORRECAO_ANSIEDADE (-a-f) [4-6 selos, inclui selos de transparencia das limitacoes]",
+    "10": "MACRO_YES_CTA_FINAL (+i+v) [SEM MARCA, sem assinatura de agencia]",
+    "11": "PROVA_SOCIAL (+v-a) [OPCIONAL/dormente: so com review REAL nosso + flag reviews_proprios_confirmados:true]"
+  }
+}

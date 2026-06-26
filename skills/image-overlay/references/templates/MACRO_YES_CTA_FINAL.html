@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>MACRO_YES_CTA_FINAL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:1200px}
+  .canvas{position:relative;width:1200px;height:1200px;overflow:hidden;font-family:'Inter',system-ui,-apple-system,sans-serif;color:#1a1a1a}
+  .bg{position:absolute;inset:0;width:1200px;height:1200px;object-fit:cover;z-index:0}
+  .headline:empty,.subheadline:empty,.badge:empty,.cta:empty,.brand:empty{display:none!important}
+  /* MACRO_YES_CTA_FINAL: headline topo 56px, sub 26px, badge pill dourada canto sup. direito, CTA inferior centralizado fundo escuro, brand assinada */
+  .layer-top{position:absolute;top:48px;left:48px;right:300px;z-index:2}
+  .headline{font-size:56px;font-weight:800;color:#fff;line-height:1.05;text-shadow:0 2px 8px rgba(0,0,0,0.4)}
+  .subheadline{font-size:26px;font-weight:500;color:#fff;margin-top:14px;text-shadow:0 2px 8px rgba(0,0,0,0.4)}
+  .badge{position:absolute;top:48px;right:48px;background:#c79a3a;color:#fff;font-size:22px;font-weight:700;padding:14px 26px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,0.25);z-index:3}
+  .cta{position:absolute;bottom:118px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.78);color:#fff;font-size:32px;font-weight:700;padding:18px 40px;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,0.4);white-space:nowrap;z-index:3}
+  .brand{position:absolute;bottom:52px;left:0;right:0;text-align:center;font-size:18px;font-weight:600;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,0.5);z-index:3}
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <img class="bg" src="{{BACKGROUND_IMAGE}}" alt="">
+    <div class="layer-top">
+      <div class="headline">{{HEADLINE}}</div>
+      <div class="subheadline">{{SUBHEADLINE}}</div>
+    </div>
+    <div class="badge">{{BADGE}}</div>
+    <div class="cta">{{CTA}}</div>
+    <div class="brand">{{BRAND_SIGNATURE}}</div>
+  </div>
+</body>
+</html>

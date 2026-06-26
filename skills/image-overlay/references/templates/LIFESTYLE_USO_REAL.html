@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>LIFESTYLE_USO_REAL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:1200px}
+  .canvas{position:relative;width:1200px;height:1200px;overflow:hidden;font-family:'Inter',system-ui,-apple-system,sans-serif;color:#1a1a1a}
+  .bg{position:absolute;inset:0;width:1200px;height:1200px;object-fit:cover;z-index:0}
+  .headline:empty,.brand:empty{display:none!important}
+  /* LIFESTYLE_USO_REAL: headline inferior 34px sobre gradient bottom */
+  .gradient{position:absolute;left:0;right:0;bottom:0;height:380px;background:linear-gradient(to top,rgba(0,0,0,0.72),rgba(0,0,0,0));z-index:1}
+  .layer-bottom{position:absolute;left:0;right:0;bottom:48px;padding:0 48px;z-index:2}
+  .headline{font-size:34px;font-weight:700;color:#fff;line-height:1.2}
+  .brand{font-size:16px;font-weight:500;color:#fff;opacity:0.92;margin-top:14px}
+  .brand:empty{display:none!important}
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <img class="bg" src="{{BACKGROUND_IMAGE}}" alt="">
+    <div class="gradient"></div>
+    <div class="layer-bottom">
+      <div class="headline">{{HEADLINE}}</div>
+      <div class="brand">{{BRAND_SIGNATURE}}</div>
+    </div>
+  </div>
+</body>
+</html>

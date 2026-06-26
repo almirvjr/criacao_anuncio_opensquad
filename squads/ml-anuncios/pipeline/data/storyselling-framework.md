@@ -148,20 +148,25 @@ O ONLY FACTOR é a frase única, curta e específica que descreve **por que esse
 
 Cada slot tem função única — não é ordem visual, é jornada cognitiva.
 
+Hierarquia **Equilibrado** (decisão Almir 2026-06-21): ritmo emocional alternado — lifestyle nos slots 5 e 8 dá "respiro" entre os blocos racionais (evita fadiga racional); detalhes técnicos fundidos no slot 7; prova social como slot 11 opcional.
+
 | # | Slot | Função | Códigos | Conteúdo central |
 |---|------|--------|---------|------------------|
-| 1 | CAPA Purple Cow | Para o scroll, vende a transformação | `+m+v` | Produto isolado em destaque + headline emocional |
+| 1 | CAPA Purple Cow | Para o scroll, vende a transformação | `+m+v` | Produto **ambientalizado ao centro**, SEM texto (regra capa textless) |
 | 2 | Antes vs Depois | Mostra a mudança concreta | `+v−a` | Comparação visual lado a lado |
 | 3 | Badge Tamanho | Quebra dúvida de dimensão | `−f` | Produto com referência (sacola, mão, ambiente) |
-| 4 | Anti-Ansiedade Material | Quebra dúvida de qualidade | `−a` | Close macro do material/acabamento |
-| 5 | Clareza Absoluta | Esclarece a dúvida MAIS recorrente do FAQ | `−a−f` | Infográfico simples + texto direto |
-| 6 | Detalhe Técnico 1 | Mostra como funciona | `−f+v` | Close em feature mecânica |
-| 7 | Detalhe Técnico 2 | Mostra durabilidade/qualidade | `−a+v` | Close em material/acabamento |
+| 4 | Anti-Ansiedade Material | Quebra dúvida de qualidade **e durabilidade** | `−a` | Close macro do material/acabamento; "é inox de verdade? vai durar?" |
+| 5 | **Lifestyle Emocional** | Respiro emocional no meio (benefício pessoal) | `+m` | Produto na rotina, cena aspiracional acessível; reaquece a emoção |
+| 6 | Clareza Absoluta | Esclarece a dúvida MAIS recorrente / declara limitação | `−a−f` | Infográfico simples + texto direto (ex.: "sem balde, usa saco comum") |
+| 7 | **Detalhe Técnico** | Mostra como funciona (mecanismo) | `−f+v` | Close em feature mecânica (pedal); funde os 2 detalhes antigos |
 | 8 | Lifestyle / Uso Real | Cria identificação | `+m` | Produto em uso em ambiente real |
-| 9 | Sobrecorreção Ansiedade | Checklist final anti-medo | `−a−f` | 4-6 selos visuais com objetivo psicológico declarado |
-| 10 | Macro-Yes + CTA | Fecha a jornada com aspiração | `+i+v` | Cenário cinematográfico + CTA + identidade da loja |
+| 9 | Sobrecorreção Ansiedade | Checklist final anti-medo | `−a−f` | 4-6 selos, **incluindo selos de transparência das `limitacoes[]`** |
+| 10 | Macro-Yes + CTA | Fecha a jornada com aspiração | `+i+v` | Cenário cinematográfico + CTA. **SEM MARCA, sem assinatura de agência** |
+| 11 | **Prova Social** *(opcional)* | Validação evidencial por review real | `+v−a` | Citações de review + selos de avaliação. **DORMENTE** até haver review REAL nosso (anúncio novo: omitir) |
 
 **Regra de ouro:** se uma foto não couber em nenhum desses slots, ela não entra. Não há foto "extra" ou "ornamental".
+
+**Slot 11 (Prova Social) — trava anti-fabricação:** só entra com review REAL do NOSSO anúncio (flag `reviews_proprios_confirmados: true` no brief). Nunca usar review de concorrente nem inventar. Anúncio novo sem avaliação: o slot fica dormente (não gerado).
 
 ---
 

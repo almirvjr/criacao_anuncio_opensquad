@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>CAPA_PURPLE_COW</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:1200px}
+  .canvas{position:relative;width:1200px;height:1200px;overflow:hidden;font-family:'Inter',system-ui,-apple-system,sans-serif;color:#1a1a1a}
+  .bg{position:absolute;inset:0;width:1200px;height:1200px;object-fit:cover;z-index:0}
+  .headline:empty,.subheadline:empty,.brand:empty{display:none!important}
+  /* CAPA_PURPLE_COW: headline topo 64px white shadow, subheadline 28px abaixo */
+  .layer-top{position:absolute;top:0;left:0;right:0;padding:48px;text-align:center;z-index:2}
+  .headline{font-size:64px;font-weight:800;color:#fff;line-height:1.05;text-shadow:0 2px 8px rgba(0,0,0,0.35)}
+  .subheadline{font-size:28px;font-weight:500;color:#fff;margin-top:16px;text-shadow:0 2px 8px rgba(0,0,0,0.35)}
+  .brand{position:absolute;bottom:48px;left:0;right:0;text-align:center;font-size:16px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,0.4);z-index:2}
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <img class="bg" src="{{BACKGROUND_IMAGE}}" alt="">
+    <div class="layer-top">
+      <div class="headline">{{HEADLINE}}</div>
+      <div class="subheadline">{{SUBHEADLINE}}</div>
+    </div>
+    <div class="brand">{{BRAND_SIGNATURE}}</div>
+  </div>
+</body>
+</html>
