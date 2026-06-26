@@ -2,6 +2,25 @@
 
 <!-- Decisoes tecnicas importantes. Formato: data - contexto - decisao - motivo. -->
 
+## 2026-06-24
+
+### GATE de enquadramento da faixa-clara — pre-validacao vira CODIGO inpulavel (nao checklist)
+**Contexto:** ao montar a base studio do slot 9 (infografico faixa-clara), reaproveitei o hero fiel centralizado sem simular onde a faixa cai e mandei 2× pro Almir uma imagem com o **pedal cortado**. Causa raiz medida (nao suposta): o `render_faixa.py` desenha a faixa creme nos 486px de baixo (band_top=714) **com um fade de 40px ACIMA** (y674→714) que dissolve no creme qualquer parte do produto abaixo de y674. Coloquei a base do produto em y700 → os 26px de baixo sumiram no fade. NAO foi deteccao falha: `cutout.alpha_mask` (BiRefNet) e dark-pixel CONCORDAM no fundo real (~y1012 no master) e excluem a sombra de chao. O erro foi a regra viver so num checklist de memoria — **dependia de eu lembrar de rodar** (mesma classe de falha do edit-drift).
+
+**Decisao:** a parte MENSURAVEL da pre-validacao saiu da memoria e virou gate em codigo, igual ao `--lock`/`prompt_lint`. Novo `skills/image-overlay/scripts/framing_gate.py`: (a) `autofit()` reescala/reposiciona o produto p/ caber inteiro acima do fade (so encolhe; so atua em fundo ~uniforme) — PREVINE; (b) `check_clip()` mede o fundo do produto (alpha_mask, exclui sombra) vs topo do fade e exige folga >=8px — PEGA. Integrados no `render_faixa.py` (layout faixa, nao scrim): autofit roda antes; o gate roda antes do save e, se reprovar, manda pra `_rejeitado/` + `exit 3` (override `no_qa:true`). **Nao da pra eu mostrar um "aprovado" sem o gate ter passado.** O checklist de memoria fica so pro que exige olho humano (cor-heroi, props, gosto).
+
+**Motivo:** infalibilidade tem que ser por construcao, nao por promessa de atencao — Almir apontou que "se mandei sem pre-validar, a regra nao estava amarrada". Provado end-to-end: base ruim (master inteiro, produto y1012) → autofit conserta sozinho (x0.68, folga OK); com autofit off → REPROVA exit3 + `_rejeitado/`. 11 testes novos (`test_framing_gate.py`), suite 71→82 verdes. Vale p/ todo infografico futuro (slots 6,10, 8L, proximos produtos).
+
+### Layout `plate` de overlay + 3 arquetipos por contexto
+**Contexto:** o `scrim` joga o texto no rodape-esquerda; numa cena lifestyle com a lixeira no lower-left, o texto cobria o produto (reclamacao Almir 24/06: "o texto ficou em cima do que mais importa, a lixeira").
+**Decisao:** 3 arquetipos no `render_faixa.py`, escolhidos por contexto — estudio/fundo claro = `faixa-clara` (faixa creme + framing_gate); lifestyle escuro/foto cheia = `scrim`; **lifestyle com PAREDE/area clara vazia = `plate`** (texto tinta escura + halo branco no espaco negativo, sem faixa/scrim, nao escurece nem cobre o produto). Regra de composicao: a cena lifestyle com texto deve ser GERADA com espaco negativo deliberado de um lado (produto do outro), e CONFERIR que a zona do texto nao toca o produto antes de aplicar.
+**Motivo:** texto nunca sobre o produto, por construcao (nao por sorte de layout). Usado no slot7-maos e slot8 da 5L.
+
+### Inox natural em lifestyle + proporcao + fidelidade (numeros/regras duras — Almir 24/06)
+**Contexto:** Almir cansou de repetir as mesmas orientacoes de imagem ("e esse tipo de reajuste que estou tentando limar"). Fixados como regra dura (memoria + processo):
+**Decisao:** (1) **inox_cast/dourado vale SO p/ STUDIO**; em ambientalizada/lifestyle o **reflexo NATURAL do ambiente e PREFERIDO** (o cromado reflete madeira/luz quente; nao forcar neutro, nao rodar inox_cast como gate). Ref: `_final/foto-06-pedal.jpg`. (2) **Proporcao lixeira÷bancada (chao→tampo): MAX 0,33, IDEAL 0,28, MEDIDA antes de apresentar.** Ratio em texto ("1/3", "half") NAO funciona no Nano (prompt_lint barra) — usar framing de fotografo/marcos ("chega na gaveta de baixo"). **EXCECAO foto de ACAO** (pe-no-pedal): a lixeira fica no foreground (onde o pe esta) e a perspectiva infla p/ ~0,38-0,47 MESMO sendo do tamanho certo (28cm) — ≤0,33 e demo-de-acao sao incompativeis; em foto de acao aceita-se ~0,4 (Almir escolheu manter a acao no slot 7). ≤0,33 vale p/ fotos de CONTEXTO (capa/lifestyle). (3) **Saco plastico NAO acompanha o produto** — nunca mostrar saco no interior (cria expectativa errada→devolucao); interior aberto = inox vazio (master `branco-studio-fiel.jpg`). (4) **Tampa = plastico BRANCO** (topo E por baixo), nao inox; so corpo+interior sao aco.
+**Motivo:** tirar o que e mensuravel/factual da "memoria-que-eu-posso-esquecer" e fixar em regra/codigo; reduzir reajustes repetitivos.
+
 ## 2026-06-23
 
 ### ARQUITETURA PRODUTO-TRAVADO — produto NAO e re-renderizado, e composto (council + teste ao vivo)

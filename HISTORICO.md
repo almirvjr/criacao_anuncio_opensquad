@@ -2,6 +2,22 @@
 
 <!-- Tarefas concluidas (arquivo morto). Formato: data - resumo. -->
 
+## 2026-06-24/26 - Sessao: 5L (VIE_1066) FECHADO (10 fotos sem marca) + bake-ins de overlay/escala
+
+### Anuncio 5L completo e aprovado (todos validados no Chrome dedicado)
+- 10 fotos sem marca em `output/2026-06-21-conforme-5L/fotos/VIE_1066-PAI/`: capa 3 cores + foto-02..10. foto-08 agora LOCAL (era reuso).
+- **Slot 6 (Clareza):** refeito SEM saco (saco NAO acompanha o produto) — base master ABERTO vazio, "Sem balde interno removivel".
+- **Slot 7 (Pedal):** conceito MAOS OCUPADAS (algodao+frasco) + pe no pedal; mudou de COZINHA p/ BANHEIRO (a 5L e bin de banheiro); TAMPA BRANCA corrigida (saia inox); overlay `plate`. Escala ~0,38 aceita (foto de acao = foreground, perspectiva).
+- **Slots 9/10:** infograficos studio (master fechado reenquadrado), overlays faixa-clara (9: 5 selos de transparencia) e CTA (10).
+- **Slot 5:** mantido original (abertura escura = sombra, nao saco; foi over-flag meu; regen via compose-lifestyle nao cravou pouso).
+- **Slot 8:** reusou `base-foto8-pro` + overlay `plate` neutro (removeu verde-marca); headline sem "cozinha".
+
+### Construido (bake-ins, suite 71->82 verdes)
+- `skills/image-overlay/scripts/framing_gate.py` + integracao no `render_faixa.py`: `autofit` (reescala p/ caber) + `check_clip` (gate inpulavel) -> produto invade fade/faixa = `_rejeitado/`+exit3. 11 testes (`test_framing_gate.py`).
+- Layout `plate` no `render_faixa.py`: texto tinta escura+halo no espaco negativo da cena (sem faixa/scrim) — p/ lifestyle com parede/area clara.
+- `prompt_lint` confirmado barrando ratio/half em texto de escala (usar framing de fotografo/marcos).
+- Memoria da squad (`_memory/memories.md`) atualizada: inox-natural-lifestyle, proporcao ≤0,33 medida (+excecao acao), sem-saco-interno, plate, compor-com-espaco-negativo.
+
 ## 2026-06-23 - Sessao: ARQUITETURA PRODUTO-TRAVADO (mata edit-drift) + slots 6 e 7 do ciclo 5L
 
 ### Council + decisao (ver DECISOES.md 2026-06-23)
