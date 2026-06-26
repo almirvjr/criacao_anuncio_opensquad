@@ -1,0 +1,37 @@
+{
+  "pai_sku": "VIE_1067-PAI",
+  "cor_heroi": "Preto",
+  "data_aprovacao": "2026-06-26",
+  "assets": {
+    "aberto": {
+      "hero_fonte": "squads/ml-anuncios/output/2026-06-26-conforme-8L/fotos/_master/master-preto-aberto.jpg",
+      "png": "squads/ml-anuncios/pipeline/data/produtos-travados/VIE_1067-PAI_aberto.png",
+      "sha256": "7bdea23582acfb78a9526b9ee88b5c178b912dde747a262960dcb48bfad70558",
+      "bbox_no_hero": [
+        338,
+        38,
+        863,
+        1161
+      ],
+      "hero_size": [
+        1200,
+        1200
+      ]
+    },
+    "fechado": {
+      "hero_fonte": "squads/ml-anuncios/output/2026-06-26-conforme-8L/fotos/_master/master-preto-fechado.jpg",
+      "png": "squads/ml-anuncios/pipeline/data/produtos-travados/VIE_1067-PAI_fechado.png",
+      "sha256": "b77c8805bb87b666bd42b25a82390579239bfaa0b907455c059f366b403c0f32",
+      "bbox_no_hero": [
+        353,
+        76,
+        847,
+        1123
+      ],
+      "hero_size": [
+        1200,
+        1200
+      ]
+    }
+  }
+}

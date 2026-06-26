@@ -2,6 +2,24 @@
 
 <!-- Tarefas concluidas (arquivo morto). Formato: data - resumo. -->
 
+## 2026-06-26 - Sessao: inicio do 8L (VIE_1067) - herói preto, produto travado, capa v8 (1/3+realista)
+
+Rodada em `output/2026-06-26-conforme-8L/`. Pipeline herdado do 5L. NÃO concluído — capa aguarda aprovação; 9 StorySelling pendentes.
+
+### Feito
+- **Cor-herói = PRETO** (Almir escolheu; quer definir herói por anúncio). Master branco (recolor fiel pro/faithful das fotos reais) gerado e guardado p/ futura capa Branco; mas o herói é preto.
+- **Produto-travado preto** (`pipeline/data/produtos-travados/VIE_1067-PAI.{json,_aberto.png,_fechado.png}`) travado DIRETO das fotos reais pretas do fornecedor (WhatsApp 15/06) — fidelidade máxima, sem recolor. Descoberta: as fotos do WhatsApp são o 8L ALTO real (a `base-branco.jpg` é que é squat/proporção 5L; nota antiga da memória estava desatualizada).
+- **Brief conformado** (`inteligencia/brief-VIE_1067-PAI.yaml`): hierarquia do 5L, SEM marca (removido slogan/loja da foto 10), COZINHA-líder, dims reais 18Ø×34cm, foto 6 = sem balde interno.
+- **Capa v8** (`_redesign/capa-v8.jpg`): escala MEDIDA razão 0,32 (≤1/3) + realista. Aguarda OK do Almir.
+
+### Como a capa chegou na v8 (7 iterações — a lição técnica está em DECISOES 26/06)
+- v1/v2 (one-shot Pro): realista mas lixeira inflada (~0,5-0,66); Almir reprovou ">meia bancada".
+- v4 (compose do PNG-travado de estúdio): escala 0,33 exata MAS adesivo (inox refletia estúdio, não a cozinha); Almir reprovou "figurinha colada".
+- v6 (--edit encolher): distorceu (squat, perdeu silhueta alta).
+- v7 (one-shot wide): melhor realista mas ainda ~0,46.
+- **v8 (método novo):** render-in-scene (v7) → --edit remove lixeira (cena vazia) → recorta a lixeira realista da v7 → compose encolhida a 1/3 na mesma cena (reflexos já casam) + sombra reforçada. = escala 0,32 + realista.
+- Erros de processo do assistente nesta sessão (Almir cobrou): apresentei v4 sem rodar o checklist de realismo; me enrolei justificando escala 0,43-0,64 como "ok". Corrigido.
+
 ## 2026-06-24/26 - Sessao: 5L (VIE_1066) FECHADO (10 fotos sem marca) + bake-ins de overlay/escala
 
 ### Anuncio 5L completo e aprovado (todos validados no Chrome dedicado)

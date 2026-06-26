@@ -2,6 +2,23 @@
 
 <!-- Decisoes tecnicas importantes. Formato: data - contexto - decisao - motivo. -->
 
+## 2026-06-26
+
+### Cor-herói é definida pelo ALMIR por anúncio (não default do brief)
+**Contexto:** no início do 8L (VIE_1067) o brief defaultava cor-herói = Branco (1ª variação). Almir: "quero sempre definir a cor herói por anúncio".
+**Decisão:** **8L = herói PRETO.** A cor-herói nunca herda o default do brief/Helena — perguntar e confirmar com o Almir em cada anúncio antes de gerar as StorySelling (elas saem todas na cor-herói, compartilhadas entre as 3 cores). Bônus: quando a herói é uma cor que já temos foto real do fornecedor, travar o produto DIRETO da foto real (sem recolor de IA = zero drift). Foi o caso do 8L preto (fotos WhatsApp 15/06).
+**Motivo:** decisão do dono; trocar a herói depois de gerar custa retrabalho e geração ($).
+
+### MIRROR-FINISH + escala 1/3 exata: render-in-scene → recorta → encolhe → recompõe
+**Contexto:** Almir exige a lixeira a **≤1/3 da bancada** (34cm/90cm) E realista. Bati num impasse com 7 capas: (a) **one-shot Pro** = realista mas o Gemini SEMPRE infla o produto a ~0,5–0,66 e NÃO desce a 1/3 (limitação documentada — "orbita ~metade"); (b) **compose.py do PNG-travado de estúdio** = escala exata (0,33) mas vira **ADESIVO** — porque o inox é espelhado e o PNG reflete o ESTÚDIO, não a cozinha (Almir reprovou a v4: "parece figurinha colada"); (c) **--edit encolher** = distorce a proporção (vira squat, perde a silhueta alta). Causa raiz do adesivo: produto mirror-finish PRECISA refletir a cena real; recorte de estúdio reflete o ambiente errado.
+**Decisão (validada por medida; aguarda OK visual do Almir):** para produto mirror em lifestyle com escala dura — **NÃO** compor do PNG de estúdio. Em vez disso: (1) gerar a lixeira DENTRO da cozinha por one-shot Pro (`capa-v7`, reflexos/luz reais da cena, ~0,5); (2) `--edit` remover a lixeira → cena vazia idêntica (`cena-v7-vazia`); (3) recortar a lixeira realista da v7 (BiRefNet num box justo) → PNG com os reflexos da cozinha já embutidos; (4) `compose.py` colar essa lixeira encolhida no `target-h` exato (1/3) na MESMA cena vazia, **sem `--harmonize`** (a cor/reflexo já casam), sombra de contato reforçada (`--shadow-alpha 155`). Resultado `capa-v8`: razão MEDIDA **0,32** + integração realista (não-adesivo). Scripts: `generate.py --edit` (remover), `cutout.alpha_mask` (recorte), `compose.py` (recolar).
+**Motivo:** reconcilia escala exata (compose dá controle de pixel) com realismo (os reflexos vêm de uma render real da própria cena). Aplicável a TODA lifestyle de produto mirror com escala dura — provável receita das StorySelling 8L (capa,2,5,8) e futuros.
+
+### Lembrete de processo: rodar o CHECKLIST antes de apresentar (reforço)
+**Contexto:** nesta sessão apresentei a v4 (compose-adesivo) sem checar realismo — Almir cobrou "passou no seu checklist?". Mesma classe de falha do gate de enquadramento (24/06).
+**Decisão:** reafirmado — NUNCA apresentar imagem (mesmo "só pra alinhar rumo") sem o checklist COMPLETO medido/olhado. Escala mede-se com grade de pixels (script ad-hoc: linhas de y a cada 50/100px, ler topo/base da lixeira e chão→tampo). Mostrar no Chrome só o que passou.
+**Motivo:** "uma vez orientado, não deveria receber de novo uma imagem com o mesmo erro" (Almir).
+
 ## 2026-06-24
 
 ### GATE de enquadramento da faixa-clara — pre-validacao vira CODIGO inpulavel (nao checklist)
