@@ -1,6 +1,7 @@
 # PROGRESSO
 
-> Atualizado 2026-06-26. **8L (VIE_1067) EM ANDAMENTO.** 5L fechado/aprovado (ver HISTORICO 2026-06-24/26). Rodada 8L em `output/2026-06-26-conforme-8L/`. **RETOMAR EM: aprovar a capa v8 (capa-v8.jpg) → gerar as 9 StorySelling.**
+> Atualizado 2026-07-12. **8L (VIE_1067) EM ANDAMENTO.** 5L fechado/aprovado (ver HISTORICO 2026-06-24/26). Rodada 8L em `output/2026-06-26-conforme-8L/`. **RETOMAR EM: aprovar a capa v8 (capa-v8.jpg) → gerar as 9 StorySelling.**
+> **Plano paralelo (estratégico):** fechar o loop do pipeline — ver `PLANO-LOOP-JUIZ-VISUAL.md` (seção 4 abaixo).
 
 ## 0. Estado do 8L (VIE_1067) — feito nesta sessão
 - **Cor-herói = PRETO** (escolha explícita do Almir; ele quer definir a herói por anúncio, sempre). As 9 StorySelling sairão em preto.
@@ -25,3 +26,11 @@
 - **SUPABASE_SERVICE_ROLE** (a chave service_role do Supabase): re-fornecer p/ subir ao bucket.
 - **step-10:** `N8N_WEBHOOK_ML_PUBLICAR` ausente; workflow "ML Publicar" (`0rzNJ7RLqLzMbKnf`) INATIVO de propósito.
 - Custo da sessão 8L (OpenRouter Pro): ~$1,9 (master + cena + iterações de capa). Saldo OpenRouter ~$4,5.
+
+## 4. Plano paralelo — fechar o loop (Juiz Visual) — próxima sessão
+Detalhe completo em `PLANO-LOOP-JUIZ-VISUAL.md`. Resumo:
+- Opensquad já é ~85% loop engineering (maker≠checker Felipe/Vinícius, `qa_imagens.py`, retries/vetos no runner). NÃO reconstruir.
+- 2 vazamentos que puxam o Almir: (1) veredito estético a olho no step-08(ii); (2) checkpoints obrigatórios.
+- **Peça A (fazer 1º):** Juiz Visual — Camada 1 estende `qa_imagens.py`; Camada 2 `juiz_visual.py` (modelo de visão via OpenRouter). **Calibrar contra o 5L FECHADO antes de plugar.**
+- **Começar por:** localizar as fotos aprovadas do 5L (pista: `output/.../fotos/VIE_1066-PAI/`) + ler o checklist em `_memory/memories.md`.
+- Peças B (heartbeat/fila) e C (checkpoints condicionais) só depois da A confiável.

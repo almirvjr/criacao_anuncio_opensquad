@@ -2,6 +2,18 @@
 
 <!-- Decisoes tecnicas importantes. Formato: data - contexto - decisao - motivo. -->
 
+## 2026-07-12
+
+### Fechar o loop do pipeline por CIMA do Opensquad (não reconstruir) — Juiz Visual primeiro
+**Contexto:** estudados 4 artigos do Addy Osmani sobre agentic engineering. Almir perguntou se, para automatizar o loop de criação de anúncio (hoje "conferência atrás de conferência sem veredito"), valia remover a skill Opensquad e recomeçar no novo conceito. Auditado o pipeline real: o Opensquad já tem maker≠checker (Felipe/Vinícius), veredito determinístico (`qa_imagens.py`) e loops de auto-correção no `runner.pipeline.md`. Os 2 pontos que ainda exigem o Almir: (1) a inspeção ESTÉTICA do step-08(ii) é a olho humano (escala 1/3, materiais, sem-marca, foto×slot — o que `qa_imagens.py` não mede); (2) checkpoints obrigatórios por regra.
+**Decisão:** NÃO remover nem reiniciar o Opensquad. O loop engineering fica um andar ACIMA do harness (artigo 1) — reconstruir jogaria fora a intenção já codificada (dívida de intenção). Adicionar 3 peças: **A) Juiz Visual** (Camada 1 estende `qa_imagens.py` no que é geometria; Camada 2 = `juiz_visual.py` novo, manda cada JPG a um modelo de VISÃO via OpenRouter — Gemini 3 Pro/Claude — que julga materiais/slot-fit/sem-marca e devolve confiança; escala aprova sozinho + escala pro Almir só o duvidoso). **B) heartbeat/fila externa** de SKUs. **C) checkpoints condicionais** (segue sozinho quando a evidência passa; pergunta só em incerteza/risco). Fazer A primeiro; B/C só depois. **Antes de plugar A, CALIBRAR contra o 5L FECHADO** (rodar o juiz nas fotos já aprovadas/reprovadas e ajustar até concordar com o Almir — artigo 2, "meça na sua própria base").
+**Motivo:** autonomia segue a verificação (artigo 3): o que prende o Almir é justamente a parte do veredito que ainda não é mensurável por máquina. Automatizar esse veredito é o único desbloqueio; sem confiança calibrada no juiz, o Almir reconfere tudo e não se ganha nada. Plano detalhado em `PLANO-LOOP-JUIZ-VISUAL.md`.
+
+### Regra geral de arquitetura de loop nos projetos do workspace (levantado nesta sessão)
+**Contexto:** Almir perguntou se todo projeto (existentes e novos) precisa de um plano de implementação como este e se deve sempre rodar a skill Opensquad.
+**Decisão:** (1) O tamanho do esforço de loop escala com a dificuldade de AUTOMATIZAR O VEREDITO daquele projeto, não é fixo. Projeto com "done" fácil de medir (ex.: reposição n8n = workflow rodou verde / SQL retornou o esperado) quase não precisa de plano; projeto com veredito de julgamento (estético, como este) precisa. (2) Para projeto NOVO: decidir logo no início qual é o veredito automático (Quality→Verdict, artigo 4), mas sem cerimônia pesada em projeto pequeno/descartável (blast radius — artigo 2). Começar em autonomia baixa e subir a escada conforme acumula verificação. (3) Opensquad NÃO é padrão universal: serve para trabalho que se decompõe em etapas/papéis estáveis e repetíveis (estrategista→curador→copy→foto→validador). Não usar para integração event-driven (isso é n8n) nem para tarefa única (basta 1 agente + boa verificação). Escolher o harness pela FORMA do trabalho.
+**Motivo:** evitar over-engineering e evitar aplicar o Opensquad por hábito onde ele não encaixa.
+
 ## 2026-06-26
 
 ### Cor-herói é definida pelo ALMIR por anúncio (não default do brief)

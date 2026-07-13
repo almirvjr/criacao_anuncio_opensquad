@@ -2,6 +2,19 @@
 
 <!-- Tarefas concluidas (arquivo morto). Formato: data - resumo. -->
 
+## 2026-07-12 - Sessao: estudo loop engineering (Addy Osmani) + diagnóstico do pipeline + plano do Juiz Visual
+
+Sessão de estudo/planejamento (nenhum código alterado). Lidos 4 artigos do Addy Osmani (loop engineering; code review; agência×orquestração; outer loop/accountability) e mapeados sobre os projetos do workspace.
+
+### Feito
+- **Diagnóstico do Opensquad ml-anuncios:** já é ~85% um sistema de loop engineering. Tem maker≠checker (Felipe step-07 gera / Vinícius step-08 confere), veredito determinístico rodando (`pipeline/validators/qa_imagens.py`: dimensão, produto, eixo, inox dourado, procedência sha256), e loops de auto-correção no `_opensquad/core/runner.pipeline.md` (retry de output vazio, veto 2x, review loop `on_reject`).
+- **Identificados os 2 vazamentos** que ainda puxam o Almir pra dentro do loop: (1) o veredito ESTÉTICO (escala 1/3, materiais, sem-marca, foto×slot) está entregue ao olho humano no step-08 passo (ii); (2) os checkpoints são obrigatórios por regra (runner + SKILL.md).
+- **Decisão:** NÃO reiniciar/remover o Opensquad — o loop mora um andar acima do harness (artigo 1). Adicionar 3 peças em cima. Registrado em DECISOES 2026-07-12.
+- **Plano criado:** `PLANO-LOOP-JUIZ-VISUAL.md` (Peça A = Juiz Visual, calibrar contra 5L; Peças B/C depois).
+
+### Questão aberta p/ próxima sessão
+- Onde estão as fotos APROVADAS do 5L p/ calibrar o juiz. Pista levantada: `output/.../fotos/VIE_1066-PAI/` (5L = VIE_1066, fechado em 24-26/06).
+
 ## 2026-06-26 - Sessao: inicio do 8L (VIE_1067) - herói preto, produto travado, capa v8 (1/3+realista)
 
 Rodada em `output/2026-06-26-conforme-8L/`. Pipeline herdado do 5L. NÃO concluído — capa aguarda aprovação; 9 StorySelling pendentes.
