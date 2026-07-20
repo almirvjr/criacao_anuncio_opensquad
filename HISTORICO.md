@@ -2,6 +2,37 @@
 
 <!-- Tarefas concluidas (arquivo morto). Formato: data - resumo. -->
 
+## 2026-07-19/20 - Sessao: higiene de prompts da squad (Helena, Felipe, Renata, photo-templates) + 2 bugs de producao
+
+Rodada de `/common-kit:prompt-limpo` na squad ml-anuncios. **Metodo que revelou tudo: rodar a TRAVA de cada agente contra os GABARITOS do proprio prompt, antes de editar.** Nenhuma alteracao no trabalho do 8L; as mudancas sao nos prompts e validadores.
+
+### Helena Estrategista — 480 → 270 linhas
+- **O gabarito "alta confianca" do proprio prompt era REPROVADO pela trava** (`validar_brief.py`): 4 erros. O prompt ensinava a Helena a produzir brief que a trava rejeita.
+- Lacunas fechadas (a trava exigia, o prompt nunca dizia): `nome_base`, `limitacoes_nota`, selos da foto 9 (4-6) e da 10 (min. 1), tokens MECLABS proibidos, condicao do slot 11, evidencia com min. 12 caracteres.
+- Corrigido: "Foto 5 (Clareza)" → Foto 6 (resquicio de hierarquia velha); escala de confianca unificada; regra do "luxuoso" agora distingue `evidencias` (aceita a palavra do cliente) de `linguagem_real_cliente` (vocabulario da Renata).
+- Cortados 18 de 25 itens de Never/Always Do que a trava ja confere sozinha. Eval: `BRIEF REJEITADO (4 erros)` → `BRIEF OK`.
+
+### Felipe Fotos — 386 → 205 linhas
+- **Brigava consigo mesmo:** principio 2b(e) dizia "prompt sempre PROSA, JSON so auditoria", mas os passos d/c mandavam "prompt: conteudo do JSON". Seguindo os passos, 12/12 templates eram bloqueados por `JSON_CRU`.
+- Exemplo dizia `slot 5 = CLAREZA_ABSOLUTA` (canonico e 6); vocabulario dizia "1200x1200 = resolucao MINIMA" enquanto o principio 6 dizia "EXATAMENTE, nao minimo".
+- 33 itens de Never/Always/Quality → tabela das 5 travas reais + 4 erros que trava nenhuma pega.
+
+### Renata Redatora — 430 → 197 linhas
+- **A regra SEM MARCA era enunciada 7 VEZES e os 3 gabaritos a violavam (3/3)**, com `- Marca: Terra Casa Decor` dentro do bloco de specs, que E a descricao. Demonstracao pratica de que o modelo copia o EXEMPLO, nao a prosa.
+- Campo `BRAND` passou a receber a marca do FABRICANTE (aparece na caixa de Caracteristicas do anuncio, entao a loja ali furava a propria regra).
+
+### photo-templates.md + `prompt_lint.py`
+- **Template 1 (CAPA) brigava consigo mesmo:** `composicao` pedia "dominante, ~60% da area" e `direcao_de_arte` pedia "BEM pequena (~0,28)". 60% contra 28% no mesmo prompt — explica parte da briga de escala.
+- Escala da capa estava como razao em texto ("ATE 1/3"), a forma que o linter bloqueia porque o modelo ignora. Trocada por framing de fotografo + marco fisico.
+- **Bug no linter de producao:** `"vista 3/4"` (angulo de camera) era tratado como razao de escala e bloqueava quem seguia o proprio template. Corrigido com TDD (4 testes primeiro, 2 falharam; 1 garante que razao de tamanho real continua bloqueada). Templates bloqueados em prosa: 1 → **0 de 12**.
+
+### `validar_claims.py` — guarda estendida para a copy
+- A guarda anti-claim-falso varria **so o overlay das fotos**. Titulo e descricao — que o comprador le antes de olhar foto por foto — nao tinham trava nenhuma. Agora `--copy anuncio-{pai_sku}.yaml` poe a copy sob as mesmas checagens. TDD: 5 testes (4 falharam), 1 trava retrocompatibilidade.
+
+**Suite de testes: 82 → 91, todas passando.** Todos os arquivos com `.snapshot-2026-07-19` ao lado (nada disso esta no git).
+
+**Erros meus, registrados:** (1) cortei os exemplos de `metadata.yaml` do Felipe inteiros — e sao o unico lugar que documenta o formato que a Paula consome; devolvidos enxutos. (2) meu gabarito novo da Renata saiu com `length` errado por 1 char e `word_count: 213` num texto de 192 palavras — o mesmo defeito que eu estava corrigindo; so apareceu porque medi antes de aplicar.
+
 ## 2026-07-12 - Sessao: estudo loop engineering (Addy Osmani) + diagnóstico do pipeline + plano do Juiz Visual
 
 Sessão de estudo/planejamento (nenhum código alterado). Lidos 4 artigos do Addy Osmani (loop engineering; code review; agência×orquestração; outer loop/accountability) e mapeados sobre os projetos do workspace.

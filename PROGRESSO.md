@@ -27,10 +27,13 @@
 - **step-10:** `N8N_WEBHOOK_ML_PUBLICAR` ausente; workflow "ML Publicar" (`0rzNJ7RLqLzMbKnf`) INATIVO de propósito.
 - Custo da sessão 8L (OpenRouter Pro): ~$1,9 (master + cena + iterações de capa). Saldo OpenRouter ~$4,5.
 
-## 4. Plano paralelo — fechar o loop (Juiz Visual) — próxima sessão
-Detalhe completo em `PLANO-LOOP-JUIZ-VISUAL.md`. Resumo:
-- Opensquad já é ~85% loop engineering (maker≠checker Felipe/Vinícius, `qa_imagens.py`, retries/vetos no runner). NÃO reconstruir.
-- 2 vazamentos que puxam o Almir: (1) veredito estético a olho no step-08(ii); (2) checkpoints obrigatórios.
-- **Peça A (fazer 1º):** Juiz Visual — Camada 1 estende `qa_imagens.py`; Camada 2 `juiz_visual.py` (modelo de visão via OpenRouter). **Calibrar contra o 5L FECHADO antes de plugar.**
-- **Começar por:** localizar as fotos aprovadas do 5L (pista: `output/.../fotos/VIE_1066-PAI/`) + ler o checklist em `_memory/memories.md`.
-- Peças B (heartbeat/fila) e C (checkpoints condicionais) só depois da A confiável.
+## 4. Plano paralelo — Juiz Visual (fechar o loop)
+Detalhe completo em `PLANO-LOOP-JUIZ-VISUAL.md`. Ordem: **Peça A primeiro** (Juiz Visual = camada 1 estende `qa_imagens.py`, camada 2 `juiz_visual.py` por modelo de visão; **calibrar contra o 5L FECHADO antes de plugar**); B (heartbeat/fila) e C (checkpoints condicionais) só depois de A confiável. Não reconstruir o Opensquad — ele já é ~85% loop.
+
+## 5. Prompts da squad foram higienizados em 19-20/07 — o que mudou pro 8L
+Helena, Felipe, Renata e `photo-templates` foram limpos (detalhe em HISTORICO/DECISOES 19-20/07). O que afeta o trabalho em andamento:
+- **`picture_ids` agora é 10, não 11** — no `modo: variacoes` publica ambientalizada + slots 2-10; o slot 1 é gerado e guardado, mas **não publicado**. (O DECISOES já mandava isso; os prompts é que estavam errados.)
+- **Overlay trocou nos slots 5 e 6:** faixa clara agora é do slot 6 (Clareza), scrim é do 5 (Lifestyle).
+- **Template 1 (CAPA):** a instrução de escala saiu de "ATE 1/3" para framing + marco físico. **O método de compor-e-encolher da capa v8 continua valendo** — a mudança é só na forma de pedir à IA, que nunca obedeceu a razão em texto.
+- **`cor_heroi` nunca mais vem vazia** e, quando a Helena escolher uma cor diferente da 1ª variação, o step-04b para e pede sua confirmação.
+- **Nova trava:** `validar_claims.py --copy` agora cobre também título e descrição, não só as fotos.

@@ -2,6 +2,42 @@
 
 <!-- Decisoes tecnicas importantes. Formato: data - contexto - decisao - motivo. -->
 
+## 2026-07-19/20
+
+### O DECISOES estava certo; os PROMPTS e que tinham derivado (re-alinhamento, nao redecisao)
+**Contexto:** higiene de prompts da squad. Duas regras ja decididas aqui estavam sendo contrariadas pelos arquivos executaveis dos agentes.
+**Nao sao decisoes novas — sao consertos de drift:**
+- **`picture_ids` = 10.** A decisao "Capa = ambientalizada SEM texto" ja fechava: "1 ambientalizada (capa) + 9 StorySelling = 10". Mas `felipe-fotos.agent.md` e `step-07-fotos.md` mandavam "fotos_cor + as 10 = 11 itens" — o anuncio sairia com DUAS capas, a segunda na cor-heroi (podendo nao ser a cor que o comprador escolheu). Os dois arquivos foram alinhados ao 10; varredura confirmou que ninguem mais ensina 11.
+- **Escala por framing, nao por razao em texto.** Ja decidido ("Ratio em texto NAO funciona no Nano — usar framing de fotografo/marcos"). Mas o TEMPLATE 1 do `photo-templates.md` ainda dizia "= ATE 1/3 e na real MENOS (~0,28)" — a forma que o proprio `prompt_lint` bloqueia. Trocado por wide shot + marco fisico ("o topo da tampa chega na gaveta de baixo do gabinete").
+**Motivo do registro:** o padrao a vigiar nao e so "prompt contradiz prompt", e **"decisao registrada nao chegou no arquivo que o agente le"**. Ao decidir algo aqui, conferir se o prompt/template correspondente foi atualizado.
+
+### Campo `BRAND` da ficha ML = marca do FABRICANTE (estende a regra SEM MARCA)
+**Contexto:** a regra SEM MARCA (19/06) cobre foto, titulo e descricao, mas era **silenciosa sobre o campo estruturado `BRAND`** da ficha tecnica. Os 3 gabaritos da Renata traziam `BRAND: "Terra Casa Decor"` — e esse campo aparece na caixa de Caracteristicas do anuncio, ou seja, a marca da loja aparecia mesmo com a regra valendo.
+**Decisao (Almir):** `BRAND` recebe a marca do **fabricante** (`dossie.marca`). Sem fabricante no dossie, usar o valor padrao do ML para produto sem marca, nunca inventar e nunca a loja.
+**Motivo:** fecha a regra SEM MARCA de ponta a ponta (o objetivo era nao prender o anuncio a um rebrand). Custo aceito: expoe o fabricante a quem olhar a ficha.
+
+### Arquetipo de overlay: faixa clara no slot 6 (Clareza), scrim no slot 5 (Lifestyle)
+**Contexto:** o mapa no `felipe-fotos.agent.md` mandava faixa clara nos slots 3/5/9 e scrim nos 6/7/8/10 — resquicio da hierarquia antiga, quando o slot 5 era Clareza. Na hierarquia canonica atual, 5 = LIFESTYLE_EMOCIONAL e 6 = CLAREZA_ABSOLUTA.
+**Decisao (Almir):** trocar os dois. **Faixa clara** (painel de texto legivel) vai para o slot 6, que precisa declarar a limitacao do produto sem ambiguidade; **scrim** (sombra suave) vai para o slot 5, que e respiro emocional e pede pouco texto.
+
+### `cor_heroi` sempre preenchida + confirmacao POR EXCECAO no step-04b
+**Contexto:** Helena, step-04, Felipe e step-07 ensinavam `cor_heroi: null` ("Felipe assume a primeira variacao"), mas o `brief.schema.json` e o `validar_brief.py` exigem string — e o **step-04b nunca mencionava a cor**, entao ela passava batida na auto-aprovacao. A cor-heroi define as 9 StorySelling do anuncio inteiro.
+**Decisao (Almir):** a Helena SEMPRE propoe uma cor + justificativa (nunca `null`). O step-04b **compara com a primeira variacao do dossie**: igual = criterio padrao, nao ha decisao, auto-aprova e so registra; diferente = a Helena escolheu por causa das reviews, entao PARA e pede confirmacao. Felipe e step-07 param e reportam se a cor vier vazia, em vez de adivinhar.
+**Motivo:** confirmar sempre mataria o caminho automatico do checkpoint; confirmar nunca deixava passar a decisao que mais custa caro. Por excecao pega o caso que importa sem cobrar presenca no lote limpo.
+
+### Guarda anti-claim-falso estendida a copy (nao so as fotos)
+**Contexto:** o `validar_claims.py` varria apenas o overlay das fotos. Titulo e descricao da Renata — que o comprador le ANTES de olhar foto por foto — nao passavam por trava nenhuma. Um "com balde interno removivel" na descricao de um produto sem balde nao seria barrado por nada.
+**Decisao:** `validar_claims.py --copy anuncio-{pai_sku}.yaml` poe titulos e blocos da descricao sob as mesmas checagens (claim falso, feature de alto risco), mais um aviso quando uma limitacao do brief nao e declarada em lugar nenhum da copy. Negacao segue valendo como transparencia ("sem balde" passa, "com balde" bloqueia).
+
+### Quando o prompt e a trava discordarem, a TRAVA vence — e a regra sai do prompt
+**Contexto:** Helena e Felipe tinham dezenas de itens de "Never Do / Always Do / Quality Criteria" que os validadores ja conferem deterministicamente. Instrucao repetida nao adiciona capacidade; a trava sim.
+**Decisao:** onde uma trava ja confere a regra, **apagar a regra do texto** e apontar para o validador, com a frase explicita "quando este texto e a trava discordarem, a trava esta certa". Na Helena isso eliminou 18 de 25 itens; no Felipe, 33 itens viraram uma tabela das 5 travas + 4 erros que trava nenhuma pega.
+**Motivo:** evita que o prompt volte a divergir do codigo, que foi exatamente o defeito encontrado (o gabarito "alta confianca" da Helena era REPROVADO pela propria trava).
+
+### Bug de producao: `"vista 3/4"` nao e razao de escala (`prompt_lint.py`)
+**Contexto:** o linter tratava `3/4` como razao de tamanho e bloqueava — inclusive quem seguia o proprio `photo-templates.md`, que manda "lixeira sempre na DIAGONAL (vista 3/4)".
+**Decisao:** excecao no `prompt_lint.py` para `3/4` em contexto de camera (vista/angulo/view/three-quarter), neutralizado antes da checagem de razao. Feito com TDD; um dos testes garante que razao de tamanho de verdade continua bloqueada (a correcao nao abriu buraco).
+
 ## 2026-07-12
 
 ### Fechar o loop do pipeline por CIMA do Opensquad (não reconstruir) — Juiz Visual primeiro
