@@ -2,6 +2,27 @@
 
 <!-- Tarefas concluidas (arquivo morto). Formato: data - resumo. -->
 
+## 2026-07-20/22 - Sessao: higiene de prompts (fila ALTA zerada) + lote de consertos da onda MEDIA
+
+Parte de uma rodada cross-projeto (28C reembolso, Perguntas ML, Pos-Venda, Petra, Mentor — registrada no hub `.claude-hub/plans/`). O que tocou ESTE projeto:
+
+### Categoria REAL descoberta + preditor do ML trocado
+- Os IDs `MLB263532` (usado em 13 pontos) e `MLB264586` eram categorias **RAIZ** (`Ferramentas`/`Saude`, `listing_allowed:false`) — nenhum anuncio publicaria. Categoria real = **`MLB33375`** (folha, verificada ao vivo em 3 checagens). Breadcrumb tambem estava errado (`Utilidades de Cozinha` -> `Armazenamento e Organizacao`) e o ID de "Cozinha" (`MLB1648` -> `MLB1618`).
+- `category_predictor/predict` foi **descontinuado (404)**. Trocado por `domain_discovery/search` (sem token, retorna lista sem numero de confianca) em Cibele, step-03, quality-criteria, anti-patterns, domain-framework, research-brief, design.yaml. Host morto `api.mercadolivre.com.br` -> `api.mercadolibre.com`. Corrigido em 9 arquivos + fixture de teste. **99 testes passando.**
+- **Descoberta:** a propria Cibele ja tinha detectado o endpoint morto numa run de 26/mai (`output/2026-05-26-.../categorias.yaml`: "resource not found - endpoint legado", `prediction_probability: null`). Quebra sangrava desde maio; so as instrucoes nao acompanharam.
+
+### Lote de consertos da onda MEDIA (diagnostico em `.claude-hub/plans/2026-07-20-diagnostico-onda-media.md`)
+Aplicados via 3 subagentes paralelos (propriedade exclusiva de arquivo) + eu nos de producao sensivel. Todos com snapshots `.snapshot-2026-07-22` e 99 testes verdes:
+- **Vinicius:** `--lock` ligado no `qa_imagens.py` (prova de proveniencia do produto-travado, estava desligada); gabarito nao viola mais SEM MARCA; dimensao `>=` -> `== 1200x1200 exatas`.
+- **storyselling-framework:** capa nao manda mais escrever headline (regra textless); hierarquia velha da secao 4 alinhada a tabela Equilibrado da secao 6.
+- **generate.py + SKILL.md:** `--edit` realinhado ao CLAUDE.md (so fundo, nunca o produto); `SCENE_COHERENCE` agora anexado tambem no caminho sem referencia.
+- **Felipe:** lia `dossie.specs.material` (inexistente) -> `dossie.dados_produto.material.valor`.
+- **step-02:** `specs` descrito como escalar -> objeto `{valor,fonte}` (formato real do Caio).
+- Reverti a remocao de `publico_alvo`/`ambientes_uso` do step-02 — um hook do projeto barrou (sao spec canonica; LLM le o dossie inteiro). Virou decisao do dono.
+
+### Ficou para decisao do Almir
+Contrato de auditoria do Vinicius (4 vs 7 blocos); `pictures_compartilhadas` (Paula remonta vs le `picture_ids_por_variacao`; payload_builder e orfao); `cor_value_map` lista vs dict; cortar ou manter `publico_alvo`/`ambientes_uso`.
+
 ## 2026-07-19/20 - Sessao: higiene de prompts da squad (Helena, Felipe, Renata, photo-templates) + 2 bugs de producao
 
 Rodada de `/common-kit:prompt-limpo` na squad ml-anuncios. **Metodo que revelou tudo: rodar a TRAVA de cada agente contra os GABARITOS do proprio prompt, antes de editar.** Nenhuma alteracao no trabalho do 8L; as mudancas sao nos prompts e validadores.

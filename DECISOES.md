@@ -2,6 +2,33 @@
 
 <!-- Decisoes tecnicas importantes. Formato: data - contexto - decisao - motivo. -->
 
+## 2026-07-22
+
+### Categoria ML real = `MLB33375` (os IDs anteriores eram falsos)
+**Contexto:** o projeto usava `MLB263532` ("Lixeiras") em 13 pontos e `MLB264586` em outros. Verificacao ao vivo: ambos sao categorias RAIZ (`Ferramentas` e `Saude`), `listing_allowed:false`, nenhum publica.
+**Decisao:** categoria = **`MLB33375`** (folha, `Casa, Moveis e Decoracao > Cozinha > Armazenamento e Organizacao > Lixeiras`). Corrigido tambem o ID de "Cozinha" (`MLB1648` -> `MLB1618`, real).
+**Motivo:** ID copiado entre docs nunca tinha sido verificado contra a API. Regra nova: sempre confirmar categoria = folha + `settings.listing_allowed==true` via `GET /categories/{id}` antes de aceitar.
+
+### Preditor de categoria: `domain_discovery` substitui `category_predictor` + veto por AMBIGUIDADE (nao por confianca)
+**Contexto:** `GET /sites/MLB/category_predictor/predict` foi descontinuado (responde 404). O substituto `domain_discovery/search` funciona sem token mas **nao devolve numero de confianca** — a regra antiga da Cibele "confianca < 70% = veto" ficou inexequivel (estava em 8 pontos).
+**Decisao (Almir):** o gatilho de veto/revisao humana passa a ser a **ambiguidade**: (a) predictor devolve 2+ candidatos plausiveis E os 3 concorrentes top se dividem entre eles; ou (b) menos de 2 dos 3 concorrentes na categoria #1; ou (c) categoria nao e folha que aceita anuncio. As "2 alternativas" agora saem prontas na propria lista do predictor (antes a Cibele reinventava rodando o predict de novo). A validacao cruzada com concorrentes virou a ancora principal.
+**Motivo:** o numero morreu; ambiguidade + validacao cruzada cobrem a mesma intencao (nao chutar categoria incerta) com dado que existe. Ver `.claude-hub/memory/ml_preditor_categoria_domain_discovery.md`.
+
+### Gate/veto deve falhar FECHADO (guardiao.sh do Mentor)
+**Contexto:** o `guardiao.sh` (veto de saude mental do Mentor) imprimia `OK` quando nao conseguia consultar o Guardiao, e o Foco tratava `OK` como "segue livre" — falha-aberta num veto.
+**Decisao:** fallback passou a emitir veredito distinto `INDISPONIVEL` (nao `OK`); o AGENTS.md do Foco trata `INDISPONIVEL` com cautela. Padrao geral: a falha segura de um veto e negar/pausar, nunca liberar.
+
+### `--lock` do `qa_imagens.py` LIGADO no Vinicius e step-08
+**Contexto:** a arquitetura produto-travado (2026-06-23, DEFINITIVA) confere o sha256 da camada do produto via `--lock`, mas os comandos do Vinicius e do step-08 nunca passavam a flag — a prova de proveniencia estava desligada.
+**Decisao:** comandos passam `--lock pipeline/data/produtos-travados/{pai_sku}.json`. Nao e redecisao — e ligar uma trava ja decidida que estava inerte.
+
+### `specs` do dossie e OBJETO `{valor, fonte}`, nao escalar
+**Contexto:** o Caio grava `specs.capacidade_l = {valor, fonte}`; o step-02 descrevia como escalar `<num|null>` (Felipe/quem le pegava formato errado).
+**Decisao:** step-02 (Output Format + 2 exemplos) alinhado ao objeto. `specs` guarda capacidade/peso/voltagem; **material NAO fica em specs** — fica em `dados_produto.material` (o Felipe foi corrigido pra ler `dados_produto.material.valor`).
+
+### Aberto (decisao do Almir, NAO decidido nesta sessao)
+Contrato de auditoria do Vinicius (4 blocos vs os 7 do step-08, que inclui StorySelling); `pictures_compartilhadas` (Paula remonta por formula que pode gerar 2 capas vs ler `picture_ids_por_variacao` ja pronto do Felipe — `payload_builder.py` que queria a chave e ORFAO, nao roda); `cor_value_map` lista vs dict (so quebra o payload_builder orfao; a Paula le como LLM); cortar ou manter `publico_alvo`/`ambientes_uso`.
+
 ## 2026-07-19/20
 
 ### O DECISOES estava certo; os PROMPTS e que tinham derivado (re-alinhamento, nao redecisao)

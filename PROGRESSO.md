@@ -26,14 +26,18 @@
 - **SUPABASE_SERVICE_ROLE** (a chave service_role do Supabase): re-fornecer p/ subir ao bucket.
 - **step-10:** `N8N_WEBHOOK_ML_PUBLICAR` ausente; workflow "ML Publicar" (`0rzNJ7RLqLzMbKnf`) INATIVO de propósito.
 - Custo da sessão 8L (OpenRouter Pro): ~$1,9 (master + cena + iterações de capa). Saldo OpenRouter ~$4,5.
+- **⚠️ Arquivos da squad editados 20-22/07 NÃO commitados** (o /save só commita os 5 docs raiz): cibele, step-03, vinicius, felipe, step-02, storyselling, generate.py, SKILL.md, ml-api-reference, +data. Decidir quando commitar em bloco.
+- **3 decisões de contrato abertas (diagnóstico 20/07):** (a) auditoria do Vinícius = 4 blocos ou os 7 do step-08 (sem StorySelling hoje); (b) `pictures_compartilhadas` — Paula remonta por fórmula bugável vs. ler `picture_ids_por_variacao` já pronto do Felipe (payload_builder é órfão); (c) `cor_value_map` lista vs dict; e `publico_alvo`/`ambientes_uso` cortar ou manter.
 
 ## 4. Plano paralelo — Juiz Visual (fechar o loop)
 Detalhe completo em `PLANO-LOOP-JUIZ-VISUAL.md`. Ordem: **Peça A primeiro** (Juiz Visual = camada 1 estende `qa_imagens.py`, camada 2 `juiz_visual.py` por modelo de visão; **calibrar contra o 5L FECHADO antes de plugar**); B (heartbeat/fila) e C (checkpoints condicionais) só depois de A confiável. Não reconstruir o Opensquad — ele já é ~85% loop.
 
-## 5. Prompts da squad foram higienizados em 19-20/07 — o que mudou pro 8L
+## 5. Prompts da squad foram higienizados em 19-22/07 — o que mudou pro 8L
 Helena, Felipe, Renata e `photo-templates` foram limpos (detalhe em HISTORICO/DECISOES 19-20/07). O que afeta o trabalho em andamento:
 - **`picture_ids` agora é 10, não 11** — no `modo: variacoes` publica ambientalizada + slots 2-10; o slot 1 é gerado e guardado, mas **não publicado**. (O DECISOES já mandava isso; os prompts é que estavam errados.)
 - **Overlay trocou nos slots 5 e 6:** faixa clara agora é do slot 6 (Clareza), scrim é do 5 (Lifestyle).
 - **Template 1 (CAPA):** a instrução de escala saiu de "ATE 1/3" para framing + marco físico. **O método de compor-e-encolher da capa v8 continua valendo** — a mudança é só na forma de pedir à IA, que nunca obedeceu a razão em texto.
 - **`cor_heroi` nunca mais vem vazia** e, quando a Helena escolher uma cor diferente da 1ª variação, o step-04b para e pede sua confirmação.
 - **Nova trava:** `validar_claims.py --copy` agora cobre também título e descrição, não só as fotos.
+- **`--lock` LIGADO (22/07):** o gate `qa_imagens.py` do Vinícius/step-08 agora confere o sha256 da camada do produto (`produtos-travados/{pai_sku}.json`) — a prova de proveniência do produto-travado, que estava desligada, agora roda de verdade. Vale pro 8L (é produto-travado PRETO).
+- **Categoria REAL = `MLB33375`** (22/07). Os IDs antigos `MLB263532`/`MLB264586` eram categorias RAIZ e não publicavam. Predictor mudou: `category_predictor` morreu (404) → usar `domain_discovery/search` (sem token, sem número de confiança).
