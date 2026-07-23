@@ -2,6 +2,34 @@
 
 <!-- Tarefas concluidas (arquivo morto). Formato: data - resumo. -->
 
+## 2026-07-22 (tarde) - Sessao: motor de overlay defasado + as 4 decisoes de contrato + profundidade na foto tecnica
+
+Continuacao da higiene. Fecha o que a sessao da manha deixou "para decisao do Almir". **118 testes verdes** ao final (eram 99). Nada commitado no codigo da squad — rollback por git.
+
+### O manual da skill `image-overlay` ensinava o motor APOSENTADO (achado novo, nao estava no diagnostico)
+- `SKILL.md` intocado desde **25/mai**: mandava montar HTML, subir `http.server` e tirar screenshot no Playwright, e trazia `brand_signature` como campo do contrato — a marca e PROIBIDA desde 19/06. O motor real e `render_faixa.py` (Pillow) desde 06/2026.
+- O Felipe ja estava correto, **mas declara essa skill no `skills:`** e a carrega como instrucao. Mesmo padrao da Cibele com o host morto do step-03.
+- Reescrito do zero contra o proprio script: `type: script`, os 3 arquetipos reais (faixa/`scrim`/`plate`) com mapa por slot, **contrato de config extraido do codigo (38 chaves)**, secao SEM MARCA (`show_brand` e gate desligado, nao opcao), gates (`framing_gate` exit 3 — e o registro honesto de que so roda no arquetipo faixa; `inox_cast` exit 2), scripts vizinhos, templates HTML marcados como legado. Snapshot `SKILL.md.snapshot-2026-07-22`.
+- `image-creator` **saiu do loadout do Felipe** (3 pontos): e motor HTML->PNG e nada no processo dele monta HTML. Quem normaliza 1200x1200 e o proprio `render_faixa.py`.
+
+### Outros consertos do mesmo lote
+- **Angulo de camera** (`generate.py`): saiu o "you MAY place it at a different, more flattering camera angle" — o angulo vem do campo `angulo` do template.
+- **Falso positivo do linter** (TDD): `\bmacro\b` acusava `CAMERA_INFLA` no **nome do slot** "Macro-Yes" (MECLABS). Excecao `_MACRO_YES_SLOT`, 4 testes (2 que falhavam + 2 garantindo que "macro" de lente segue avisando). Varredura nos 12 templates: o template 10 saiu de aviso -> limpo; sobram os 2 avisos legitimos (slots 4 e 7, que pedem close mesmo).
+- **Ficha tecnica de dimensoes** (`photo-templates.md`): descrevia "quadro branco semi-transparente no canto inferior direito" e uma linha que sumia "via `:has(.dim-value:empty)`" — CSS de motor que nao existe mais. Realinhada as cotas reais; composicao e posicao do produto trocadas (a folga tem que ficar a esquerda/abaixo).
+- **Hierarquia velha sobrevivia em +2 arquivos** (`research-brief.md`, `domain-framework.md`): "2-5 angulos / 6-8 detalhes". Trocada por ponteiro pra fonte unica (secao 6 do storyselling-framework) em vez de repetir a lista.
+- **`_overlay_html/`** saiu do step-07 (pasta do motor morto).
+
+### As 4 decisoes de contrato — fechadas pelo Almir e aplicadas (detalhe em DECISOES)
+- **Vinicius: 7 blocos COM nota**, tabela unica 15/20/15/20/15/10/5; Variacoes ML virou **portao sem pontos** (matou a tabela dupla 4x25 vs 5x20). **StorySelling entrou de verdade** — a palavra nao existia no prompt dele; agora ha passo auditando `dor_interna`, `linguagem_real_cliente`, `escada_e_dai` e `only_factor` contra o brief da Helena, que virou input obrigatorio. Gabaritos reescritos e **somas medidas por script** (93/100/50, todas batendo, nenhum bloco acima do teto).
+- **Paula le a lista pronta do Felipe**; `pictures_compartilhadas` removido do contrato nos 6 pontos + nos 3 gabaritos de variacao (que ensinavam a conta velha e mostravam 5 fotos; agora 10, conferido por `json.loads` + contagem). **Bucket dos exemplos da Paula era `viel-produtos`, que nao existe** — so aparecia ali; o real e `tcd-produtos` (`BUCKET` no `rehost_fotos.py:25`).
+- **`cor_value_map` continua lista**; `payload_builder.py` normaliza os dois formatos e agora **falha alto** (`ValueError` com o SKU) se faltar lista de fotos ou vier tamanho != 10. +6 testes.
+- **`publico_alvo`/`ambientes_uso` ficam**; principio novo no Caio + os 2 campos nos 2 gabaritos dele (preenchido e vazio-com-warning).
+
+### Profundidade na foto tecnica — IMPLEMENTADA (pedido "funcionalidade")
+- `dim_profundidade` existia nos templates e no step-07 e **nunca era lido**. Agora o `render_faixa.py` desenha a 3a cota: diagonal de recuo (~29 graus) saindo da base a direita, nos 3 estilos, respeitando os flags. So desenha se a medida existir. Sem espaco: avisa e nao desenha. TDD, 9 testes + 3 subtestes.
+- **Validado no olho** (nao so em teste): renderizado sobre a foto real da lixeira 5L nos estilos `modelo` e `finas`, com enquadramento de 62% como o template pede.
+- **Bug PRE-EXISTENTE achado ao validar:** produto perto da borda faz as cotas de altura/largura serem desenhadas **fora do canvas — somem sem erro nenhum**. O renderer passou a **avisar** (`[dim] AVISO: so ha Npx de folga...`); nao repositionei nada, pra nao mexer em foto ja aprovada. 3 testes.
+
 ## 2026-07-20/22 - Sessao: higiene de prompts (fila ALTA zerada) + lote de consertos da onda MEDIA
 
 Parte de uma rodada cross-projeto (28C reembolso, Perguntas ML, Pos-Venda, Petra, Mentor — registrada no hub `.claude-hub/plans/`). O que tocou ESTE projeto:

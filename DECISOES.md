@@ -2,6 +2,53 @@
 
 <!-- Decisoes tecnicas importantes. Formato: data - contexto - decisao - motivo. -->
 
+## 2026-07-22 (tarde) — as 4 decisoes de contrato + funcionalidade
+
+### Auditoria do Vinicius = 7 blocos COM nota (contrato unico com o step-08)
+**Contexto:** o agente auditava 4 blocos com score; o `step-08-revisao.md` mandava 7 blocos sem score. Um dos 3 que faltavam era **StorySelling** — a palavra nao aparecia nenhuma vez no prompt do Vinicius, ou seja, ninguem conferia se a descricao ancorava na dor do cliente que a Helena mapeou.
+**Decisao (Almir):** os **7 blocos** (Titulo, Descricao, Ficha Tecnica, Midia Visual, StorySelling, Compliance ML, Tom Marca) **com nota**, tabela fixa **15/20/15/20/15/10/5 = 100**, igual nos dois modos. O brief da Helena virou input obrigatorio do Vinicius. Veto novo: bloco 1 da descricao sem ancora na `dor_interna` (fora do caso `diagnostico_neutro`) reprova.
+**Motivo:** o step-08 ja falava em "score >= 80" sem definir score — cada lado tinha metade do contrato.
+
+### Bloco que e PORTAO nao pontua (Variacoes ML)
+**Contexto:** o bloco Variacoes ML valia 20 pontos E qualquer falha nele ja era veto duro. Por causa desses 20 pontos existiam DUAS tabelas de score (4x25 no modo simples, 5x20 no variacoes).
+**Decisao:** o bloco saiu da nota e virou portao puro; a tabela de pontos passou a ser uma so nos dois modos.
+**Motivo:** peso que nunca decidiu nada custava manutencao dupla. **Padrao geral:** criterio que e "veto automatico" E tem peso na nota ao mesmo tempo — o peso e decorativo, tirar.
+
+### Fotos: a Paula LE a lista pronta do Felipe; `pictures_compartilhadas` deixou de existir
+**Contexto:** a Paula remontava `picture_ids` por formula (`fotos_cor` + `pictures_compartilhadas`), que dava 11 = **o bug das duas capas** que o DECISOES ja declarara resolvido. O Felipe ja entrega `picture_ids_por_variacao[].picture_ids` pronto, com 10 e a capa na 1a posicao.
+**Decisao:** a Paula **copia** essa lista, sem somar/recalcular/reordenar. O campo `pictures_compartilhadas` foi **removido** do contrato (Paula, step-10, `payload_builder.py`). Lista ausente ou com tamanho != 10 = parar o anuncio e reportar, nunca completar por conta propria.
+**Motivo:** duas fontes pra mesma verdade; a formula ja tinha quebrado uma vez. O n8n **desligado** `ML Publicar` tolera a ausencia do campo (ele tambem une todos os `picture_ids`), mas a linha deve sair quando o workflow for ligado.
+
+### `cor_value_map` continua LISTA — o codigo passou a aceita-la
+**Contexto:** Cibele e step-03 definem lista de objetos; `payload_builder.py` consumia como dict plano (`AttributeError` no pipeline real; o teste passava porque o fixture usava dict).
+**Decisao:** o formato canonico e a **lista**; o `payload_builder` normaliza (dict legado segue funcionando).
+**Motivo:** a lista carrega `value_name_livre` ("esta cor nao tem codigo no ML"), aviso que o dict plano nao consegue expressar — e descobrir isso na hora de publicar sai caro.
+
+### `publico_alvo` / `ambientes_uso` FICAM, e o Caio aprendeu a preencher
+**Contexto:** o step-02 exigia os dois; o prompt do Caio nunca os mencionava. O grep nao achava consumidor — mas Helena e Renata leem o dossie INTEIRO como LLM.
+**Decisao:** manter os campos + principio novo no Caio ensinando a preencher a partir do que o anuncio sustenta. Sem base: grava vazio (`null` / `[]`) e registra warning apontando a Helena. Nunca inventa.
+**Motivo:** "grep nao acha consumidor" != "campo morto" quando quem le e um modelo, nao um parser.
+
+### Foto tecnica: profundidade IMPLEMENTADA (3a cota)
+**Contexto:** `dim_profundidade` existia nos templates e no step-07 desde sempre e **nada lia** — o step mandava "deixar vazio", e a doc descrevia um painel de medidas no canto que era do overlay por navegador, aposentado.
+**Decisao (Almir, "funcionalidade"):** o `render_faixa.py` desenha a profundidade como **diagonal de recuo (~29 graus) saindo da base a direita**, nos 3 estilos (`modelo`/`cotas`/`finas`), respeitando `dim_dashed`/`dim_label_box`/`dim_extension`. So desenha se a medida vier preenchida (produto redondo manda vazio). Sem espaco a direita: avisa no log e nao desenha.
+**Motivo:** o eixo real de perspectiva nao e legivel de uma silhueta 2D, entao o recuo e uma diagonal fixa — a convencao de catalogo em vista 3/4. Validado no olho sobre a foto real da 5L, nao so em teste.
+
+### Cota que nao cabe no quadro AVISA (nao reposiciona)
+**Contexto:** achado ao validar a profundidade — se o produto chega perto da borda, as cotas de altura/largura sao desenhadas **fora do canvas e somem sem erro nenhum**. Aconteceu num render real (produto terminando em y=1155 de 1200; cota de largura em y=1189).
+**Decisao:** o renderer **avisa** (`[dim] AVISO: so ha Npx de folga...`), dizendo quanto falta e que e caso de reenquadrar a base. **Nao reposiciona nada** — mover as cotas mudaria o resultado de fotos ja aprovadas.
+**Motivo:** falha silenciosa e pior que falha barulhenta; mas conserto que mexe em saida aprovada precisa ser decisao do dono, nao efeito colateral de um aviso.
+
+### Skill `image-overlay`: o manual descrevia o motor aposentado
+**Contexto:** o `SKILL.md` (intocado desde 25/mai) ensinava montar HTML, subir `http.server` e tirar screenshot no Playwright, e pedia `brand_signature` — a marca e PROIBIDA desde 19/06. O motor real e `render_faixa.py` (Pillow) desde 06/2026. O Felipe estava certo, **mas carrega essa skill como instrucao**.
+**Decisao:** SKILL.md reescrito contra o proprio script (`type: script`, 3 arquetipos, contrato de config extraido do codigo, secao SEM MARCA, gates). `image-creator` **saiu do loadout do Felipe** — e motor HTML->PNG por navegador e nada no processo dele monta HTML.
+**Motivo:** **ao higienizar um agente, abrir tambem tudo que ele carrega** (`skills:`, steps, `data/`) — o prompt do agente e so a camada de cima. Mesmo padrao da Cibele usando o host certo e carregando o step-03 com o host morto.
+
+### Angulo de camera vem do template, nunca do gosto do modelo
+**Contexto:** o `generate.py` autorizava "you MAY place it at a different, more flattering camera angle", enquanto o `photo-templates.md` fixa o `angulo` por slot e o CLAUDE.md exige escala medida.
+**Decisao:** a permissao saiu. O enquadramento e o angulo vem da descricao do prompt; o modelo e proibido de escolher angulo "lisonjeiro" ou inclinar a camera pra cima.
+**Motivo:** "lisonjeiro" e sinonimo de heroico/contra-plongee — exatamente o que INCHA o produto e quebra a escala real (o mesmo que o `prompt_lint` ja avisa como `CAMERA_INFLA`).
+
 ## 2026-07-22
 
 ### Categoria ML real = `MLB33375` (os IDs anteriores eram falsos)
@@ -26,8 +73,9 @@
 **Contexto:** o Caio grava `specs.capacidade_l = {valor, fonte}`; o step-02 descrevia como escalar `<num|null>` (Felipe/quem le pegava formato errado).
 **Decisao:** step-02 (Output Format + 2 exemplos) alinhado ao objeto. `specs` guarda capacidade/peso/voltagem; **material NAO fica em specs** — fica em `dados_produto.material` (o Felipe foi corrigido pra ler `dados_produto.material.valor`).
 
-### Aberto (decisao do Almir, NAO decidido nesta sessao)
+### [SUPERADA 2026-07-22 -> ver bloco "2026-07-22 (tarde)" no topo] Aberto (decisao do Almir, NAO decidido nesta sessao)
 Contrato de auditoria do Vinicius (4 blocos vs os 7 do step-08, que inclui StorySelling); `pictures_compartilhadas` (Paula remonta por formula que pode gerar 2 capas vs ler `picture_ids_por_variacao` ja pronto do Felipe — `payload_builder.py` que queria a chave e ORFAO, nao roda); `cor_value_map` lista vs dict (so quebra o payload_builder orfao; a Paula le como LLM); cortar ou manter `publico_alvo`/`ambientes_uso`.
+**As 4 foram decididas no mesmo dia, algumas horas depois. Nada aqui esta em aberto.**
 
 ## 2026-07-19/20
 
