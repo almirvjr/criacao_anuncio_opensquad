@@ -40,5 +40,5 @@ Detalhe completo em `PLANO-LOOP-JUIZ-VISUAL.md`. Ordem: **Peça A primeiro** (Ju
 - **`cor_heroi` nunca vem vazia**; cor diferente da 1ª variação faz o step-04b parar e pedir sua confirmação.
 - **Travas ligadas:** `validar_claims.py --copy` cobre título e descrição; `--lock` do `qa_imagens.py` confere o sha256 do produto-travado (vale pro 8L, que é travado PRETO).
 - **Revisão do Vinícius agora tem 7 blocos com nota** e audita **StorySelling** contra o brief — o 8L vai ser cobrado nisso.
-- **Foto técnica:** ganhou a 3ª cota (profundidade). ⚠️ **Deixar folga no enquadramento** (~80px à esquerda, ~110px abaixo do produto) — sem isso as cotas são desenhadas fora da imagem; o renderer avisa no log, mas não conserta.
+- **Foto técnica:** ganhou a 3ª cota (profundidade) e agora exige folga no enquadramento — virou regra no `CLAUDE.md` (Regras Críticas).
 - **Categoria REAL = `MLB33375`** (os antigos `MLB263532`/`MLB264586` eram RAIZ e não publicavam). Predictor: `category_predictor` morreu (404) → `domain_discovery/search`.
