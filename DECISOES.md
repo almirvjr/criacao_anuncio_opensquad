@@ -2,6 +2,47 @@
 
 <!-- Decisoes tecnicas importantes. Formato: data - contexto - decisao - motivo. -->
 
+## 2026-08-06 a 10 — auditoria da ficha tecnica dos anuncios no ar
+
+### Medida de produto NAO vem do Tiny; peso VEM (e mora dentro de `dimensoes`)
+**Contexto:** propus preencher medidas puxando do Tiny. O Almir corrigiu: **o que o Tiny guarda e a medida
+da CAIXA de expedicao**, nao do produto.
+**Decisao:** medida de produto sai da **ficha do catalogo do ML do mesmo item, achada pelo codigo de barras**
+(`/products/search?q={EAN}` → `/products/{id}`); a tabela de conhecimento (`public.knowledge_base`,
+`content_type='produto'`, 70 itens) e **segunda opiniao**, nunca fonte primaria — ela tem erro dentro
+(peso "1 g" copiado do proprio anuncio). **Peso** e a excecao: o Tiny tem, em `dimensoes.pesoLiquido`
+(em KG). Nao existe `pesoLiquido` na raiz do JSON — ler a raiz devolve vazio e parece cadastro em branco.
+**Motivo:** medida de caixa no lugar de medida de produto engana o comprador e nao e o que o filtro de busca usa.
+
+### Toda gravacao em lote passa por peneira de valor ANTES de sair
+**Contexto:** o catalogo do ML sugeriu Forma="Cilindrica" para uma lixeira; a categoria MLB33375 so aceita
+Retangular/Quadrada/Circular/Oval. Sem conferir, a gravacao seria recusada ou entraria torta.
+**Decisao:** `validar_sugestoes.ps1` roda 4 peneiras antes de qualquer PUT — (1) anuncio no ar e nao-catalogo,
+(2) campo ainda vazio, (3) valor existe em `values[]` da categoria, (4) unidade dentro de `allowed_units`.
+Das 441 sugestoes, **410 passaram e 31 cairam**. Sinonimo obvio (Cilindrica/Redonda → Circular) e resgate
+manual aprovado pelo Almir, nao automatico.
+**Motivo:** valor que veio de outra ficha nao e valor valido aqui — categoria diferente, lista diferente.
+
+### O ML mexeu no titulo sozinho e o Almir decidiu MANTER
+**Contexto:** gravar `COLOR` em anuncio **sem variacao** faz o ML anexar a cor ao fim do titulo
+("...Limpeza Carro" → "...Limpeza Carro Branco"). 3 casos em 146, nao pedidos.
+**Decisao (Almir, 10/08):** **deixar como ficou**. Mas todo lote passa a comparar titulo antes/depois e
+reportar — mudanca de titulo mexe com busca e nao pode passar despercebida.
+**Motivo:** a informacao no titulo nao atrapalha; o que nao pode e a mudanca acontecer sem ninguem ver.
+
+### Campo do anuncio com valores divergentes por variacao: NAO grava
+**Contexto:** em velas (MLB31547), `COLOR` e campo do anuncio, mas cada fragrancia tinha uma cor diferente
+na sugestao. Gravar uma so faria o anuncio afirmar que todas as velas sao daquela cor.
+**Decisao:** quando um campo nao-de-variacao recebe valores diferentes vindos de variacoes diferentes,
+**pular e registrar**. Foram 41 campos em 9 anuncios.
+**Motivo:** meia-verdade na ficha e pior que campo vazio — o vazio o comprador perdoa, a informacao errada gera reclamacao.
+
+### Detector nao pode contar o mesmo problema uma vez por variacao
+**Contexto:** a primeira varredura acusou "Diametro faltando" em 79 lugares, mas eram 36 anuncios — o
+detector cobrava o campo em cada cor. `DIAMETER` nao e atributo de variacao em nenhuma categoria vista.
+**Decisao:** so cobra na variacao se a variacao **tiver** aquele campo; senao cobra so no anuncio.
+**Motivo:** numero inflado vira prioridade errada — "256 anuncios sem diametro" na verdade era bem menos.
+
 ## 2026-07-22 (tarde) — as 4 decisoes de contrato + funcionalidade
 
 ### Auditoria do Vinicius = 7 blocos COM nota (contrato unico com o step-08)

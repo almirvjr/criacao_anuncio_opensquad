@@ -2,6 +2,35 @@
 
 <!-- Tarefas concluidas (arquivo morto). Formato: data - resumo. -->
 
+## 2026-08-06 a 10 - Auditoria e conserto da ficha tecnica dos 958 anuncios (frente nova)
+
+Frente **fora do pipeline de criacao**: auditar e consertar a ficha dos anuncios JA no ar.
+Ferramentas em `tools/auditoria_ficha/` (5 scripts PS 5.1, todos com backup + releitura de conferencia).
+
+### O que foi medido
+- **958 anuncios** (698 ativos + 260 pausados). Nao existe endpoint de qualidade (`/items/{id}/health`,
+  `/health/actions`, `/performance`, `/moderations/*` = **404**): a medida sai de
+  `GET /items?ids=...&include_attributes=all` contra `/categories/{id}/attributes` filtrando
+  `tags.hidden` e `tags.read_only` (corta ~70 atributos para ~20 reais).
+- **785 anuncios com campo vazio**; 173 com ficha completa. **Anuncio de catalogo nao tem nota** (`health`
+  nulo): dos 310 ativos com nota, ZERO sao de catalogo → ficha de catalogo nao mexe na qualidade.
+- **215 irregularidades** (valor errado, nao vazio) em 164 anuncios: peso irreal, medida irreal, diametro
+  em produto nao-redondo, titulo x ficha divergente, codigo de barras invalido, caixa menor que o produto.
+
+### O que foi corrigido (com backup e conferencia campo a campo)
+- **Piloto MLB1254314177**: Cor principal nas 4 variacoes + Forma + Peso 1 g→1 kg + Diametro "nao se aplica".
+- **8 erros de unidade**: 340 kg→340 g, 1 g→1 kg, 100 kg→350 g, 0,1 g→150 g, 23 m→23 cm, banqueta 0→29 cm.
+- **36 de 36** anuncios ganharam "nao se aplica" no Diametro (produto retangular/quadrado).
+- **Lote grande: 371 campos em 146 anuncios** (203 Cor principal, 51 Cor, 22 Diametro, 50 medidas...).
+  Fonte: ficha do catalogo do ML achada pelo **codigo de barras** (957 dos 958 anuncios tem EAN).
+- Em nenhuma das ~450 gravacoes preco/fotos/estoque/variacoes foram alterados (conferido contra backup).
+
+### O que NAO deu (e por que)
+- **5 anuncios travados**: sao de catalogo, o ML aceita o PUT com **200 e ignora**. So via "Sugerir correcoes".
+- **41 campos de vela pulados de proposito**: cada variacao pedia uma cor e o campo e do anuncio inteiro.
+- **Concorrente com mesmo EAN nao serve de fonte** (0 de 10 casos): quem divide catalogo divide a mesma ficha.
+- Busca aberta por EAN (`/sites/MLB/search?q=EAN`) nao devolve nada — o caminho e pelo produto de catalogo.
+
 ## 2026-07-22 (tarde) - Sessao: motor de overlay defasado + as 4 decisoes de contrato + profundidade na foto tecnica
 
 Continuacao da higiene. Fecha o que a sessao da manha deixou "para decisao do Almir". **118 testes verdes** ao final (eram 99). Nada commitado no codigo da squad — rollback por git.

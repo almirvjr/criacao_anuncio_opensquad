@@ -1,6 +1,6 @@
 # PROGRESSO
 
-> Atualizado 2026-07-22. **8L (VIE_1067) EM ANDAMENTO.** 5L fechado/aprovado (ver HISTORICO 2026-06-24/26). Rodada 8L em `output/2026-06-26-conforme-8L/`. **RETOMAR EM: aprovar a capa v8 (capa-v8.jpg) → gerar as 9 StorySelling.**
+> Atualizado 2026-08-10. **Duas frentes:** (1) **8L (VIE_1067) EM ANDAMENTO** — 5L fechado/aprovado (HISTORICO 2026-06-24/26), rodada em `output/2026-06-26-conforme-8L/`, **RETOMAR EM: aprovar a capa v8 → gerar as 9 StorySelling**; (2) **ficha técnica dos anúncios no ar** (seção 6), parada esperando 4 decisões suas.
 > **Plano paralelo (estratégico):** fechar o loop do pipeline — ver `PLANO-LOOP-JUIZ-VISUAL.md` (seção 4 abaixo).
 
 ## 0. Estado do 8L (VIE_1067)
@@ -25,20 +25,24 @@
 ## 3. Pendências
 - **SUPABASE_SERVICE_ROLE** (a chave service_role do Supabase): re-fornecer p/ subir ao bucket.
 - **step-10:** `N8N_WEBHOOK_ML_PUBLICAR` ausente; workflow "ML Publicar" (`0rzNJ7RLqLzMbKnf`) INATIVO de propósito.
-- Custo da sessão 8L (OpenRouter Pro): ~$1,9 (master + cena + iterações de capa). Saldo OpenRouter ~$4,5.
-- **⚠️ Arquivos da squad editados 20-22/07 NÃO commitados** (o /save só commita os 5 docs raiz): agentes (cibele, vinicius, felipe, paula, caio), steps (02,03,07,08,10), data (storyselling, photo-templates, research-brief, domain-framework, ml-api-reference), `generate.py`, `prompt_lint.py`, `render_faixa.py`, `payload_builder.py`, ambos SKILL.md + testes novos. Decidir quando commitar em bloco.
+- Custo da sessão 8L (OpenRouter Pro): ~$1,9. Saldo OpenRouter ~$4,5.
+- **⚠️ Código da squad editado 20-22/07 segue NÃO commitado** (o /save só commita os 5 docs raiz): agentes, steps 02/03/07/08/10, `data/`, `generate.py`, `prompt_lint.py`, `render_faixa.py`, `payload_builder.py`, os 2 SKILL.md e os testes. Decidir quando commitar em bloco. **Some agora os scripts de `tools/auditoria_ficha/`.**
 - **Quando for LIGAR o `ML Publicar`:** tirar do nó `Montar Payload` a união de `pictures_compartilhadas` — campo que não existe mais no contrato (não quebra hoje; o nó também une todos os `picture_ids`).
-- Higiene de prompts: **as 4 decisões de contrato foram fechadas em 22/07** e aplicadas; fila ALTA e onda MÉDIA zeradas. Ver HISTORICO/DECISOES 2026-07-22 e `.claude-hub/plans/2026-07-20-diagnostico-onda-media.md`. **118 testes verdes.**
 
 ## 4. Plano paralelo — Juiz Visual (fechar o loop)
 Detalhe completo em `PLANO-LOOP-JUIZ-VISUAL.md`. Ordem: **Peça A primeiro** (Juiz Visual = camada 1 estende `qa_imagens.py`, camada 2 `juiz_visual.py` por modelo de visão; **calibrar contra o 5L FECHADO antes de plugar**); B (heartbeat/fila) e C (checkpoints condicionais) só depois de A confiável. Não reconstruir o Opensquad — ele já é ~85% loop.
 
-## 5. Higiene de prompts (19-22/07) — só o que afeta o 8L em andamento
-- **`picture_ids` = 10, não 11** — no `modo: variacoes` publica ambientalizada + slots 2-10; o slot 1 é gerado e guardado, mas **não publicado**. A Paula agora **copia** essa lista do Felipe; não monta mais.
-- **Overlay nos slots 5 e 6:** faixa clara é do 6 (Clareza), scrim é do 5 (Lifestyle).
-- **Template 1 (CAPA):** escala saiu de "ATE 1/3" para framing + marco físico. **O método de compor-e-encolher da capa v8 continua valendo** — mudou só a forma de pedir à IA, que nunca obedeceu razão em texto. O gerador também não escolhe mais ângulo "mais bonito" por conta própria.
-- **`cor_heroi` nunca vem vazia**; cor diferente da 1ª variação faz o step-04b parar e pedir sua confirmação.
-- **Travas ligadas:** `validar_claims.py --copy` cobre título e descrição; `--lock` do `qa_imagens.py` confere o sha256 do produto-travado (vale pro 8L, que é travado PRETO).
-- **Revisão do Vinícius agora tem 7 blocos com nota** e audita **StorySelling** contra o brief — o 8L vai ser cobrado nisso.
-- **Foto técnica:** ganhou a 3ª cota (profundidade) e agora exige folga no enquadramento — virou regra no `CLAUDE.md` (Regras Críticas).
-- **Categoria REAL = `MLB33375`** (os antigos `MLB263532`/`MLB264586` eram RAIZ e não publicavam). Predictor: `category_predictor` morreu (404) → `domain_discovery/search`.
+## 5. Higiene de prompts (19-22/07) — o que ainda pega no 8L
+- **`picture_ids` = 10** (capa + slots 2-10; o slot 1 não é publicado) e a Paula **copia** a lista do Felipe. Overlay: faixa é do slot 6, scrim do 5. `cor_heroi` nunca vem vazia. Travas ligadas: `validar_claims.py --copy` e `qa_imagens.py --lock`. Revisão do Vinícius = 7 blocos com nota, auditando StorySelling.
+- **Categoria REAL = `MLB33375`**; predictor via `domain_discovery/search` (o `category_predictor` morreu, 404). Detalhe de tudo em HISTORICO/DECISOES 2026-07-22.
+
+## 6. Ficha técnica dos anúncios NO AR (frente nova, 06-10/08) — `tools/auditoria_ficha/`
+Feito: 371 campos preenchidos em 146 anúncios, 36 "não se aplica", 8 erros de unidade, piloto MLB1254314177. Detalhe em HISTORICO/DECISOES 06-10/08. **Nenhuma gravação alterou preço/fotos/estoque/variações** (conferido contra backup em `backups_*/`).
+
+**Esperando decisão do Almir (não avançar sem ela):**
+1. **6 anúncios com litros divergentes** entre título e ficha (o maior tem 2.635 vendas): decidir qual número vale — corrijo a ficha OU o título.
+2. **5 anúncios travados no catálogo** (peso 1 g, comprimento 15,7 m, altura 0,3 cm): só via "Sugerir correções" no painel, um a um, se autorizar.
+3. **41 campos de vela**: escolher 1 cor por anúncio ou deixar vazio (cada variação tem uma cor e o campo é do anúncio).
+4. **112 suspeitas**: 63 de caixa menor/mais leve que o produto (mexe em frete) + 49 de "Kit N unidades" com a ficha dizendo 1.
+
+⚠️ **Antes de qualquer lote novo:** filtrar `catalog_listing=false` (catálogo responde 200 e ignora), rodar `validar_sugestoes.ps1` e comparar título antes/depois.
