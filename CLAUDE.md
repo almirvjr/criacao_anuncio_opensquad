@@ -4,7 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Projeto
 
-{{DESCRICAO_DO_PROJETO}}
+Ferramentas de anúncio do Mercado Livre da Terra Casa Decor. **Duas frentes:**
+
+1. **Criar anúncio novo** (o grosso deste arquivo) — squad `ml-anuncios` do Opensquad: pipeline de papéis
+   (estrategista → categoria → fotos → copy → revisão → publicação) que produz título, descrição, ficha e
+   as 10 fotos. Runbook em `PROGRESSO.md`.
+2. **Auditar e consertar a ficha dos anúncios JÁ no ar** — `tools/auditoria_ficha/` (ver seção própria abaixo).
 
 **Idioma:** Responda sempre em portugues (brasileiro), a menos que o usuario mude de idioma.
 
@@ -51,6 +56,29 @@ O **overlay de texto é render Python/Pillow** (`skills/image-overlay/scripts/re
 - **`skills/image-overlay/scripts/cutout.py`**: máscara/bbox do produto via **BiRefNet** (`rembg` + `onnxruntime`, modelo `birefnet-general`, roda offline/R$0). Substituiu a heurística frágil do pixel-de-canto em `render_faixa.py` (foto técnica), `fit_scale.py` e `compose_two.py`. **Fallback automático** pra heurística antiga se `rembg` faltar ou `CUTOUT_DISABLE=1`. Modelo configurável por `CUTOUT_MODEL`.
 - **`skills/image-overlay/scripts/inox_cast.py`**: quality-gate de cor — reprova foto de inox que ficou "dourada" (calor RGB `w_med>=14`), pra disparar retry. **Não** corrige em pós (achataria reflexos quentes desejados); regenera.
 - **Dependência nova:** `pip install rembg onnxruntime` (já instaladas no Windows atual). Sem elas, o pipeline funciona com qualidade antiga (fallback).
+
+---
+
+## Ficha tecnica dos anuncios no ar — `tools/auditoria_ficha/`
+
+Frente separada do pipeline: mede e conserta a ficha dos ~958 anuncios existentes. Scripts PS 5.1, todos
+com backup antes e releitura de conferencia depois. `auditar_ficha_tecnica.ps1` (campo vazio) ·
+`auditar_irregularidades.ps1` (valor errado) · `coletar_sugestoes.ps1` (busca o valor certo) ·
+`validar_sugestoes.ps1` (peneira) · `aplicar_lote.ps1` / `aplicar_nao_se_aplica.ps1` (grava).
+
+> 🔑 **ANTES de qualquer gravacao em lote, nesta ordem:** (1) filtrar `catalog_listing=false` —
+> **anuncio de catalogo responde HTTP 200 e IGNORA a escrita**, sem erro nenhum, entao um lote sem esse
+> filtro "corrige" centenas de anuncios e nao corrige nada; (2) rodar `validar_sugestoes.ps1` — valor vindo
+> de outra ficha pode nao existir na lista daquela categoria; (3) comparar titulo antes/depois — gravar
+> `COLOR` em anuncio **sem variacao** faz o ML anexar a cor no titulo sozinho.
+
+- **Onde cada dado mora:** medida de PRODUTO = ficha do catalogo do ML achada pelo codigo de barras
+  (`/products/search?q={EAN}` → `/products/{id}`). **Peso** = Tiny, em `dimensoes.pesoLiquido` (KG) —
+  nao existe na raiz do JSON. **Medida do Tiny e da CAIXA**, nao serve. `knowledge_base` = 2a opiniao, tem erro dentro.
+- **`value_id = "-1"` = "nao se aplica"** — campo assim esta preenchido, nao vazio. E e assim que se marca.
+- **So `variation_attribute` grava na variacao.** `allow_variations` NAO basta (400). `COLOR` e do anuncio
+  na maioria das categorias; `MAIN_COLOR` e da variacao. Campo do anuncio com valor diferente por variacao: **nao gravar**.
+- Nao existe API de qualidade do anuncio (`/health`, `/performance` = 404). Anuncio de catalogo **nao tem nota**.
 
 ---
 
