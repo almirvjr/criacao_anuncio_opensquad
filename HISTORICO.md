@@ -410,3 +410,38 @@ Rodada em `output/2026-06-26-conforme-8L/`. Pipeline herdado do 5L. NÃO conclu�
 
 ### Pendente
 - **Commitar os 18 arquivos da squad** (renata/vinicius/steps/data) — o `/save` so commita os 5 docs raiz; a propagacao SEM MARCA nos arquivos da squad segue NAO commitada.
+
+## 2026-09-09 - Sessao: Raio-X do anuncio ML (userscript novo) - do EAN13 ate o painel enxuto
+
+### Origem: achar o codigo universal (EAN13) de um anuncio
+- Pergunta do Almir: 2 anuncios do mesmo Organizador Coza New Retro 1L 1x4 Cristal. Achado: **EAN13 = 7900161004868** (ref. de fabrica 102573009). Irmao 2x2 = ref 102583009 / EAN 7900161020875.
+- Confirmado por DOIS caminhos independentes: site da propria Coza (dataLayer `"EAN"`) e conexao oficial do ML. Bate.
+- **O GTIN NAO existe no codigo da pagina do anuncio** — varrido o HTML dos formatos `/p/` e `/up/` procurando "GTIN", "EAN", "Codigo universal" e o proprio numero: zero ocorrencias.
+
+### A ferramenta: `userscripts/raio-x-anuncio.user.js` (v2.0.1) + `README-raio-x.md`
+- Userscript Tampermonkey. Cola a URL de qualquer anuncio (inclusive de concorrente) e devolve o que NAO esta na tela. Instalado e configurado no Chrome do Almir; chave via GM storage (funcao `get-ml-token`, mesma da reposicao).
+- Instalacao/atualizacao pelo metodo ja conhecido: `python -m http.server` na pasta + abrir `http://127.0.0.1:8899/<script>.user.js` no Chrome dele (Tampermonkey intercepta e mostra a tela de instalar/atualizar).
+
+### Reconhecimento de API feito ao vivo (o que responde sobre anuncio de TERCEIRO)
+- ✅ `/products/search?q={id_da_ficha}` → **GTIN** (unica porta). `/products/{id}` NAO traz.
+- ✅ `/products/{ficha}/items` → quem disputa a ficha (item_id, seller_id, price). Serve de PROVA de vinculo.
+- ✅ `/items/{id}/visits/time_window?last=30&unit=day` → visitas do concorrente.
+- ✅ `/users/{id}` → nickname, nivel, power seller, total historico de transacoes.
+- ✅ `/sites/MLB/listing_prices?price=` → comissao. Sem `category_id` vem generica; categoria sai de `/sites/MLB/domain_discovery/search?q=<titulo>`.
+- ✅ `/reviews/item/{id}`, `/highlights/MLB/category/{cat}` (ranking de mais vendidos).
+- ❌ 403: `/items/{id}` de terceiro, `/items/{id}/price_to_win`, `/sites/MLB/search` (busca), `/sites/MLB/search?seller_id=`.
+
+### Bugs pegos nos testes ao vivo (nenhum foi achado por leitura de codigo)
+- **Falso positivo por buscar na pagina inteira:** "loja oficial" e o icone do Full aparecem no carrossel de OUTROS vendedores embaixo do anuncio. Deu "Terra e loja oficial" (falso) e "esta no Full" (falso). Fix: procurar so na area certa — Full em `.ui-pdp-container__row--stock-and-full`, entrega em `.xprod-lib-shipping-promises`, loja oficial subindo 6 niveis do titulo do vendedor.
+- **Pagina `/up/MLBU...` nao tem o numero do anuncio no endereco** — esta no HTML em `"item_id"`. Sem pescar dali o script confundia o numero do anuncio com o da ficha (o ML escreve os dois como `/p/MLB...`).
+- **Detector de catalogo so pelo redirecionamento ERRA em loja oficial** (o ML manda loja oficial pra pagina `/up/` dela, nunca pra ficha). Fix: provar por `/products/{ficha}/items`.
+- **Vendedor errado na ficha:** a pagina de catalogo mostra quem GANHA a caixa de compra, nao o dono do anuncio colado. Passou a mostrar as duas linhas.
+
+### Enxugamento (decisao do Almir, apos conselho)
+- Veredito dele sobre a v1: "mais do mesmo, nao soma" — preco, vendas, estoque, frete, vendedor, categoria, ficha, fotos, descricao e avaliacoes ja estao na tela. Tudo cortado.
+- v2 = 5 blocos: codigo universal, catalogo vs lista, marca+modelo, visitas 30d, quanto sobra pro vendedor, quem disputa a ficha.
+- Conselho (llm-council, 5 conselheiros + 3 revisoes) rodado antes de decidir. Os 3 revisores escolheram o mesmo conselheiro (First Principles). Dois argumentos do conselho foram DERRUBADOS por fato: (a) risco de ban — sao portas oficiais com a chave do proprio Almir; (b) "radar nao da porque o ML bloqueia de fora" — o bloqueio e so nas PAGINAS, a API responde de qualquer lugar.
+
+### Posicao na busca — investigado, viavel, ficou fora
+- Busca pela API = 403. A pagina de resultados vem do servidor SEM os anuncios (so renderizam no navegador), entao `fetch` + parse nao ve nada.
+- Lendo a pagina JA ABERTA funciona: 60 cards por pagina em `li.ui-search-layout__item`. Medido ao vivo: anuncio MLB1968951521 na **posicao 34 de 937 resultados** para "lixeira pedal 12 litros". Fora do escopo da v2 porque exige abrir a busca, nao colar URL.

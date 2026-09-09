@@ -516,3 +516,38 @@ Contrato de auditoria do Vinicius (4 blocos vs os 7 do step-08, que inclui Story
 
 ### Validar briefing da Helena vs agente-referencia StorySelling
 - Almir vai enviando as respostas do agente-referencia (FASE 0 inteligencia, titulos, descricao, 10 imagens JSON) pra checar se a Helena traz o briefing certo; corrigir a Helena se divergir. Hierarquia difere: foto tecnica = nossa foto 3 (escolha do Almir) → imagem 3 do ref = nossa foto 8. NAO usar selo "+N avaliacoes" (era do concorrente; nosso produto e novo).
+
+## 2026-09-09
+
+### REGRA DE OURO do Raio-X: painel so mostra o que o Almir NAO ve na tela
+- Veredito dele sobre a v1 da ferramenta: "mais do mesmo, nao soma". Preco, vendas, estoque, frete, vendedor, categoria, ficha, fotos, descricao e avaliacoes ja estao no anuncio — sair do caminho pra buscar na API o que esta na tela e trabalho que nao vira decisao.
+- **Vale como regua pra QUALQUER painel construido pra ele**, nao so este. Ao propor um campo novo, a pergunta e "ele consegue ver isso abrindo o anuncio?" — se sim, nao entra.
+- v2 ficou com 5 blocos: codigo universal, catalogo vs lista, marca+modelo, visitas 30d, quanto sobra pro vendedor, quem disputa a ficha.
+
+### O GTIN/EAN13 so sai por `/products/search`, nunca por `/products/{id}`
+- `/products/{id}` NAO devolve o atributo GTIN. `/products/search?status=active&site_id=MLB&q={catalog_product_id}` devolve, com 1 resultado exato. Validado em 4 produtos.
+- Caminho inverso (GTIN → produto) existe: `&product_identifier={gtin}`. Os filtros `catalog_product_id=` e `ids=` dao 400, nao existem.
+- O ML guarda em 14 digitos com zero a esquerda (`07890236015069`); pra planilha/Tiny vale o de 13.
+
+### Catalogo vs lista: o redirecionamento e PALPITE, a lista da ficha e PROVA
+- Palpite: pedir `produto.mercadolivre.com.br/MLB-<numero>-x-_JM` e ver onde parou (`/p/MLB...` = catalogo).
+- ⚠️ **Isso sozinho ERRA em loja oficial** — o ML manda loja oficial pra pagina `/up/MLBU...` dela, nunca pra ficha. Mordeu no 1o teste ao vivo.
+- Prova: `/products/{ficha}/items` lista quem disputa. Se o numero do anuncio esta la, e catalogo. Essa lista tambem e a concorrencia de verdade (vendedor + preco), melhor que raspar "outras opcoes de compra" da tela.
+- ⚠️ `catalog_product_id` preenchido NAO significa anuncio de catalogo: 154 anuncios da Terra tem produto vinculado com `catalog_listing=false`. Existe o caso do meio (aponta pra ficha do mesmo produto sem disputar ela) — ai o codigo lido e do PRODUTO, nao do anuncio, e o painel avisa.
+
+### Marcador de pagina do ML se procura na AREA, nunca na pagina inteira
+- Embaixo do anuncio o ML mostra carrossel de OUTROS vendedores. Buscar "loja oficial", "frete gratis" ou a classe do icone do Full no HTML todo da falso positivo (deu "Terra e loja oficial" e "esta no Full" — ambos falsos).
+- Areas certas: Full em `.ui-pdp-container__row--stock-and-full`, entrega em `.xprod-lib-shipping-promises`, loja oficial subindo 6 niveis a partir do titulo do vendedor. Quando a area nao existe naquela pagina, mostrar "esta pagina nao mostra" — nunca "nao".
+
+### NAO calcular taxa de conversao do concorrente
+- Visitas vem de 30 dias; o "vendidos" da tela e acumulado da vida toda do anuncio. Dividir um pelo outro da numero bonito e falso. Mostrar a visita crua e avisar na propria tela.
+- Comissao sai em DUAS linhas (Classico e Premium): nao da pra saber pelo anuncio de terceiro qual dos dois ele usa, e a diferenca e grande. Mostrar as duas e honesto; escolher uma seria chute.
+
+### Bloqueio do ML e nas PAGINAS, nao na API
+- `mercadolivre.com.br` (HTML) de fora do navegador devolve a tela `suspicious-traffic-frontend`. Por isso a leitura de pagina e userscript no Chrome do Almir.
+- `api.mercadolibre.com` responde de qualquer lugar com a chave (todas as sondagens desta sessao foram feitas fora do navegador). **Consequencia:** um radar agendado de concorrentes via n8n e viavel pros dados de API — o conselho errou ao dizer que nao era.
+
+### Posicao na busca: viavel, mas exige ABRIR a busca
+- Busca pela API = 403. A pagina de resultados vem do servidor SEM os anuncios (renderizam no navegador), entao `fetch` + parse nao ve nada.
+- Lendo a pagina JA ABERTA funciona: 60 cards em `li.ui-search-layout__item`. Medido: MLB1968951521 na posicao 34 de 937 em "lixeira pedal 12 litros".
+- ⚠️ Nao existe "relevancia" unica: e posicao POR TERMO, personalizada por endereco e por quem esta logado, e patrocinado ocupa lugar e oscila. Ficou fora da v2 de proposito.

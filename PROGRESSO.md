@@ -1,12 +1,11 @@
 # PROGRESSO
 
-> Atualizado 2026-08-10. **Duas frentes:** (1) **8L (VIE_1067) EM ANDAMENTO** — 5L fechado/aprovado (HISTORICO 2026-06-24/26), rodada em `output/2026-06-26-conforme-8L/`, **RETOMAR EM: aprovar a capa v8 → gerar as 9 StorySelling**; (2) **ficha técnica dos anúncios no ar** (seção 6), parada esperando 4 decisões suas.
+> Atualizado 2026-09-09. **Três frentes:** (1) **8L (VIE_1067) EM ANDAMENTO** — 5L fechado/aprovado (HISTORICO 2026-06-24/26), rodada em `output/2026-06-26-conforme-8L/`, **RETOMAR EM: aprovar a capa v8 → gerar as 9 StorySelling**; (2) **ficha técnica dos anúncios no ar** (seção 6), parada esperando 4 decisões suas; (3) **Raio-X do anúncio** (seção 7), pronto e em uso.
 > **Plano paralelo (estratégico):** fechar o loop do pipeline — ver `PLANO-LOOP-JUIZ-VISUAL.md` (seção 4 abaixo).
 
 ## 0. Estado do 8L (VIE_1067)
 - **Cor-herói = PRETO** (escolha explícita do Almir; ele quer definir a herói por anúncio, sempre). As 9 StorySelling sairão em preto.
-- **Produto-travado PRETO** em `pipeline/data/produtos-travados/VIE_1067-PAI.json` (+ `_aberto.png`/`_fechado.png`). Travado DIRETO das fotos reais pretas (`output/2026-05-26-091553/fotos/VIE_1067-PAI/_base/WhatsApp ...16.46.47/16.47.56`) → fidelidade máxima, sem recolor de IA.
-- **Master branco** (recolor fiel) guardado em `.../_master/master-branco-*.jpg` — só p/ futura capa da variação Branco (não-herói).
+- **Produto-travado PRETO** em `pipeline/data/produtos-travados/VIE_1067-PAI.json` (+ `_aberto.png`/`_fechado.png`), travado DIRETO das fotos reais pretas → fidelidade máxima, sem recolor de IA. **Master branco** (recolor fiel) em `.../_master/` só p/ futura capa da variação Branco.
 - **Brief conformado** em `output/2026-06-26-conforme-8L/inteligencia/brief-VIE_1067-PAI.yaml`: hierarquia aprovada do 5L, SEM marca, **cozinha-líder** (only_factor 8L = tamanho útil + cabe a sacola de mercado), dims REAIS 18Ø×34cm, foto 6 = sem balde interno.
 - **Capa v8** (`.../VIE_1067-PAI/_redesign/capa-v8.jpg`) — AGUARDANDO APROVAÇÃO DO ALMIR. Escala MEDIDA razão 0,32 (≤1/3, exigência do Almir) + realista (não-adesivo). Método novo (ver DECISOES 2026-06-26).
 
@@ -25,8 +24,7 @@
 ## 3. Pendências
 - **SUPABASE_SERVICE_ROLE** (a chave service_role do Supabase): re-fornecer p/ subir ao bucket.
 - **step-10:** `N8N_WEBHOOK_ML_PUBLICAR` ausente; workflow "ML Publicar" (`0rzNJ7RLqLzMbKnf`) INATIVO de propósito.
-- Custo da sessão 8L (OpenRouter Pro): ~$1,9. Saldo OpenRouter ~$4,5.
-- **⚠️ Código da squad editado 20-22/07 segue NÃO commitado** (o /save só commita os 5 docs raiz): agentes, steps 02/03/07/08/10, `data/`, `generate.py`, `prompt_lint.py`, `render_faixa.py`, `payload_builder.py`, os 2 SKILL.md e os testes. Decidir quando commitar em bloco. **Some agora os scripts de `tools/auditoria_ficha/`.**
+- **⚠️ Código da squad editado 20-22/07 segue NÃO commitado** (o /save só commita os 5 docs raiz): agentes, steps 02/03/07/08/10, `data/`, `generate.py`, `prompt_lint.py`, `render_faixa.py`, `payload_builder.py`, os 2 SKILL.md e os testes. Decidir quando commitar em bloco. **Somam agora `tools/auditoria_ficha/` e `userscripts/`.** ⚠️ Este repo é PÚBLICO — conferir antes de commitar.
 - **Quando for LIGAR o `ML Publicar`:** tirar do nó `Montar Payload` a união de `pictures_compartilhadas` — campo que não existe mais no contrato (não quebra hoje; o nó também une todos os `picture_ids`).
 
 ## 4. Plano paralelo — Juiz Visual (fechar o loop)
@@ -46,3 +44,8 @@ Feito: 371 campos preenchidos em 146 anúncios, 36 "não se aplica", 8 erros de 
 4. **112 suspeitas**: 63 de caixa menor/mais leve que o produto (mexe em frete) + 49 de "Kit N unidades" com a ficha dizendo 1.
 
 ⚠️ **Antes de qualquer lote novo:** filtrar `catalog_listing=false` (catálogo responde 200 e ignora), rodar `validar_sugestoes.ps1` e comparar título antes/depois.
+
+## 7. Raio-X do anúncio (frente nova, 09/09) — `userscripts/raio-x-anuncio.user.js`
+**PRONTO e em uso.** Userscript Tampermonkey: cola a URL de qualquer anúncio do ML e devolve **só o que não está na tela** — código universal (EAN13), catálogo vs lista, marca+modelo, visitas 30d, quanto sobra pro vendedor, e quem disputa a ficha. Manual em `README-raio-x.md`, detalhe em HISTORICO/DECISOES 09/09.
+🔑 **Régua do Almir, vale pra qualquer painel:** se ele vê o dado abrindo o anúncio, o dado NÃO entra.
+- **Próximo passo opcional (não iniciado):** medidor de posição na busca. Já provado viável (achou um anúncio na posição 34 de 937), mas exige ABRIR a página de busca — o servidor manda ela sem os anúncios. Só fazer se o Almir pedir.
