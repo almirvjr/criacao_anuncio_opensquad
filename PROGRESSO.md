@@ -1,6 +1,6 @@
 # PROGRESSO
 
-> Atualizado 2026-09-09. **Três frentes:** (1) **8L (VIE_1067) EM ANDAMENTO** — 5L fechado/aprovado (HISTORICO 2026-06-24/26), rodada em `output/2026-06-26-conforme-8L/`, **RETOMAR EM: aprovar a capa v8 → gerar as 9 StorySelling**; (2) **ficha técnica dos anúncios no ar** (seção 6), parada esperando 4 decisões suas; (3) **Raio-X do anúncio** (seção 7), pronto e em uso.
+> Atualizado 2026-09-15. **Frentes:** (1) **8L (VIE_1067) EM ANDAMENTO** — 5L fechado/aprovado (HISTORICO 2026-06-24/26), rodada em `output/2026-06-26-conforme-8L/`, **RETOMAR EM: aprovar a capa v8 → gerar as 9 StorySelling**; (2) **ficha técnica dos anúncios no ar** (seção 6), parada esperando 4 decisões suas; (3) **Raio-X do anúncio** (seção 7) e (4) **entrar em catálogo sem oferta** (seção 8), prontos e em uso.
 > **Plano paralelo (estratégico):** fechar o loop do pipeline — ver `PLANO-LOOP-JUIZ-VISUAL.md` (seção 4 abaixo).
 
 ## 0. Estado do 8L (VIE_1067)
@@ -24,15 +24,12 @@
 ## 3. Pendências
 - **SUPABASE_SERVICE_ROLE** (a chave service_role do Supabase): re-fornecer p/ subir ao bucket.
 - **step-10:** `N8N_WEBHOOK_ML_PUBLICAR` ausente; workflow "ML Publicar" (`0rzNJ7RLqLzMbKnf`) INATIVO de propósito.
-- **⚠️ Código da squad editado 20-22/07 segue NÃO commitado** (o /save só commita os 5 docs raiz): agentes, steps 02/03/07/08/10, `data/`, `generate.py`, `prompt_lint.py`, `render_faixa.py`, `payload_builder.py`, os 2 SKILL.md e os testes. Decidir quando commitar em bloco. **Somam agora `tools/auditoria_ficha/` e `userscripts/`.** ⚠️ Este repo é PÚBLICO — conferir antes de commitar.
+- **⚠️ Código da squad editado 20-22/07 segue NÃO commitado** (o /save só commita os 5 docs raiz): agentes, steps 02/03/07/08/10, `data/`, `generate.py`, `prompt_lint.py`, `render_faixa.py`, `payload_builder.py`, os 2 SKILL.md e os testes. Decidir quando commitar em bloco. **Somam agora `tools/auditoria_ficha/`, `userscripts/` e `tools/catalogo_sem_oferta/`.** ⚠️ Este repo é PÚBLICO — conferir antes de commitar.
 - **Quando for LIGAR o `ML Publicar`:** tirar do nó `Montar Payload` a união de `pictures_compartilhadas` — campo que não existe mais no contrato (não quebra hoje; o nó também une todos os `picture_ids`).
+- `picture_ids` = 10 (Paula copia do Felipe); categoria REAL `MLB33375` via `domain_discovery/search`. Detalhe em HISTORICO/DECISOES 2026-07-22. (higiene de prompts 19-22/07, vale no 8L)
 
 ## 4. Plano paralelo — Juiz Visual (fechar o loop)
 Detalhe completo em `PLANO-LOOP-JUIZ-VISUAL.md`. Ordem: **Peça A primeiro** (Juiz Visual = camada 1 estende `qa_imagens.py`, camada 2 `juiz_visual.py` por modelo de visão; **calibrar contra o 5L FECHADO antes de plugar**); B (heartbeat/fila) e C (checkpoints condicionais) só depois de A confiável. Não reconstruir o Opensquad — ele já é ~85% loop.
-
-## 5. Higiene de prompts (19-22/07) — o que ainda pega no 8L
-- **`picture_ids` = 10** (capa + slots 2-10; o slot 1 não é publicado) e a Paula **copia** a lista do Felipe. Overlay: faixa é do slot 6, scrim do 5. `cor_heroi` nunca vem vazia. Travas ligadas: `validar_claims.py --copy` e `qa_imagens.py --lock`. Revisão do Vinícius = 7 blocos com nota, auditando StorySelling.
-- **Categoria REAL = `MLB33375`**; predictor via `domain_discovery/search` (o `category_predictor` morreu, 404). Detalhe de tudo em HISTORICO/DECISOES 2026-07-22.
 
 ## 6. Ficha técnica dos anúncios NO AR (frente nova, 06-10/08) — `tools/auditoria_ficha/`
 Feito: 371 campos preenchidos em 146 anúncios, 36 "não se aplica", 8 erros de unidade, piloto MLB1254314177. Detalhe em HISTORICO/DECISOES 06-10/08. **Nenhuma gravação alterou preço/fotos/estoque/variações** (conferido contra backup em `backups_*/`).
@@ -48,4 +45,7 @@ Feito: 371 campos preenchidos em 146 anúncios, 36 "não se aplica", 8 erros de 
 ## 7. Raio-X do anúncio (frente nova, 09/09) — `userscripts/raio-x-anuncio.user.js`
 **PRONTO e em uso.** Userscript Tampermonkey: cola a URL de qualquer anúncio do ML e devolve **só o que não está na tela** — código universal (EAN13), catálogo vs lista, marca+modelo, visitas 30d, quanto sobra pro vendedor, e quem disputa a ficha. Manual em `README-raio-x.md`, detalhe em HISTORICO/DECISOES 09/09.
 🔑 **Régua do Almir, vale pra qualquer painel:** se ele vê o dado abrindo o anúncio, o dado NÃO entra.
-- **Próximo passo opcional (não iniciado):** medidor de posição na busca. Já provado viável (achou um anúncio na posição 34 de 937), mas exige ABRIR a página de busca — o servidor manda ela sem os anúncios. Só fazer se o Almir pedir.
+- Opcional, só se o Almir pedir: medidor de posição na busca (viável, mas exige abrir a busca; DECISOES 09/09).
+
+## 8. Entrar em catálogo sem "Vender um igual" (15/09) — `tools/catalogo_sem_oferta/`
+**PRONTO.** Clique duplo em `Entrar no catalogo.bat`: cola o link, digita preço e estoque, confere no ML e só publica com "s". Feito 2x à mão antes (04/09 e 15/09; HISTORICO 15/09).

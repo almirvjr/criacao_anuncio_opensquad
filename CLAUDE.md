@@ -4,12 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Projeto
 
-Ferramentas de anúncio do Mercado Livre da Terra Casa Decor. **Duas frentes:**
+Ferramentas de anúncio do Mercado Livre da Terra Casa Decor. **Três frentes:**
 
 1. **Criar anúncio novo** (o grosso deste arquivo) — squad `ml-anuncios` do Opensquad: pipeline de papéis
    (estrategista → categoria → fotos → copy → revisão → publicação) que produz título, descrição, ficha e
    as 10 fotos. Runbook em `PROGRESSO.md`.
 2. **Auditar e consertar a ficha dos anúncios JÁ no ar** — `tools/auditoria_ficha/` (ver seção própria abaixo).
+3. **Entrar em catálogo sem "Vender um igual"** (catálogo sem oferta ativa) — `tools/catalogo_sem_oferta/Entrar no catalogo.bat`
+   (clique duplo; pede link, preço e estoque; confere no ML antes e só publica com "s"; anota em `historico.csv`).
+   Receita na memória `ml_catalogo_sem_oferta_criar_pela_api`.
 
 **Idioma:** Responda sempre em portugues (brasileiro), a menos que o usuario mude de idioma.
 

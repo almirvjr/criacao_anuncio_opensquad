@@ -551,3 +551,16 @@ Contrato de auditoria do Vinicius (4 blocos vs os 7 do step-08, que inclui Story
 - Busca pela API = 403. A pagina de resultados vem do servidor SEM os anuncios (renderizam no navegador), entao `fetch` + parse nao ve nada.
 - Lendo a pagina JA ABERTA funciona: 60 cards em `li.ui-search-layout__item`. Medido: MLB1968951521 na posicao 34 de 937 em "lixeira pedal 12 litros".
 - ⚠️ Nao existe "relevancia" unica: e posicao POR TERMO, personalizada por endereco e por quem esta logado, e patrocinado ocupa lugar e oscila. Ficou fora da v2 de proposito.
+
+## 2026-09-15
+
+### Catalogo sem oferta: entrar criando o anuncio pela API, nao pelo botao
+- O botao "Vender um igual" copia o anuncio de um concorrente (`/syi/core/list/equals?itemId=...&productId=...`); sem oferta ativa ele nem e desenhado, e so com `productId` o site descarta.
+- `POST /items` com `catalog_product_id` + `catalog_listing:true` + `category_id` (do `domain_discovery` que bate o `domain_id` do produto) funciona. Aviso `shipping.lost_me1_by_user` na validacao e inofensivo.
+
+### Ferramenta de clique duplo, nao userscript
+- Escolhido `.bat` + Python em vez de botao dentro da pagina do ML: mais simples, a chave nao precisa morar no navegador, e o caso e raro (2x em 11 dias).
+- Preco e estoque sempre perguntados (decisao do Almir por anuncio); resto no padrao da conta. Nada publica sem "s" e sem `items/validate` limpo de erro.
+
+### `buy_box_winner` nao diz se o catalogo tem oferta
+- Vem `null` ate em catalogo que esta vendendo (MLB45444537). Tirado da ferramenta. Pra saber quem esta ligado, usar `/products/{id}/items` (que tambem lista pausado/sem estoque).

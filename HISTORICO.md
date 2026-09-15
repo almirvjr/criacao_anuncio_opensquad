@@ -445,3 +445,15 @@ Rodada em `output/2026-06-26-conforme-8L/`. Pipeline herdado do 5L. NÃO conclu�
 ### Posicao na busca — investigado, viavel, ficou fora
 - Busca pela API = 403. A pagina de resultados vem do servidor SEM os anuncios (so renderizam no navegador), entao `fetch` + parse nao ve nada.
 - Lendo a pagina JA ABERTA funciona: 60 cards por pagina em `li.ui-search-layout__item`. Medido ao vivo: anuncio MLB1968951521 na **posicao 34 de 937 resultados** para "lixeira pedal 12 litros". Fora do escopo da v2 porque exige abrir a busca, nao colar URL.
+
+## 2026-09-15 — Entrar em catalogo sem "Vender um igual"
+
+### Anuncio criado a pedido
+- Catalogo MLB61791806 (Organizador de armarios Coza 102573009 transparente) sem oferta na pagina, entao sem o botao "Vender um igual".
+- Criado pela API: **MLB5237845265**, R$ 50, 1 un, Classico, Mercado Envios, garantia do vendedor 32 dias. Releitura: ativo e preso ao catalogo. `price_to_win` logo apos = `not_listed / item_not_opted_in` (normal: o prato de 04/09, MLB5188060157, comecou igual e hoje esta `winning`).
+- A lista `/products/MLB61791806/items` mostra 1 concorrente (2 anuncios a R$ 24,90) mesmo com a pagina sem oferta: pausado ou sem estoque.
+
+### A ferramenta: `tools/catalogo_sem_oferta/`
+- `Entrar no catalogo.bat` (clique duplo) + `entrar_no_catalogo.py`. Pede link/codigo, mostra produto, se a Terra ja esta no catalogo e o menor preco dos concorrentes; descobre a categoria sozinha; pede preco e estoque; roda `items/validate`; mostra resumo (inclusive frete gratis obrigatorio); publica so com "s"; rele o anuncio e anota em `historico.csv`.
+- Token pela funcao `get-ml-token` do `.env` da reposicao; erro de chave sai com frase fixa (nunca a excecao).
+- Testado sem publicar: link com lixo, codigo inexistente, catalogo com a Terra ja dentro (3 catalogos), preco/estoque invalidos, preco R$ 1.234,56 (frete gratis obrigatorio). Nenhum `historico.csv` criado = nada publicado.
