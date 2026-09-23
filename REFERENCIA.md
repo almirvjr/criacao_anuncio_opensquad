@@ -122,7 +122,7 @@ Frameworks de referencia (em `squads/ml-anuncios/pipeline/data/`):
 
 ## Regra global de fotos da squad
 
-**1200x1200 px exatos.** Maior ou menor e veto automatico. Aplicado em todos os pontos da pipeline (Felipe, image-overlay, quality-criteria, anti-patterns). Motivo: templates de overlay assumem canvas 1200x1200 fixo; outras dimensoes quebram posicionamento de selos/headlines. `generate.py` devolve 1024x1024 (as vezes JPEG com ext .png) -> normalizar pra 1200x1200 pos-geracao (PIL LANCZOS).
+**1200x1200 px exatos.** Maior ou menor e veto automatico. Aplicado em todos os pontos da pipeline (Felipe, image-overlay, quality-criteria, anti-patterns). Motivo: templates de overlay assumem canvas 1200x1200 fixo; outras dimensoes quebram posicionamento de selos/headlines. Desde 17/09/2026 o proprio `generate.py` entrega 1200x1200: gera 2048x2048 na API de imagem e REDUZ (PIL LANCZOS). Nao precisa mais normalizar a mao — e reduzir de 2048 e melhor que a ampliacao de 1024 que se fazia antes. `--nativo` pula a reducao (fica fora do contrato, so p/ uso fora da pipeline).
 
 ## Receita de capa + proporcao (Felipe) — consolidado 2026-06-15
 

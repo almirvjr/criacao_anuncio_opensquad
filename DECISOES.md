@@ -173,7 +173,7 @@ Contrato de auditoria do Vinicius (4 blocos vs os 7 do step-08, que inclui Story
 **Decisão:** **8L = herói PRETO.** A cor-herói nunca herda o default do brief/Helena — perguntar e confirmar com o Almir em cada anúncio antes de gerar as StorySelling (elas saem todas na cor-herói, compartilhadas entre as 3 cores). Bônus: quando a herói é uma cor que já temos foto real do fornecedor, travar o produto DIRETO da foto real (sem recolor de IA = zero drift). Foi o caso do 8L preto (fotos WhatsApp 15/06).
 **Motivo:** decisão do dono; trocar a herói depois de gerar custa retrabalho e geração ($).
 
-### MIRROR-FINISH + escala 1/3 exata: render-in-scene → recorta → encolhe → recompõe
+[SUPERADA 2026-09-17 -> ver 2026-09-17/23] ### MIRROR-FINISH + escala 1/3 exata: render-in-scene → recorta → encolhe → recompõe
 **Contexto:** Almir exige a lixeira a **≤1/3 da bancada** (34cm/90cm) E realista. Bati num impasse com 7 capas: (a) **one-shot Pro** = realista mas o Gemini SEMPRE infla o produto a ~0,5–0,66 e NÃO desce a 1/3 (limitação documentada — "orbita ~metade"); (b) **compose.py do PNG-travado de estúdio** = escala exata (0,33) mas vira **ADESIVO** — porque o inox é espelhado e o PNG reflete o ESTÚDIO, não a cozinha (Almir reprovou a v4: "parece figurinha colada"); (c) **--edit encolher** = distorce a proporção (vira squat, perde a silhueta alta). Causa raiz do adesivo: produto mirror-finish PRECISA refletir a cena real; recorte de estúdio reflete o ambiente errado.
 **Decisão (validada por medida; aguarda OK visual do Almir):** para produto mirror em lifestyle com escala dura — **NÃO** compor do PNG de estúdio. Em vez disso: (1) gerar a lixeira DENTRO da cozinha por one-shot Pro (`capa-v7`, reflexos/luz reais da cena, ~0,5); (2) `--edit` remover a lixeira → cena vazia idêntica (`cena-v7-vazia`); (3) recortar a lixeira realista da v7 (BiRefNet num box justo) → PNG com os reflexos da cozinha já embutidos; (4) `compose.py` colar essa lixeira encolhida no `target-h` exato (1/3) na MESMA cena vazia, **sem `--harmonize`** (a cor/reflexo já casam), sombra de contato reforçada (`--shadow-alpha 155`). Resultado `capa-v8`: razão MEDIDA **0,32** + integração realista (não-adesivo). Scripts: `generate.py --edit` (remover), `cutout.alpha_mask` (recorte), `compose.py` (recolar).
 **Motivo:** reconcilia escala exata (compose dá controle de pixel) com realismo (os reflexos vêm de uma render real da própria cena). Aplicável a TODA lifestyle de produto mirror com escala dura — provável receita das StorySelling 8L (capa,2,5,8) e futuros.
@@ -426,7 +426,7 @@ Contrato de auditoria do Vinicius (4 blocos vs os 7 do step-08, que inclui Story
 
 **Motivo:** capa limpa converte melhor e evita o overlay amador; concentra o esforco de tipografia num lugar so. `picture_ids` por variacao continua = 1 ambientalizada (capa) + 9 StorySelling = 10.
 
-### Formula do "gabinete cortado" para conciliar destaque + escala 1/3
+[SUPERADA 2026-09-17 -> ver 2026-09-17/23] ### Formula do "gabinete cortado" para conciliar destaque + escala 1/3
 **Contexto:** destaque do produto e prova da escala (lixeira = 1/3 da bancada de 90cm) brigam: pra PROVAR o 1/3 a bancada inteira tem que caber no quadro, o que deixa a lixeira pequena; trazer pra frente pra dar destaque estoura a escala. A IA tambem nao obedece tamanho exato por prompt (orbita ~40-50% por mais que se escreva "1/3").
 
 **Decisao:** quando os dois objetivos conflitam, NAO mostrar a bancada inteira. Dar zoom no produto (foreground hero) e CORTAR o tampo/bancada fora do topo do quadro — mostra so a parte de baixo de um gabinete alto que claramente sobe pra fora da imagem; a lixeira fica baixa contra ele (terco de baixo). O olho entende que e pequena mesmo grande no frame. Reforcar com pistas de tamanho que sobrevivem ao corte (piso, rodape, gaveta). Quando NAO ha conflito, mostrar o ambiente mais aberto.
@@ -495,7 +495,7 @@ Contrato de auditoria do Vinicius (4 blocos vs os 7 do step-08, que inclui Story
 
 ## 2026-06-18/19
 
-### Gemini 3 Pro Image + geracao em 1 tacada (substitui composicao manual)
+[SUPERADA 2026-09-17 -> ver 2026-09-17/23] ### Gemini 3 Pro Image + geracao em 1 tacada (substitui composicao manual)
 - `generate.py` ganhou modo **`pro` = `google/gemini-3-pro-image`** (OpenRouter tem pro-image/-preview, 3.1-flash-image=Nano Banana 2, 2.5-flash-image). **Pro e MUITO mais fiel e acerta de 1a** que o Flash.
 - Cenas/lifestyle/antes-depois: **gerar a cena inteira numa tacada** a partir de prompt JSON rico (a IA integra o produto) — NAO compor recorte no Pillow (vira "figurinha"/adesivo) nem iterar 14×. Metodo veio do projeto-referencia do Almir; ja documentado em `pipeline/data/photo-templates.md`.
 - Por que o Pro perde fidelidade: (1) pedir tampa FECHADA com referencia ABERTA → reverte pro vies (tampa de inox abaulada) — FIX: ref no mesmo estado (`branco-studio-fiel-fechada.jpg`); (2) cena quente doura o aco — FIX: travar "cool neutral silver, neutral white balance" + medir cropando a regiao do produto.
@@ -507,7 +507,7 @@ Contrato de auditoria do Vinicius (4 blocos vs os 7 do step-08, que inclui Story
 - Nenhuma foto leva logo Terra, slogan, nem se apoia nas cores da marca — pra nao prender o anuncio a um rebrand futuro. `render_faixa.py` nao desenha marca por padrao (gate `show_brand`, off).
 - **Ampliacao (Almir 19/06, mesmo dia):** a regra passou a valer tambem para TITULO e DESCRICAO. Nome "Terra Casa Decor" e slogan "O seu melhor lugar e a sua casa" **nao aparecem em nenhuma parte do anuncio** (foto, titulo nem descricao). PMME do titulo so usa marca de FABRICANTE real (Tramontina etc.), nunca a loja; descricao fecha com frase acolhedora generica. So o **tom/voz** acolhedor permanece na copy. Propagado em: CLAUDE.md, renata-redatora, step-05-copywriting, vinicius-validador, research-brief, anti-patterns, storyselling-framework, output-examples, quality-criteria, design.yaml, photo-templates, felipe-fotos, step-07/08, brand-identity, memories.md. **Hook que exigia o slogan: RESOLVIDO 19/06** — era a feature de pattern-rules por-edicao do plugin `security-guidance` v2.0.6; desligada via `ENABLE_PATTERN_RULES=0` no bloco `env` do `~/.claude/settings.json` (mantem o review de seguranca no Stop e em commit/push; sobrevive a updates do plugin).
 
-### Coerencia de cena = automatica + Escala MEDIDA
+[PARCIALMENTE SUPERADA 2026-09-17 (a parte da ESCALA) -> ver 2026-09-17/23] ### Coerencia de cena = automatica + Escala MEDIDA
 - `generate.py` anexa `SCENE_COHERENCE` em toda geracao de cena (toalha no toalheiro/bancada NUNCA no chao; no chao so tapete/planta de piso/cesto; nada flutuando).
 - Escala: MEDIR lixeira÷bancada (chao→tampo) em px; alvo 5L ≈ 1/3 (~33%). NAO confundir com "% do frame". O Gemini tende a ~metade; cozinha incha mais que banheiro (5L e produto de banheiro). zoom_out.py (composicao) DEPRECADO — borra lateral; preferir gerar de novo.
 
@@ -564,3 +564,86 @@ Contrato de auditoria do Vinicius (4 blocos vs os 7 do step-08, que inclui Story
 
 ### `buy_box_winner` nao diz se o catalogo tem oferta
 - Vem `null` ate em catalogo que esta vendendo (MLB45444537). Tirado da ferramenta. Pra saber quem esta ligado, usar `/products/{id}/items` (que tambem lista pausado/sem estoque).
+
+
+## 2026-09-17/23 — motor, referencia, reguas e o achado do StorySelling
+
+### Motor padrao = GPT Image 2, e pela API de IMAGEM do OpenRouter
+**Contexto:** o motor era `pro` (Nano Banana Pro) pelo `/chat/completions`. Bake-off medido em
+`tests/motor-bakeoff/` (capa do 8L, 2 rodadas por motor, mesmo prompt e mesma referencia).
+**Decisao:** motor padrao do `generate.py` passa a ser **`gpt` = `openai/gpt-image-2`**, chamado
+pela **API de imagem** (`/images/generations`), gerando 2048x2048 e REDUZINDO pra 1200x1200.
+**Motivo, medido:** o GPT erra a escala pela METADE do Pro (+0,08 contra +0,23) e e o mais estavel.
+Pela API de imagem custa **US$ 0,027** contra US$ 0,140 do Pro (pelo `/chat/completions` o mesmo
+GPT custava US$ 0,245 porque passava por um LLM de embrulho) e entrega 4x mais pixels em ~20 s.
+O `/chat/completions` **ignora pedido de tamanho** — so a API de imagem aceita.
+🔴 **Armadilha:** a referencia so chega pelo parametro **`input_references`**. Com nome errado
+(`image`/`image_urls`) a API **aceita, cobra e ignora a referencia calada**, devolvendo outro
+produto. Ha trava no `generate.py` (confere `prompt_tokens`); quem mexer confere a IMAGEM.
+⚠️ `quality:"high"` custa US$ 0,222 e demora 104 s pra entregar imagem MENOR — nao usar.
+
+### A foto-mestre do produto estava ESTICADA 12% — usar sempre a CORRIGIDA
+**Contexto:** o modelo entregava a lixeira esguia demais mesmo mandando "reproduza com fidelidade".
+**Decisao:** `_master/master-preto-fechado-CORRIGIDO.jpg` (recorte do 8L na foto do fornecedor de
+4000x4000, distorcao corrigida) vira a referencia oficial. A antiga mostrava proporcao 2,26; a real
+e 1,89. O modelo copiava fielmente um produto errado.
+**Motivo (3 provas):** (1) volume — com 15 cm de diametro, 8 L precisariam de 43 cm de corpo numa
+lixeira de 34 cm, impossivel; (2) aplicando a correcao, o volume calculado das 5 lixeiras da foto
+do fornecedor bate com o rotulo, inclusive a 5L, que **nao** foi usada pra calcular a correcao;
+(3) na foto, 5L e 8L tem a mesma largura, como diz o brief.
+⚠️ **A 5L aprovada tem o mesmo defeito** (`foto-08-lifestyle` mede 1,78 contra 1,39 real).
+
+### Escala e POR PRODUTO, e virou FAIXA ACEITA — nao alvo exato
+**Contexto:** a regra dizia "1/3 ou menos da bancada" pros dois produtos. 1/3 e quase a regua da 5L.
+**Decisao:** razao = altura da lixeira ÷ altura do movel (chao→tampo, 90 cm). Verdade fisica:
+**5L = 0,27 · 8L = 0,38**. Mas o motor entrega 0,42-0,48 e o Almir, olhando a imagem, aceitou:
+**faixa 0,36-0,48 no 8L** (piso perto da verdade fisica de proposito — abaixo disso o 8L fica com
+cara de 5L, o defeito que condenou a capa v8; teto = o que ele aceitou).
+**Motivo:** acertar 0,38 na geracao nao esta ao alcance hoje, e insistir nisso e o que fazia o
+anuncio nao sair.
+
+### FORMA do produto: o motor nao obedece — corrigir DEPOIS, achatando a foto
+**Contexto:** a proporcao real e 1,89 (34÷18). Em 24 imagens medidas a distribuicao ficou centrada
+em **~2,05**, e nao cede: testado tirar a frase de proporcao do prompt, e dar uma referencia
+achatada de proposito (2,11 / 1,95 / 2,10). O motor tem a propria ideia do que e uma lixeira.
+**Decisao:** `skills/image-overlay/scripts/corrigir_forma.py` — mede o produto e **achata a foto
+inteira** ate ele bater com a medida real. 2,11 vira 1,89. Aprovado pelo Almir olhando antes/depois.
+**Motivo:** na foto, o unico objeto com forma verdadeira e o produto; a cozinha e inventada.
+Nao fere "recorte nao vale em ambientada": nada e recortado nem colado, so muda a escala vertical.
+⚠️ **Duas armadilhas:** depois de achatar, voltar ao quadrado por RECORTE (reesticar desfaz tudo);
+e conferir que o recorte nao cortou o produto (uma foto saiu 5,08 assim e foi salva mesmo assim
+pela primeira versao do script).
+
+### Luz NEUTRA com materiais quentes — luz quente doura o inox
+**Contexto:** o Almir pediu cores quentes. Luz de fim de tarde dourou o inox em 3 de 5 fotos
+(gate `inox_cast`: 14,3 / 20,2 / 24,1; limite 14).
+**Decisao:** o calor vem dos MATERIAIS (madeira mel, terracota, areia) e a LUZ fica neutra.
+**Motivo, medido:** com luz neutra as mesmas cenas deram 7,4 e 9,1 — folga confortavel.
+
+### Juiz de escala (Peca A, camada 1): recusar vale mais que chutar
+**Decisao:** `pipeline/validators/juiz_escala.py` mede forma e escala e devolve
+APROVA / REPROVA / **NAO_MEDIDO**. Recusa de proposito em 5 casos, cada um vindo de um caso real:
+tampa aberta (falso positivo na capa do 5L), produto cortado pela borda (fotos 3/4/9 do 5L),
+detector pegou outro objeto (na capa-v8 pegou o ARMARIO), bancada fora do quadro, e uma borda
+candidata so (foto-08 do 5L e banheiro de gabinete SUSPENSO).
+**Revisto em 22/09:** a escala passou a ser **informada**, nao barrada, quando a medicao nao e
+confiavel — em cena cheia o detector acha 7 candidatos a linha da bancada e bloqueava foto boa.
+Escala medida COM confianca e fora da faixa continua barrando.
+**Motivo:** portao que diz OK sem enxergar e pior que portao nenhum; mas portao cego que barra
+tudo trava o projeto.
+
+### 🔴 O StorySelling do projeto CONTRADIZ o prompt original do Almir (23/09, EM ABERTO)
+**Contexto:** as 5 fotos ambientadas sairam corretas tecnicamente e o Almir reprovou: "sao iguais".
+Primeiro achado: eu montei as 5 com o mesmo bloco de texto **sem ler o StorySelling** — cada slot
+tem funcao propria na jornada e nenhuma cumpria a sua. Reescrevi a partir do brief + templates.
+Segundo achado, maior: mesmo obedecendo o template, o resultado continua longe do que ele quer.
+**O template do slot 2 diz o OPOSTO do prompt original que o Almir trouxe pro projeto:**
+| | Prompt original do Almir | Template do projeto |
+|---|---|---|
+| Lado "antes" | bagunca + **lixeira de plastico barata** | "comum, levemente desorganizado" |
+| Luz | **fria/azulada na esquerda, quente na direita** | "MESMA temperatura de cor nos dois lados" |
+| Paleta | **duas paletas** | uma paleta so |
+| Contraste | "strong visual contrast" | "evitar exagerar o ANTES como feio, nao caricato" |
+**Situacao:** o Almir vai trazer os prompts originais das outras imagens. Antes de gerar mais
+nada, comparar template a template. **Provavel que o StorySelling precise ser corrigido no
+projeto**, nao so o prompt de uma foto.

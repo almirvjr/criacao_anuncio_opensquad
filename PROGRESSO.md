@@ -1,51 +1,46 @@
 # PROGRESSO
 
-> Atualizado 2026-09-15. **Frentes:** (1) **8L (VIE_1067) EM ANDAMENTO** — 5L fechado/aprovado (HISTORICO 2026-06-24/26), rodada em `output/2026-06-26-conforme-8L/`, **RETOMAR EM: aprovar a capa v8 → gerar as 9 StorySelling**; (2) **ficha técnica dos anúncios no ar** (seção 6), parada esperando 4 decisões suas; (3) **Raio-X do anúncio** (seção 7) e (4) **entrar em catálogo sem oferta** (seção 8), prontos e em uso.
-> **Plano paralelo (estratégico):** fechar o loop do pipeline — ver `PLANO-LOOP-JUIZ-VISUAL.md` (seção 4 abaixo).
+> Atualizado 2026-09-23. **Frentes:** (1) **8L (VIE_1067) TRAVADO numa decisão de método** — ver seção 0; (2) **ficha técnica dos anúncios no ar** (seção 5), parada esperando 4 decisões suas; (3) **Raio-X do anúncio** e (4) **entrar em catálogo sem oferta** — prontos e em uso (HISTORICO 09/09 e 15/09).
 
-## 0. Estado do 8L (VIE_1067)
-- **Cor-herói = PRETO** (escolha explícita do Almir; ele quer definir a herói por anúncio, sempre). As 9 StorySelling sairão em preto.
-- **Produto-travado PRETO** em `pipeline/data/produtos-travados/VIE_1067-PAI.json` (+ `_aberto.png`/`_fechado.png`), travado DIRETO das fotos reais pretas → fidelidade máxima, sem recolor de IA. **Master branco** (recolor fiel) em `.../_master/` só p/ futura capa da variação Branco.
-- **Brief conformado** em `output/2026-06-26-conforme-8L/inteligencia/brief-VIE_1067-PAI.yaml`: hierarquia aprovada do 5L, SEM marca, **cozinha-líder** (only_factor 8L = tamanho útil + cabe a sacola de mercado), dims REAIS 18Ø×34cm, foto 6 = sem balde interno.
-- **Capa v8** (`.../VIE_1067-PAI/_redesign/capa-v8.jpg`) — AGUARDANDO APROVAÇÃO DO ALMIR. Escala MEDIDA razão 0,32 (≤1/3, exigência do Almir) + realista (não-adesivo). Método novo (ver DECISOES 2026-06-26).
+## 0. 🔴 O que trava o 8L hoje (23/09)
+**O StorySelling deste projeto contradiz o prompt original que o Almir trouxe.** As 5 fotos ambientadas saíram tecnicamente corretas e foram reprovadas: "são iguais". Reescritas a partir do brief + templates, continuam longe do que ele quer.
 
-## 1. Próximas tarefas (ordem)
-1. **Aprovar a capa v8** no Chrome (pendente). Se reprovar, iterar a posição/sombra/cena mantendo o método.
-2. **Gerar as 9 StorySelling (fotos 2–10)** do 8L em PRETO, reusando a receita: studio compose (3,4,9,10) + lifestyle pelo método render-in-scene→recorta→encolhe→recompõe (capa,2,5,8) + ação no pedal (7). Texto NEUTRO de cor. Medir escala ≤1/3 (contexto) antes de apresentar cada uma.
-3. Validar regras de imagem do ML (capa exige fundo branco?) antes de publicar.
-4. Subir ao bucket `tcd-produtos` (precisa SERVICE_ROLE) → Step-08 → publicar.
+No slot 2 (antes/depois) o template manda **mesma temperatura de cor nos dois lados** e **"não exagerar o ANTES"**; o prompt original do Almir manda **luz fria e azulada na esquerda contra quente na direita**, **duas paletas** e **lixeira de plástico barata** no lado ruim. São instruções opostas. Comparação completa em DECISOES 2026-09-17/23.
+
+**PRÓXIMO PASSO: o Almir traz os prompts originais das outras imagens → comparar template a template ANTES de gerar qualquer coisa.** Provável que o StorySelling precise ser corrigido no projeto, não só um prompt.
+
+## 1. Estado do 8L (VIE_1067)
+- **Cor-herói PRETO**; brief conformado em `output/2026-06-26-conforme-8L/inteligencia/`; dims REAIS 18Ø×34 cm; SEM marca; foto 6 = sem balde interno.
+- 🔴 **Referência oficial = `_master/master-preto-fechado-CORRIGIDO.jpg`.** A antiga estava esticada 12% (mostrava 2,26; o real é 1,89) e o modelo copiava fielmente um produto errado. ⚠️ **A 5L aprovada tem o mesmo defeito** (`foto-08` mede 1,78 contra 1,39) — decidir se refaz.
+- **Capa `VIE_1067-PAI/capa-8L-preto.jpg`** (17/09): checklist verde, procedência em `_procedencia-capa.json`. Pendente de OK — e possivelmente a refazer junto com o resto quando o StorySelling for resolvido.
+- v8 DESCARTADA (montagem + escala de 5L).
 
 ## 2. Regras de trabalho (Almir) — INFALÍVEIS
-- **CONFERIR medindo (não afirmar) + rodar checklist COMPLETO ANTES de apresentar** + aprovar SEMPRE no Chrome dedicado.
-- **Escala em ambientada = 1/3 ou menos da bancada** (8L 34cm ÷ bancada 90cm). MEDIR (razão = alt. lixeira ÷ alt. chão→tampo). O Gemini fotorrealista orbita ~metade e NÃO desce a 1/3 — usar o método de compor a lixeira-já-renderizada-na-cena encolhida (DECISOES 26/06).
-- **Pedal = tamanho FIXO** (igual no 5L e 8L). Numa lixeira mais alta o pedal deve parecer proporcionalmente menor — é a régua real do tamanho. Vem fiel no produto-travado.
-- **SEM MARCA** em todo o anúncio. Cor-herói definida pelo Almir por anúncio.
+- **CONFERIR medindo, nunca afirmar** + checklist COMPLETO antes de apresentar + aprovar SEMPRE no Chrome.
+- **Escala = altura da lixeira ÷ altura do móvel (chão→tampo, 90 cm), POR PRODUTO.** Verdade física: 5L = 0,27 · 8L = 0,38. **Faixa aceita no 8L: 0,36 a 0,48** (decisão do Almir em 22/09 olhando a imagem). Nunca abaixo do piso — vira cara de 5L.
+- **FORMA do produto = altura ÷ largura do corpo: 8L = 1,89 · 5L = 1,39**, ±5%. O motor entrega ~2,05 e não cede; corrigir com `corrigir_forma.py` (achata a foto inteira).
+- **Método:** gerar a cena ABERTA (móvel inteiro no quadro) → MEDIR → só então aproximar (`enquadrar_capa.py`). Aproximar não muda a relação de tamanho.
+- **Luz NEUTRA com materiais quentes.** Luz quente doura o inox (gate `inox_cast` reprovou 3 de 5).
+- **Pedal = tamanho FIXO**; dobradiça da tampa no MESMO eixo do pedal (atrás dele). ⚠️ Essa última **não é automatizável** — é relação 3D que a silhueta não resolve. Olho humano.
+- **SEM MARCA** em foto, título e descrição.
 
-## 3. Pendências
-- **SUPABASE_SERVICE_ROLE** (a chave service_role do Supabase): re-fornecer p/ subir ao bucket.
-- **step-10:** `N8N_WEBHOOK_ML_PUBLICAR` ausente; workflow "ML Publicar" (`0rzNJ7RLqLzMbKnf`) INATIVO de propósito.
-- **⚠️ Código da squad editado 20-22/07 segue NÃO commitado** (o /save só commita os 5 docs raiz): agentes, steps 02/03/07/08/10, `data/`, `generate.py`, `prompt_lint.py`, `render_faixa.py`, `payload_builder.py`, os 2 SKILL.md e os testes. Decidir quando commitar em bloco. **Somam agora `tools/auditoria_ficha/`, `userscripts/` e `tools/catalogo_sem_oferta/`.** ⚠️ Este repo é PÚBLICO — conferir antes de commitar.
-- **Quando for LIGAR o `ML Publicar`:** tirar do nó `Montar Payload` a união de `pictures_compartilhadas` — campo que não existe mais no contrato (não quebra hoje; o nó também une todos os `picture_ids`).
-- `picture_ids` = 10 (Paula copia do Felipe); categoria REAL `MLB33375` via `domain_discovery/search`. Detalhe em HISTORICO/DECISOES 2026-07-22. (higiene de prompts 19-22/07, vale no 8L)
+## 3. Ferramentas de medida (construídas 17-22/09)
+| Ferramenta | O que faz |
+|---|---|
+| `validators/juiz_escala.py` | forma + escala. APROVA / REPROVA / **NAO_MEDIDO** (recusa em vez de chutar) |
+| `validators/peneirar.py` | roda os portões em N tentativas e escolhe a melhor de cada foto |
+| `image-overlay/corrigir_forma.py` | achata a foto até o produto bater com o real |
+| `image-overlay/enquadrar_capa.py` | aproxima e centraliza DEPOIS de medir |
 
-## 4. Plano paralelo — Juiz Visual (fechar o loop)
-Detalhe completo em `PLANO-LOOP-JUIZ-VISUAL.md`. Ordem: **Peça A primeiro** (Juiz Visual = camada 1 estende `qa_imagens.py`, camada 2 `juiz_visual.py` por modelo de visão; **calibrar contra o 5L FECHADO antes de plugar**); B (heartbeat/fila) e C (checkpoints condicionais) só depois de A confiável. Não reconstruir o Opensquad — ele já é ~85% loop.
+⚠️ **O detector (BiRefNet) é pesado e derrubou a máquina 3 vezes em 22/09.** Rodar em blocos pequenos. Melhoria pendente: a peneira remede o que a correção de forma já mediu — gravar e reaproveitar.
 
-## 6. Ficha técnica dos anúncios NO AR (frente nova, 06-10/08) — `tools/auditoria_ficha/`
-Feito: 371 campos preenchidos em 146 anúncios, 36 "não se aplica", 8 erros de unidade, piloto MLB1254314177. Detalhe em HISTORICO/DECISOES 06-10/08. **Nenhuma gravação alterou preço/fotos/estoque/variações** (conferido contra backup em `backups_*/`).
+## 4. Pendências
+- **SUPABASE_SERVICE_ROLE** p/ subir ao bucket `tcd-produtos`.
+- **⚠️ Código da squad sem commit desde julho** (o /save só commita os 5 docs raiz). Somam agora as 4 ferramentas novas. ⚠️ Repo PÚBLICO — conferir antes.
+- **`ML Publicar`** (`0rzNJ7RLqLzMbKnf`) INATIVO de propósito; ao ligar, tirar `pictures_compartilhadas` do nó `Montar Payload`. O webhook no `.env` **já está preenchido**.
+- Juiz Visual: camada 1 entregue; falta a **camada 2** (juiz que enxerga — é onde cabe o alinhamento dobradiça-pedal) e as Peças B e C. Ver `PLANO-LOOP-JUIZ-VISUAL.md`.
 
-**Esperando decisão do Almir (não avançar sem ela):**
-1. **6 anúncios com litros divergentes** entre título e ficha (o maior tem 2.635 vendas): decidir qual número vale — corrijo a ficha OU o título.
-2. **5 anúncios travados no catálogo** (peso 1 g, comprimento 15,7 m, altura 0,3 cm): só via "Sugerir correções" no painel, um a um, se autorizar.
-3. **41 campos de vela**: escolher 1 cor por anúncio ou deixar vazio (cada variação tem uma cor e o campo é do anúncio).
-4. **112 suspeitas**: 63 de caixa menor/mais leve que o produto (mexe em frete) + 49 de "Kit N unidades" com a ficha dizendo 1.
-
-⚠️ **Antes de qualquer lote novo:** filtrar `catalog_listing=false` (catálogo responde 200 e ignora), rodar `validar_sugestoes.ps1` e comparar título antes/depois.
-
-## 7. Raio-X do anúncio (frente nova, 09/09) — `userscripts/raio-x-anuncio.user.js`
-**PRONTO e em uso.** Userscript Tampermonkey: cola a URL de qualquer anúncio do ML e devolve **só o que não está na tela** — código universal (EAN13), catálogo vs lista, marca+modelo, visitas 30d, quanto sobra pro vendedor, e quem disputa a ficha. Manual em `README-raio-x.md`, detalhe em HISTORICO/DECISOES 09/09.
-🔑 **Régua do Almir, vale pra qualquer painel:** se ele vê o dado abrindo o anúncio, o dado NÃO entra.
-- Opcional, só se o Almir pedir: medidor de posição na busca (viável, mas exige abrir a busca; DECISOES 09/09).
-
-## 8. Entrar em catálogo sem "Vender um igual" (15/09) — `tools/catalogo_sem_oferta/`
-**PRONTO.** Clique duplo em `Entrar no catalogo.bat`: cola o link, digita preço e estoque, confere no ML e só publica com "s". Feito 2x à mão antes (04/09 e 15/09; HISTORICO 15/09).
+## 5. Ficha técnica dos anúncios NO AR — `tools/auditoria_ficha/`
+371 campos preenchidos em 146 anúncios (06-10/08). Nada alterou preço/fotos/estoque/variações.
+**Esperando decisão do Almir:** (1) 6 anúncios com litros divergentes entre título e ficha — corrijo qual? (2) 5 travados no catálogo, só via "Sugerir correções" um a um; (3) 41 campos de vela — 1 cor por anúncio ou vazio? (4) 112 suspeitas (63 de caixa menor que o produto, mexe em frete; 49 de "Kit N" com ficha dizendo 1).
+⚠️ Antes de qualquer lote: filtrar `catalog_listing=false` (catálogo responde 200 e IGNORA), rodar `validar_sugestoes.ps1`, comparar título antes/depois.

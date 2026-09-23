@@ -457,3 +457,43 @@ Rodada em `output/2026-06-26-conforme-8L/`. Pipeline herdado do 5L. NÃO conclu�
 - `Entrar no catalogo.bat` (clique duplo) + `entrar_no_catalogo.py`. Pede link/codigo, mostra produto, se a Terra ja esta no catalogo e o menor preco dos concorrentes; descobre a categoria sozinha; pede preco e estoque; roda `items/validate`; mostra resumo (inclusive frete gratis obrigatorio); publica so com "s"; rele o anuncio e anota em `historico.csv`.
 - Token pela funcao `get-ml-token` do `.env` da reposicao; erro de chave sai com frase fixa (nunca a excecao).
 - Testado sem publicar: link com lixo, codigo inexistente, catalogo com a Terra ja dentro (3 catalogos), preco/estoque invalidos, preco R$ 1.234,56 (frete gratis obrigatorio). Nenhum `historico.csv` criado = nada publicado.
+
+
+## 2026-09-17 a 23 — motor novo, referencia corrigida e as ferramentas de medida
+
+**Auditoria de retomada.** Projeto parado desde 15/09. Achados: perfil de navegador com COOKIES
+fora do `.gitignore` num repo PUBLICO (fechado); 89 arquivos sem commit desde julho; modo `test`
+apontando p/ modelo delistado; docs dizendo "Gemini 2.5" enquanto o codigo usava outro.
+
+**Motor trocado (17/09).** Bake-off em `tests/motor-bakeoff/` com 2 rodadas por motor, mesmo
+prompt e referencia. GPT Image 2 erra a escala pela metade do Nano Banana Pro e e mais estavel.
+Descoberto que o `generate.py` chamava o endereco errado da API (ignora tamanho, entregava 1024
+quando em junho entregava 1200). Migrado pra API de imagem: 2048→1200, US$ 0,027, ~20 s.
+113 testes verdes. Detalhe em `tests/motor-bakeoff/RESULTADO-2.md`.
+
+**Referencia do produto estava esticada 12% (17/09).** Provado por 3 caminhos independentes
+(volume, as 5 lixeiras da foto do fornecedor, largura cruzada 5L×8L). Criada a
+`master-preto-fechado-CORRIGIDO.jpg`. Detalhe em `RESULTADO-3-referencia-e-prompt.md`.
+
+**Prompt da capa reescrito do zero (17/09)** — `prompt-capa-8L-v9.txt`. Saiu: "pequena" 3x
+(linguagem da 5L), a regua da gaveta calibrada pra 5L, foco raso brigando com grande-angular,
+vies de "produto heroi", lixeira em primeiro plano. Entrou: medidas reais, tudo nitido,
+legibilidade em miniatura.
+
+**Ferramentas novas:**
+- `pipeline/validators/juiz_escala.py` — mede forma e escala sozinho (Peca A, camada 1). 9 testes.
+- `pipeline/validators/peneirar.py` — roda os dois portoes em N tentativas e escolhe a melhor.
+- `skills/image-overlay/scripts/enquadrar_capa.py` — aproxima e centraliza DEPOIS de medir.
+- `skills/image-overlay/scripts/corrigir_forma.py` — achata a foto ate o produto bater com o real.
+
+**Capa do 8L (17/09):** `VIE_1067-PAI/capa-8L-preto.jpg`, gerada de uma tacada, fechada em 65%,
+checklist completo verde, procedencia em `_procedencia-capa.json`. **Pendente de OK do Almir** —
+e possivelmente a refazer, ver abaixo.
+
+**As 5 ambientadas (22-23/09): REPROVADAS pelo Almir.** Duas rodadas. Na primeira eu montei as 5
+com o mesmo texto mudando so o comodo, sem ler o StorySelling — "as imagens ficaram otimas, so que
+sao iguais". Reescritas a partir do brief + templates (cada slot com sua funcao, angulo e clima) e
+ainda assim longe do que ele quer. Causa raiz identificada: **o StorySelling do projeto contradiz
+o prompt original dele**. Ver DECISOES 2026-09-17/23.
+
+**Gasto de API no periodo: ~US$ 6,40.**
