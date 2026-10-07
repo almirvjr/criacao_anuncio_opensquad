@@ -75,7 +75,7 @@ A squad **não gera foto**. A capa de cada cor é subida pelo Almir no Cloudinar
 - [ ] Unidades padronizadas (cm para dimensões, kg para peso, L para capacidade)
 - [ ] Valores consistentes com os do dossiê
 
-**Veto:** título fora do range 50-70 chars; descrição sem os 3 blocos; ficha incompleta.
+**Veto:** título fora do range 50-60 chars; descrição sem os 3 blocos; ficha incompleta.
 
 ## Capas (step-07)
 

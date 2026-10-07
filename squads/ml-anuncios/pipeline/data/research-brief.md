@@ -15,7 +15,7 @@ Automatizar a criação, revisão e publicação de anúncios no Mercado Livre p
 
 ## Mercado Livre — Padrões Descobertos na Investigação
 
-### Padrão de título (50-70 caracteres)
+### Padrão de título (50-60 caracteres)
 `[Tipo de produto] + [Material] + [Capacidade/Tamanho] + [Features mecânicas] + [Ambientes de uso] + [+Marca opcional]`
 
 Exemplo: `Lixeira Inox 15L Pedal Tampa Antiodor Cozinha Banheiro LHP`

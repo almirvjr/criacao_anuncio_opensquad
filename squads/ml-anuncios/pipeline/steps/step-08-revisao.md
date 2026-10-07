@@ -27,7 +27,7 @@ Load these files before executing:
 
 1. Para cada SKU, identificar o `modo` do anúncio (`simples` ou `variacoes`) no arquivo `anuncios.yaml`. O modo determina quais blocos executar.
 2. **Rodar checklist base (todos os modos)** — 7 blocos: Título, Descrição, Ficha Técnica, Mídia Visual, Tom Marca, Compliance ML, **StorySelling**.
-   - **Validar título escolhido**: `titulo_final` está entre as 3-5 alternativas propostas, e seu `length` está entre 50-70. Se `titulo_final` é resultado de edição livre, validar contagem.
+   - **Validar título escolhido**: `titulo_final` está entre as 3-5 alternativas propostas, e seu `length` está entre 50-60. Se `titulo_final` é resultado de edição livre, validar contagem.
    - **Cruzar dossiê x copy**: capacidade na descrição = capacidade na ficha = capacidade no dossiê; cor, material idem.
    - **Compliance ML**: caracteres proibidos no título (`!`, `?`, `*`, emojis), CAPS LOCK fora de siglas, atributos obrigatórios todos preenchidos.
    - **Tom Terra Casa Decor**: presença de pelo menos uma das palavras-âncora (`casa`, `lar`, `dia a dia`); "Terra Casa Decor" só aparece em produto Mundiart (`MDA`) e nunca no título; ausência de termos proibidos (`melhor do mercado`, `imbatível`, `adquira`, `produto premium`).

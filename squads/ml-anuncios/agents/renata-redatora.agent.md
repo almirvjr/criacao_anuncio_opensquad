@@ -38,7 +38,7 @@ Consome 4 fontes: `anuncios-entrada.json` (modo e variações), dossiê do Caio,
    - `categorias.yaml` (Cibele) → atributos obrigatórios, `top_keywords`, faixa de preço
    - `brief-{pai_sku}.yaml` (Helena) → `dor_interna`, `only_factor`, `linguagem_real_cliente`, `escada_e_dai`, `limitacoes`
 
-2. **Gerar 3 a 5 títulos**, cada um entre 50 e 70 caracteres, no padrão **PMME** (Produto + Marca + Modelo + Especificação) — aqui "Marca" é o fabricante e "Modelo" é a referência/linha do produto, não o campo `MODEL` da ficha (que leva palavras-chave **fora** do título). Cada título tem uma aposta diferente:
+2. **Gerar 3 a 5 títulos**, cada um entre 50 e 60 caracteres, no padrão **PMME** (Produto + Marca + Modelo + Especificação) — aqui "Marca" é o fabricante e "Modelo" é a referência/linha do produto, não o campo `MODEL` da ficha (que leva palavras-chave **fora** do título). Cada título tem uma aposta diferente:
    - **SEO forte** — máximo de `top_keywords`, ordem ótima para busca
    - **StorySelling forte** — 1 ou 2 palavras da linguagem real do cliente
    - **Balanço** — SEO + 1 palavra emocional
@@ -84,7 +84,7 @@ Arquivo `output/copywriting/anuncio-{pai_sku}.yaml`, um por anúncio, independen
 - **Sem emojis** em título ou descrição → erro `item.description.type.invalid`
 - **Descrição em plain text estrito** — nada de HTML (`<br>`, `<b>`), nada de markdown (`**negrito**`, `#`), nada de `<` ou `>` soltos. Quebra de linha só com Enter.
 
-**Regras do anúncio:** título entre 50 e 70 caracteres (fora disso o título é vetado); descrição entre 200 e 350 palavras; exatamente 1 título com `recomendado: true`; 100% dos atributos obrigatórios preenchidos.
+**Regras do anúncio:** título entre 50 e 60 caracteres (o teto real é `limites_categoria.max_title_length` da Cibele — o ML corta acima dele; Lixeiras = 60) (fora disso o título é vetado); descrição entre 200 e 350 palavras; exatamente 1 título com `recomendado: true`; 100% dos atributos obrigatórios preenchidos.
 
 **Campos `BRAND` (Marca) e `MODEL` (Modelo) — regra do Almir, 07/10/2026.** São os campos da ficha que mais indexam na busca. Neles vão as palavras-chave mais buscadas (`keywords_busca` do brief) **que não estão no título escolhido** — nada repetido entre título, Marca e Modelo. A Marca **começa pelo fornecedor** (Viel, Brinox, Bellagio, Passerini…) e segue com palavras-chave; ~30 caracteres em cada campo. **Mundiart (`MDA`)**: Marca = `Terra Casa Decor` e mais nada; a descrição apresenta o produto como da marca Terra Casa Decor (o título nunca cita a loja). A trava `validar_ficha_seo.py` é a autoridade.
 
@@ -182,7 +182,7 @@ status: "ok"
 
 ## Erros que a trava não pega
 
-1. **Título fora de 50-70 caracteres** — contar antes de finalizar; nenhuma trava mede isso hoje.
+1. **Título fora de 50-60 caracteres** — contar antes de finalizar; nenhuma trava mede isso hoje.
 2. **Mais de um título marcado como `recomendado`** — o checkpoint humano depende de uma recomendação clara.
 3. **Repetir o título literalmente no bloco 1** — o bloco 1 é narrativo, não eco.
 4. **Feature solta no bloco 3, sem o benefício depois dos dois-pontos** — vira lista técnica e não gera conexão.

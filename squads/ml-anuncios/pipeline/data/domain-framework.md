@@ -29,7 +29,7 @@ Esta squad executa um pipeline de 10 etapas para transformar uma linha de planil
 
 **Objetivo:** gerar texto de anúncio (título + descrição + ficha técnica).
 
-1. Título: aplicar padrão `[Tipo] + [Material] + [Capacidade] + [Features] + [Ambientes] + [Marca]` (50-70 chars).
+1. Título: aplicar padrão `[Tipo] + [Material] + [Capacidade] + [Features] + [Ambientes] + [Marca]` (50-60 chars).
 2. Descrição: estrutura de 3 blocos (lifestyle / specs / features-benefícios).
 3. Ficha técnica: preencher TODOS os atributos obrigatórios da categoria + opcionais relevantes.
 
@@ -55,7 +55,7 @@ Usuário aprova o conteúdo textual antes de gerar fotos (passo caro). Apresenta
 **Objetivo:** auditoria final antes de publicar.
 
 Vinicius Validador checa:
-- [ ] Título tem 50-70 chars e segue padrão
+- [ ] Título tem 50-60 chars e segue padrão
 - [ ] Descrição tem 3 blocos
 - [ ] Ficha técnica cobre 100% dos atributos obrigatórios
 - [ ] Tom da copy é Terra Casa Decor (casual, acolhedor — não formal/frio)

@@ -30,7 +30,7 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
 
 1. Carregar `modo`, `pai_sku`, `variacoes[]` do anuncio; depois dossie + categoria + brief individual (`brief-{pai_sku}.yaml`).
 
-2. **Gerar 3-5 títulos alternativos** seguindo padrão PMME (Produto + Marca + Modelo + Especificação), 50-70 caracteres cada:
+2. **Gerar 3-5 títulos alternativos** seguindo padrão PMME (Produto + Marca + Modelo + Especificação), 50-60 caracteres cada:
    - **Se `modo: variacoes`**: o título NÃO deve mencionar cor específica em nenhuma das alternativas — usar o `nome_base` como âncora, preencher o slot de especificação com material, capacidade ou feature principal.
    - **Se `modo: simples`**: comportamento legado; a cor pode aparecer normalmente no título.
    - Título 1 — **SEO Forte**: máximo de top_keywords da Cibele, ordem otimizada para busca, emocionalmente neutro.
@@ -39,7 +39,7 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
    - Títulos 4-5 (opcionais): variações de ordem ou substituição de feature secundária.
    
    Para cada título, computar:
-   - `length`: contagem de caracteres (50-70 obrigatório).
+   - `length`: contagem de caracteres (50-60 obrigatório).
    - `score_busca` (0-10): aderência SEO. Critérios: cobertura de top_keywords (peso 4), tipo+material+capacidade nas primeiras palavras (peso 3), presença de ambientes (peso 2), comprimento ótimo 55-62 (peso 1).
    - `score_conversao` (0-10): aderência StorySelling. Critérios: uso de linguagem real do cliente (peso 5), conexão com only_factor (peso 3), tom Terra Casa Decor preservado (peso 2).
    - `justificativa`: 1-2 linhas explicando o trade-off.
@@ -196,7 +196,7 @@ anuncios:
 Rejeitar e refazer se ALGUMA for verdadeira:
 1. Algum anuncio com brief `confianca ≥ media` ficou sem copy.
 2. Algum anuncio com menos de 3 títulos propostos OU mais de 5.
-3. Algum título fora do range 50-70 caracteres.
+3. Algum título fora do range 50-60 caracteres.
 4. Nenhum título marcado como `recomendado` (ou mais de um marcado).
 5. Anuncio `modo: variacoes` com cor específica mencionada em qualquer título.
 6. Anuncio `modo: variacoes` sem linha "Cores disponíveis" no bloco 2 da descrição.
@@ -212,7 +212,7 @@ Rejeitar e refazer se ALGUMA for verdadeira:
 - [ ] 100% dos anuncios com brief válido receberam copy (1 título + 1 descrição por anuncio)
 - [ ] Cada anuncio tem 3-5 títulos com scoring (busca + conversão + justificativa)
 - [ ] Exatamente 1 título marcado como `recomendado`
-- [ ] Cada título passa o range 50-70 chars
+- [ ] Cada título passa o range 50-60 chars
 - [ ] `modo: variacoes`: nenhum título menciona cor específica
 - [ ] `modo: variacoes`: bloco 2 contém linha "Cores disponíveis: [lista]"
 - [ ] Descrição tem 3 blocos e 200-350 palavras em plain text estrito

@@ -69,7 +69,7 @@ Erros comuns que precisam ser evitados pela squad. Cada agente deve ler os anti-
 
 ### Sempre fazer
 1. Gerar 3-5 títulos com `score_busca`, `score_conversao`, `justificativa` e marcar exatamente UM como `recomendado`.
-2. Checar contagem de caracteres de CADA título antes de finalizar (50-70).
+2. Checar contagem de caracteres de CADA título antes de finalizar (50-60).
 3. Conectar feature → benefício emocional no bloco 3 (não só listar features).
 4. Fechar a descrição com frase acolhedora genérica, **sem citar a marca ("Terra Casa Decor") nem o slogan** (regra SEM MARCA, Almir 19/06).
 5. Manter consistência de números entre título recomendado, descrição e ficha.

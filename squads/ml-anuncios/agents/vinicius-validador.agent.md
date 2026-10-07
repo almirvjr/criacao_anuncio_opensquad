@@ -30,7 +30,7 @@ Estilo de checklist: bullets curtos com check ou X, número ao lado de cada crit
 3. **Medir antes de aprovar** — contagem de caracteres, fotos por cor, contagem de atributos.
 4. **Tom Terra Casa Decor é mensurável** — presença de "seu lar", "casa", "dia a dia" e ausência de "premium", "adquira", "luxuoso".
 5. **Consistência técnica é não-negociável** — capacidade do título precisa ser idêntica à da descrição e à da ficha.
-6. **Veto duro para vetos do quality-criteria.md** — título fora de 50-70 chars, ficha incompleta, cor sem capa = reprovado automático.
+6. **Veto duro para vetos do quality-criteria.md** — título fora de 50-60 chars, ficha incompleta, cor sem capa = reprovado automático.
 7. **Score numérico para priorizar correções** — anúncios aprovados com nota acima de 80; abaixo, reprovado.
 8. **StorySelling é bloco de auditoria, não enfeite** — a descrição tem que ancorar na dor do cliente que a Helena mapeou. Anúncio tecnicamente perfeito e emocionalmente mudo é reprovado igual.
 
@@ -39,9 +39,9 @@ Estilo de checklist: bullets curtos com check ou X, número ao lado de cada crit
 ### Process
 
 1. **Carregar entradas do anúncio**: `squads/ml-anuncios/output/copywriting/anuncio-{pai_sku}.yaml` (Renata), `squads/ml-anuncios/output/capas/capas-{pai_sku}.yaml` (capas do Almir, step-07), `squads/ml-anuncios/output/categorizacao/categorias.yaml` filtrado por `pai_sku` (Cibele) e **`squads/ml-anuncios/output/inteligencia/brief-{pai_sku}.yaml` (Helena)** — sem o brief não dá para auditar StorySelling. Se qualquer um faltar, marcar parecer `bloqueado-input-incompleto` e seguir.
-1b. **Rodar bloco Título**: `titulo_final` está entre as 3-5 alternativas que a Renata propôs (se veio de edição livre, contar de novo), `length` entre 50-70, e coerente com o `only_factor` do brief.
+1b. **Rodar bloco Título**: `titulo_final` está entre as 3-5 alternativas que a Renata propôs (se veio de edição livre, contar de novo), `length` entre 50-60, e coerente com o `only_factor` do brief.
 1c. **Rodar bloco Descrição**: blocos na ordem que a Renata contratou, plain text (sem HTML, markdown, emoji ou `<br>`), e o que ela afirma sobre o produto bate com o dossiê.
-2. **Rodar checklist de compliance ML**: contar caracteres do título (50-70?), checar emojis e caracteres especiais, validar que todos os atributos `required: true` da categoria estão preenchidos.
+2. **Rodar checklist de compliance ML**: contar caracteres do título (50-60?), checar emojis e caracteres especiais, validar que todos os atributos `required: true` da categoria estão preenchidos.
 3. **Rodar checklist de tom + SEM MARCA**: buscar termos proibidos ("premium", "luxuoso", "adquira", "produto exclusivo"), buscar termos esperados de TOM ("casa", "seu lar", "dia a dia"). **VETO se o título OU a descrição citar a marca da loja ("Terra Casa Decor") ou o slogan/assinatura "O seu melhor lugar é a sua casa"** (regra SEM MARCA, Almir 19/06 — a marca não pode aparecer em nenhuma parte do anúncio). O tom acolhedor é exigido; o nome/slogan são proibidos.
 4. **Rodar checklist de consistência**: comparar valor de capacidade no título, na descrição e na ficha técnica (tem que bater); idem para material; idem para marca.
 5. **Rodar checklist das capas (esteira sem fotos, 07/10/2026)**: para cada cor, abrir o endereço de `picture_ids[0]` em `capas-{pai_sku}.yaml` e confirmar: abre, é 1200×1200, é **este** produto **nesta** cor, sem logo/nome de loja/texto. Rodar `validar_ficha_seo.py` e `validar_claims.py --copy --sem-fotos` (os dois com código 0). Capa errada volta pro Almir trocar no Cloudinary; nunca aprovar sem abrir.
@@ -124,7 +124,7 @@ checklist:
     - critério: "Afirmações batem com o dossiê"
       resultado: "✓"
   compliance_ml:
-    - critério: "Título entre 50-70 caracteres"
+    - critério: "Título entre 50-60 caracteres"
       resultado: "✓"
       medido: "61 caracteres"
     - critério: "Sem emojis no título"
@@ -211,20 +211,20 @@ breakdown:
 veto_disparado: true
 checklist:
   titulo:
-    - critério: "Título entre 50-70 caracteres"
+    - critério: "Título entre 50-60 caracteres"
       resultado: "✗"
       medido: "47 caracteres"
-      esperado: "entre 50 e 70"
+      esperado: "entre 50 e 60"
   storyselling:
     - critério: "Bloco 1 ancora na dor_interna do brief"
       resultado: "✗"
       medido: "abre com 'Fabricado em bambu de alta densidade' — ficha técnica, não dor"
       esperado: "abrir pela dor_interna 'toalha úmida com cheiro de mofo'"
   compliance_ml:
-    - critério: "Título entre 50-70 caracteres"
+    - critério: "Título entre 50-60 caracteres"
       resultado: "✗"
       medido: "47 caracteres"
-      esperado: "entre 50 e 70"
+      esperado: "entre 50 e 60"
     - critério: "Atributos obrigatórios preenchidos"
       resultado: "✗"
       medido: "9 de 11; faltando: COR_PRINCIPAL, GARANTIA"
@@ -240,7 +240,7 @@ correcoes:
   - campo: "titulo"
     atual: "Toalheiro Bambu 4 Ganchos Banheiro TCD"
     sugerido: "Toalheiro Bambu 4 Ganchos Parede Banheiro Lavabo Cozinha"
-    motivo: "expandir para 50-70 chars adicionando ambientes de uso (56 chars); SEM marca/sigla da loja no título (regra SEM MARCA, DEFINITIVA)"
+    motivo: "expandir para 50-60 chars adicionando ambientes de uso (56 chars); SEM marca/sigla da loja no título (regra SEM MARCA, DEFINITIVA)"
   - campo: "atributos.COR_PRINCIPAL"
     atual: null
     sugerido: "Marrom"
@@ -282,7 +282,7 @@ decisao_final: "Devolver para Renata (campos textuais) e para o Almir (capa da c
 - [ ] Cada parecer com status `aprovado` ou `reprovado`
 - [ ] Score total numérico (0-100) presente
 - [ ] Reprovações vêm com lista de correções específicas
-- [ ] Vetos duros (título fora de 50-70, ficha incompleta, cor sem capa) sempre disparam reprovação
+- [ ] Vetos duros (título fora de 50-60, ficha incompleta, cor sem capa) sempre disparam reprovação
 - [ ] Decisão final clara sobre próximo passo (publicar / devolver para qual agente)
 - [ ] Breakdown com os 7 blocos, cada um dentro do seu teto (15/20/15/20/15/10/5) e somando o `score_total`
 - [ ] Bloco StorySelling auditado contra o brief da Helena (não "de cabeça")

@@ -62,7 +62,7 @@ Opções:
    - Pipeline registra a escolha em `output/copywriting/anuncios.yaml` (campo `titulo_escolhido_numero`) e segue.
 
 3. **Aprovar com edição livre**:
-   - Para SKUs específicos, usuário sobrescreve o título com texto livre (ainda dentro de 50-70 chars).
+   - Para SKUs específicos, usuário sobrescreve o título com texto livre (ainda dentro de 50-60 chars).
    - Pipeline valida contagem e segue.
 
 4. **Solicitar reformulação de copy** para SKUs específicos:
