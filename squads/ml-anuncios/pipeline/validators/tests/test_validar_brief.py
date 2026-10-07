@@ -199,5 +199,30 @@ class TestUnidades(unittest.TestCase):
         self.assertFalse(evidencia_ancorada("trecho um ... nao existe", blob))
 
 
+
+class TestSemFotos(unittest.TestCase):
+    def test_sem_fotos_dispensa_briefing_e_cor_heroi(self):
+        b = brief_valido()
+        b.pop("briefing_fotos")
+        b.pop("cor_heroi")
+        erros = [e for e in validate_brief(b, com_fotos=False) if not e[0].startswith("WARN")]
+        self.assertEqual(erros, [])
+
+    def test_com_fotos_continua_exigindo_briefing(self):
+        b = brief_valido()
+        b.pop("briefing_fotos")
+        codigos = [e[0] for e in validate_brief(b)]
+        self.assertIn("FALTA_CAMPO", codigos)
+
+    def test_sem_fotos_continua_exigindo_limitacoes_e_diagnostico(self):
+        b = brief_valido()
+        b.pop("briefing_fotos")
+        b.pop("limitacoes")
+        b["diagnostico"]["ansiedades"] = []
+        codigos = [e[0] for e in validate_brief(b, com_fotos=False)]
+        self.assertIn("FALTA_CAMPO", codigos)
+        self.assertIn("SEM_ANSIEDADES", codigos)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

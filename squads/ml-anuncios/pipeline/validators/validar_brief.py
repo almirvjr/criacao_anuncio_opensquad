@@ -123,9 +123,11 @@ def evidencia_ancorada(quote, raw_blob):
     return all(norm(p) in raw_blob for p in pedacos)
 
 
-def validate_brief(brief, raw_dir=None):
+def validate_brief(brief, raw_dir=None, com_fotos=True):
     """Retorna lista de erros (code, msg). Lista vazia = brief valido.
-    Avisos de ancora (raw_dir ausente) entram como ('WARN:...')."""
+    Avisos de ancora (raw_dir ausente) entram como ('WARN:...').
+    com_fotos=False (esteira sem fotos, 07/10/2026): dispensa briefing_fotos e
+    cor_heroi; o resto da trava (diagnostico, limitacoes, ancora) continua igual."""
     err = []
 
     def E(code, msg):
@@ -135,9 +137,11 @@ def validate_brief(brief, raw_dir=None):
         return [("BRIEF_INVALIDO", "Brief nao e um mapa YAML valido.")]
 
     # --- campos de topo obrigatorios ------------------------------------
-    for campo in ("pai_sku", "nome_base", "confianca", "cor_heroi",
-                  "dados_produto", "diagnostico", "escada_e_dai",
-                  "briefing_fotos", "limitacoes"):
+    obrigatorios = ["pai_sku", "nome_base", "confianca", "dados_produto", "diagnostico",
+                    "escada_e_dai", "limitacoes"]
+    if com_fotos:
+        obrigatorios += ["cor_heroi", "briefing_fotos"]
+    for campo in obrigatorios:
         if campo not in brief or brief[campo] in (None, "", []):
             if campo == "limitacoes" and "limitacoes" in brief:
                 continue  # lista vazia tratada abaixo
@@ -202,64 +206,65 @@ def validate_brief(brief, raw_dir=None):
             E("ESCADA_INCOMPLETA",
               f"escada_e_dai[{i}] precisa de feature + logico + emocional.")
 
-    # --- briefing_fotos: 10 slots, funcao certa, meclabs valido ----------
-    fotos = brief.get("briefing_fotos") or []
-    por_numero = {}
-    for f in fotos:
-        if isinstance(f, dict) and isinstance(f.get("numero"), int):
-            por_numero[f["numero"]] = f
+    if com_fotos:
+        # --- briefing_fotos: 10 slots, funcao certa, meclabs valido ----------
+        fotos = brief.get("briefing_fotos") or []
+        por_numero = {}
+        for f in fotos:
+            if isinstance(f, dict) and isinstance(f.get("numero"), int):
+                por_numero[f["numero"]] = f
 
-    for numero, (funcao_ok, exige_obj) in SLOTS_CANONICOS.items():
-        f = por_numero.get(numero)
-        if f is None:
-            E("SLOT_FALTANDO", f"Foto slot {numero} ({funcao_ok}) ausente.")
-            continue
-        if f.get("funcao") != funcao_ok:
-            E("SLOT_FUNCAO_ERRADA",
-              f"Foto {numero}: funcao '{f.get('funcao')}' != esperada '{funcao_ok}'.")
-        if not f.get("headline"):
-            E("SLOT_SEM_HEADLINE", f"Foto {numero} sem headline.")
-        toks = parse_meclabs(f.get("objetivo_meclabs"))
-        if toks is None or not toks:
-            E("MECLABS_INVALIDO",
-              f"Foto {numero}: objetivo_meclabs '{f.get('objetivo_meclabs')}' invalido.")
-        else:
-            for t in toks:
-                if t in MECLABS_TOKENS_PROIBIDOS:
-                    E("MECLABS_PROIBIDO",
-                      f"Foto {numero}: token MECLABS proibido '{t}' (nunca amplificar f/a nem reduzir m/v/i).")
-                elif t not in MECLABS_TOKENS_VALIDOS:
-                    E("MECLABS_DESCONHECIDO", f"Foto {numero}: token '{t}' desconhecido.")
-        if exige_obj and not f.get("objecao_alvo"):
-            E("SLOT_SEM_OBJECAO",
-              f"Foto {numero} ({funcao_ok}) exige objecao_alvo ancorada.")
-        if numero in SLOT_COM_SELOS:
-            selos = f.get("selos_visuais") or []
-            if numero == 9 and not (SELOS_MIN <= len(selos) <= SELOS_MAX):
-                E("SELOS_QTD",
-                  f"Foto 9 precisa de {SELOS_MIN}-{SELOS_MAX} selos_visuais (tem {len(selos)}).")
-            if numero == 10 and len(selos) < 1:
-                E("SELOS_QTD", "Foto 10 precisa de pelo menos 1 selo_visual.")
+        for numero, (funcao_ok, exige_obj) in SLOTS_CANONICOS.items():
+            f = por_numero.get(numero)
+            if f is None:
+                E("SLOT_FALTANDO", f"Foto slot {numero} ({funcao_ok}) ausente.")
+                continue
+            if f.get("funcao") != funcao_ok:
+                E("SLOT_FUNCAO_ERRADA",
+                  f"Foto {numero}: funcao '{f.get('funcao')}' != esperada '{funcao_ok}'.")
+            if not f.get("headline"):
+                E("SLOT_SEM_HEADLINE", f"Foto {numero} sem headline.")
+            toks = parse_meclabs(f.get("objetivo_meclabs"))
+            if toks is None or not toks:
+                E("MECLABS_INVALIDO",
+                  f"Foto {numero}: objetivo_meclabs '{f.get('objetivo_meclabs')}' invalido.")
+            else:
+                for t in toks:
+                    if t in MECLABS_TOKENS_PROIBIDOS:
+                        E("MECLABS_PROIBIDO",
+                          f"Foto {numero}: token MECLABS proibido '{t}' (nunca amplificar f/a nem reduzir m/v/i).")
+                    elif t not in MECLABS_TOKENS_VALIDOS:
+                        E("MECLABS_DESCONHECIDO", f"Foto {numero}: token '{t}' desconhecido.")
+            if exige_obj and not f.get("objecao_alvo"):
+                E("SLOT_SEM_OBJECAO",
+                  f"Foto {numero} ({funcao_ok}) exige objecao_alvo ancorada.")
+            if numero in SLOT_COM_SELOS:
+                selos = f.get("selos_visuais") or []
+                if numero == 9 and not (SELOS_MIN <= len(selos) <= SELOS_MAX):
+                    E("SELOS_QTD",
+                      f"Foto 9 precisa de {SELOS_MIN}-{SELOS_MAX} selos_visuais (tem {len(selos)}).")
+                if numero == 10 and len(selos) < 1:
+                    E("SELOS_QTD", "Foto 10 precisa de pelo menos 1 selo_visual.")
 
-    # slots OPCIONAIS (ex.: 11 PROVA_SOCIAL): validados so se presentes
-    for numero, (funcao_ok, _) in SLOTS_OPCIONAIS.items():
-        f = por_numero.get(numero)
-        if f is None:
-            continue
-        if f.get("funcao") != funcao_ok:
-            E("SLOT_FUNCAO_ERRADA",
-              f"Foto {numero}: funcao '{f.get('funcao')}' != esperada '{funcao_ok}'.")
-        # PROVA_SOCIAL so vale com review REAL nosso (anti prova social fabricada)
-        if funcao_ok == "PROVA_SOCIAL" and not brief.get("reviews_proprios_confirmados"):
-            E("PROVA_SOCIAL_SEM_REVIEW",
-              "Foto 11 (PROVA_SOCIAL) exige 'reviews_proprios_confirmados: true' no brief "
-              "(prova social so com review REAL nosso — nunca de concorrente nem inventado). "
-              "Anuncio novo sem review: omitir a foto 11.")
+        # slots OPCIONAIS (ex.: 11 PROVA_SOCIAL): validados so se presentes
+        for numero, (funcao_ok, _) in SLOTS_OPCIONAIS.items():
+            f = por_numero.get(numero)
+            if f is None:
+                continue
+            if f.get("funcao") != funcao_ok:
+                E("SLOT_FUNCAO_ERRADA",
+                  f"Foto {numero}: funcao '{f.get('funcao')}' != esperada '{funcao_ok}'.")
+            # PROVA_SOCIAL so vale com review REAL nosso (anti prova social fabricada)
+            if funcao_ok == "PROVA_SOCIAL" and not brief.get("reviews_proprios_confirmados"):
+                E("PROVA_SOCIAL_SEM_REVIEW",
+                  "Foto 11 (PROVA_SOCIAL) exige 'reviews_proprios_confirmados: true' no brief "
+                  "(prova social so com review REAL nosso — nunca de concorrente nem inventado). "
+                  "Anuncio novo sem review: omitir a foto 11.")
 
-    permitidos = set(SLOTS_CANONICOS) | set(SLOTS_OPCIONAIS)
-    extras = set(por_numero) - permitidos
-    if extras:
-        E("SLOT_EXTRA", f"Slots fora da hierarquia 1-10 (+11 opcional): {sorted(extras)}.")
+        permitidos = set(SLOTS_CANONICOS) | set(SLOTS_OPCIONAIS)
+        extras = set(por_numero) - permitidos
+        if extras:
+            E("SLOT_EXTRA", f"Slots fora da hierarquia 1-10 (+11 opcional): {sorted(extras)}.")
 
     # --- ANCORA: evidencias tem que existir no _raw ----------------------
     if raw_dir and os.path.isdir(raw_dir):
@@ -293,6 +298,8 @@ def main():
     ap = argparse.ArgumentParser(description="Trava de validacao do brief StorySelling.")
     ap.add_argument("brief", help="Caminho do brief .yaml")
     ap.add_argument("--raw-dir", help="Pasta _raw com os JSON brutos dos concorrentes")
+    ap.add_argument("--sem-fotos", action="store_true",
+                    help="Esteira sem fotos: nao exige roteiro das 10 fotos nem cor-heroi")
     args = ap.parse_args()
 
     if not os.path.isfile(args.brief):
@@ -307,7 +314,7 @@ def main():
             raw_dir = cand
 
     brief = carregar_yaml(args.brief)
-    erros = validate_brief(brief, raw_dir=raw_dir)
+    erros = validate_brief(brief, raw_dir=raw_dir, com_fotos=not args.sem_fotos)
 
     hard = [e for e in erros if not e[0].startswith("WARN")]
     warns = [e for e in erros if e[0].startswith("WARN")]
