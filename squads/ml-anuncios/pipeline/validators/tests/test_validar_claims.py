@@ -96,6 +96,37 @@ class TestGuarda(unittest.TestCase):
         self.assertFalse(any(c == "CLAIM_FALSO" for c, _ in blocks))
 
 
+
+class TestSemFotos(unittest.TestCase):
+    def _brief(self):
+        b = brief_base()
+        b.pop("briefing_fotos")
+        return b
+
+    def test_sem_fotos_exige_copy(self):
+        blocks, _ = validar_claims(self._brief(), sem_fotos=True)
+        self.assertIn("COPY_OBRIGATORIA", [c for c, _ in blocks])
+
+    def test_sem_fotos_limitacao_fora_da_copy_bloqueia(self):
+        copy_doc = {"titles": [{"texto": "Lixeira Inox 5L Pedal", "recomendado": True}],
+                    "description": {"bloco_1_abertura": "Lixeira bonita para a casa."}}
+        blocks, _ = validar_claims(self._brief(), copy_doc=copy_doc, sem_fotos=True)
+        self.assertIn("LIMITACAO_FORA_DA_COPY", [c for c, _ in blocks])
+
+    def test_sem_fotos_limitacao_declarada_passa_e_nao_cobra_foto(self):
+        copy_doc = {"titles": [{"texto": "Lixeira Inox 5L Pedal", "recomendado": True}],
+                    "description": {"bloco_3": "Importante: modelo sem balde interno, usa saco comum."}}
+        blocks, warns = validar_claims(self._brief(), copy_doc=copy_doc, sem_fotos=True)
+        self.assertEqual(blocks, [])
+        self.assertNotIn("LIMITACAO_NAO_DECLARADA", [c for c, _ in warns])
+
+    def test_sem_fotos_claim_falso_na_copy_continua_bloqueando(self):
+        copy_doc = {"titles": [{"texto": "Lixeira Inox 5L com balde interno", "recomendado": True}],
+                    "description": {"bloco_3": "Modelo sem balde interno."}}
+        blocks, _ = validar_claims(self._brief(), copy_doc=copy_doc, sem_fotos=True)
+        self.assertIn("CLAIM_FALSO_COPY", [c for c, _ in blocks])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
 

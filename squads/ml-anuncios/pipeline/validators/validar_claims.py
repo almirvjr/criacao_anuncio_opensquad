@@ -147,7 +147,7 @@ def coletar_copy(copy_doc):
     return out
 
 
-def validar_claims(brief, overlays_extra=None, copy_doc=None):
+def validar_claims(brief, overlays_extra=None, copy_doc=None, sem_fotos=False):
     """Retorna (blocks, warns). blocks vazio = passou.
 
     `copy_doc` = output da Renata (`anuncio-{pai_sku}.yaml`), opcional. Quando
@@ -158,6 +158,13 @@ def validar_claims(brief, overlays_extra=None, copy_doc=None):
     blocks, warns = [], []
     if not isinstance(brief, dict):
         return [("BRIEF_INVALIDO", "brief nao e mapa")], []
+    # sem_fotos=True (esteira sem fotos, 07/10/2026): nao ha foto para declarar a
+    # limitacao, entao a transparencia passa a ser cobrada NA COPY (bloqueio) e a
+    # copy vira obrigatoria.
+    if sem_fotos and not copy_doc:
+        return [("COPY_OBRIGATORIA",
+                 "Modo sem fotos: rode com --copy anuncio-{pai_sku}.yaml (a limitacao e "
+                 "declarada no texto, nao ha foto).")], []
 
     overlays = coletar_overlays(brief)
     if overlays_extra:
@@ -191,25 +198,26 @@ def validar_claims(brief, overlays_extra=None, copy_doc=None):
                                f"{rotulo}: afirma '{_linha_culpada(txt, termo)}' mas o produto TEM a "
                                f"limitacao '{texto_orig}'. O comprador le isso antes de comprar = devolucao."))
 
-    # 2) TRANSPARENCIA: limitacao com disclosure_foto tem que ser declarada na foto
-    overlays_por_foto = {}
-    for numero, txt in overlays:
-        overlays_por_foto.setdefault(numero, []).append(norm(txt))
-    for termo, eh_aus, disc, texto_orig in termos:
-        if disc is None:
-            warns.append(("LIMITACAO_SEM_FOTO",
-                          f"Limitacao '{texto_orig}' sem disclosure_foto: nao sera declarada em nenhuma foto."))
-            continue
-        blob = " ".join(overlays_por_foto.get(disc, []))
-        ok = declarado(termo, blob) if eh_aus else (termo in blob)
-        if not ok:
-            if eh_aus:
-                blocks.append(("LIMITACAO_NAO_DECLARADA",
-                               f"Foto {disc} deveria declarar a limitacao '{texto_orig}' "
-                               f"(ex.: selo de transparencia 'sem {termo}'), mas nao declara."))
-            else:
-                warns.append(("LIMITACAO_NAO_DECLARADA",
-                              f"Foto {disc} deveria mencionar '{texto_orig}' e nao menciona (verificar)."))
+    if not sem_fotos:
+        # 2) TRANSPARENCIA: limitacao com disclosure_foto tem que ser declarada na foto
+        overlays_por_foto = {}
+        for numero, txt in overlays:
+            overlays_por_foto.setdefault(numero, []).append(norm(txt))
+        for termo, eh_aus, disc, texto_orig in termos:
+            if disc is None:
+                warns.append(("LIMITACAO_SEM_FOTO",
+                              f"Limitacao '{texto_orig}' sem disclosure_foto: nao sera declarada em nenhuma foto."))
+                continue
+            blob = " ".join(overlays_por_foto.get(disc, []))
+            ok = declarado(termo, blob) if eh_aus else (termo in blob)
+            if not ok:
+                if eh_aus:
+                    blocks.append(("LIMITACAO_NAO_DECLARADA",
+                                   f"Foto {disc} deveria declarar a limitacao '{texto_orig}' "
+                                   f"(ex.: selo de transparencia 'sem {termo}'), mas nao declara."))
+                else:
+                    warns.append(("LIMITACAO_NAO_DECLARADA",
+                                  f"Foto {disc} deveria mencionar '{texto_orig}' e nao menciona (verificar)."))
 
     # 3) WARN: feature de alto risco afirmada sem respaldo
     cobertos = {t for t, _, _, _ in termos if t}
@@ -227,7 +235,8 @@ def validar_claims(brief, overlays_extra=None, copy_doc=None):
         blob_copy = " ".join(norm(t) for _, t in copys)
         for termo, eh_aus, _, texto_orig in termos:
             if eh_aus and termo and not declarado(termo, blob_copy):
-                warns.append(("LIMITACAO_FORA_DA_COPY",
+                destino = blocks if sem_fotos else warns
+                destino.append(("LIMITACAO_FORA_DA_COPY",
                               f"A limitacao '{texto_orig}' nao e declarada em nenhum lugar do titulo "
                               f"ou da descricao. A foto declara, mas quem le so o texto nao fica sabendo."))
     return blocks, warns
@@ -273,6 +282,8 @@ def main():
     ap.add_argument("--overlay", help="Arquivo opcional com overlays renderizados pelo Felipe (1 texto por linha)")
     ap.add_argument("--copy", dest="copy_path",
                     help="Opcional: anuncio-{pai_sku}.yaml da Renata — poe titulo e descricao sob a mesma guarda")
+    ap.add_argument("--sem-fotos", action="store_true",
+                    help="Esteira sem fotos: limitacao tem que estar no texto; exige --copy")
     args = ap.parse_args()
 
     if not os.path.isfile(args.brief):
@@ -291,7 +302,8 @@ def main():
             sys.exit(2)
         copy_doc = carregar_yaml(args.copy_path)
 
-    blocks, warns = validar_claims(brief, overlays_extra=extra, copy_doc=copy_doc)
+    blocks, warns = validar_claims(brief, overlays_extra=extra, copy_doc=copy_doc,
+                                   sem_fotos=args.sem_fotos)
 
     for code, msg in warns:
         print(f"  [aviso] {code}: {msg}")
