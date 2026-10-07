@@ -76,7 +76,7 @@ Para cada atributo `pendente` ou `divergente` apresentado, o Almir pode:
 
 ## Registrar resoluções
 
-Ao concluir o checkpoint, gravar o `dados_produto` final consolidado (Caio + enriquecimento Helena + resoluções do Almir) de volta em `squads/ml-anuncios/output/curadoria/dossies.json` — **fonte única de verdade** que a Renata (step-05) vai ler. A Renata **não** leem o brief da Helena diretamente para obter `dados_produto`; eles leem `dossies.json` após este checkpoint.
+Ao concluir o checkpoint, gravar o `dados_produto` final consolidado (Caio + enriquecimento Helena + resoluções do Almir) de volta em `squads/ml-anuncios/output/curadoria/dossies.json` — **fonte única de verdade** que a Renata (step-05) vai ler. A Renata **não** lê o brief da Helena diretamente para obter `dados_produto`; eles leem `dossies.json` após este checkpoint.
 
 Para atributos que a Helena enriqueceu com `status: "ok"` (vindos de concorrentes) e que ainda não constam em `dossies.json` com esse status, copiar o valor do brief para `dossies.json` mantendo `fonte: "concorrente"` e `permalink` de origem.
 

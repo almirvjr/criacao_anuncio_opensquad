@@ -1,0 +1,37 @@
+code: "ml-anuncios"
+name: "Squad ML Anúncios"
+description: "Cria, revisa e publica anúncios no Mercado Livre a partir de planilha de produtos, com sincronização no Tiny ERP."
+icon: "🛒"
+domain: "mixed"
+language: "pt-BR"
+version: "1.0.0"
+
+party_file: "./squad-party.csv"
+pipeline_file: "./pipeline/pipeline.yaml"
+
+skills:
+  - web_search
+  - web_fetch
+  - playwright
+  - image-fetcher
+
+data:
+  - pipeline/data/research-brief.md
+  - pipeline/data/domain-framework.md
+  - pipeline/data/quality-criteria.md
+  - pipeline/data/output-examples.md
+  - pipeline/data/anti-patterns.md
+  - pipeline/data/ml-api-reference.md
+  - pipeline/data/n8n-workflow-spec.md
+  - pipeline/data/storyselling-framework.md
+  - pipeline/data/objection-patterns.md
+
+prerequisites:
+  - "Workflow 'ML Publicar' criado e ativo no n8n (ver pipeline/data/n8n-workflow-spec.md)"
+  - "Variável N8N_WEBHOOK_ML_PUBLICAR no .env apontando para o webhook do workflow"
+  - "Token ML válido em public.access_token_ML do Supabase (app_name='pre-venda') — usado pelo workflow n8n"
+  - "Variável TINY_TOKEN no .env do n8n (não no .env do projeto)"
+  - "Tabela ml_tools.publicacoes criada no Supabase (script SQL em pipeline/data/ml-api-reference.md)"
+  - "MCP mercadolibre configurado no .mcp.json (opcional — útil para Cibele e Vinicius consultarem docs ML em tempo real)"
+  - "MCP cloudinary conectado (busca das capas por etiqueta: SKU da cor + capa-anuncio)"
+  - "MCP playwright configurado (necessário para Helena Estrategista fazer scraping de reviews/FAQ de concorrentes ML)"

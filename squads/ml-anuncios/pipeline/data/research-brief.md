@@ -1,5 +1,7 @@
 # Research Brief — Squad ML Anúncios
 
+> ⚠️ **Esteira sem fotos desde 07/10/2026:** os trechos deste arquivo sobre geração de fotos (Felipe, 10 fotos, slots, overlay, bucket) **não se aplicam** — a capa vem do Almir pelo Cloudinary. Regras de foto guardadas em `_arquivo-fotos/`.
+
 ## Objetivo da Squad
 
 Automatizar a criação, revisão e publicação de anúncios no Mercado Livre para a Terra Casa Decor a partir de uma planilha de produtos novos, com sincronização final no Tiny ERP.

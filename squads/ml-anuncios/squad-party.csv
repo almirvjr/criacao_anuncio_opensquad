@@ -1,0 +1,7 @@
+agent_id,name,title,icon,path
+caio-curador,Caio Curador,Curador de Dados de Produto,📥,./agents/caio-curador.agent.md
+cibele-categoria,Cibele Categoria,Especialista em Categorização ML,🗂️,./agents/cibele-categoria.agent.md
+helena-estrategista,Helena Estrategista,Estrategista de Conversão StorySelling,🎯,./agents/helena-estrategista.agent.md
+renata-redatora,Renata Redatora,Copywriter de Anúncios ML — StorySelling,✍️,./agents/renata-redatora.agent.md
+vinicius-validador,Vinicius Validador,Revisor de Qualidade e Compliance ML,✅,./agents/vinicius-validador.agent.md
+paula-publicacao,Paula Publicação,Publicadora ML e Sincronizadora Tiny,🚀,./agents/paula-publicacao.agent.md

@@ -2,16 +2,9 @@
 
 Critérios objetivos e verificáveis para cada artefato produzido pela squad.
 
-## Regra global de fotos
+## Regra global de fotos (esteira sem fotos desde 07/10/2026)
 
-**TODA foto entregue pela squad tem exatamente 1200×1200 pixels.** Não é mínimo, não é "a partir de" — é o padrão fixo do projeto. Foto com qualquer outra dimensão (maior ou menor) é veto automático, mesmo que tenha qualidade visual boa. Aplica-se a:
-
-- 10 fotos finais de cada SKU (`output/fotos/{sku}/foto-01.jpg` a `foto-10.jpg`)
-- Imagens geradas pelo `image-ai-generator` (saída do Gemini Nano Banana)
-- Imagens com overlay aplicadas pela skill `image-overlay`
-- Qualquer foto intermediária baixada do fornecedor que vá entrar no pacote final (precisa ser redimensionada/recortada para 1200×1200 antes de ir para o anúncio)
-
-Motivo: padronização visual no marketplace, previsibilidade de overlay (templates assumem 1200×1200), conformidade com o tamanho recomendado pelo Mercado Livre.
+A squad **não gera foto**. A capa de cada cor é subida pelo Almir no Cloudinary (etiquetas: SKU da cor + `capa-anuncio`) e chega ao ML pelo endereço 1200×1200 que o `capas.py` monta. Regras de geração antigas: `_arquivo-fotos/`.
 
 ## Dossiê de Produto (saída de Caio Curador)
 
@@ -19,8 +12,6 @@ Motivo: padronização visual no marketplace, previsibilidade de overlay (templa
 - [ ] Nome completo do produto (não abreviado)
 - [ ] Pelo menos 3 specs técnicas (material, dimensões, peso)
 - [ ] Marca identificada
-- [ ] URL de foto base válida (responde HTTP 200)
-- [ ] URL do fornecedor (quando disponível) para Felipe usar
 
 **Veto:** se faltar SKU OU preço_venda, o produto é marcado como `bloqueado` e fica fora do lote.
 
@@ -42,15 +33,10 @@ Motivo: padronização visual no marketplace, previsibilidade de overlay (templa
 - [ ] Cada item do diagnóstico tem trecho de review como evidência (ancoragem obrigatória)
 - [ ] `linguagem_real_cliente` com 5-10 frases textuais extraídas dos reviews
 - [ ] Escada "E Daí?" com 3-5 features (feature → benefício lógico → benefício emocional)
-- [ ] Briefing das 10 fotos completo, todos os slots preenchidos com nome canônico (`CAPA_PURPLE_COW` a `MACRO_YES_CTA_FINAL`)
-- [ ] Cada foto tem `objetivo_meclabs` válido (códigos `+m`, `-a-f`, `+i+v`, etc.)
-- [ ] Headlines ≤ 8 palavras; subheadlines ≤ 14
-- [ ] Slot 9 (`SOBRECORRECAO_ANSIEDADE`) com 4-6 selos visuais e objetivo psicológico declarado em cada
-- [ ] Slot 10 (`MACRO_YES_CTA_FINAL`) com `cta` preenchido
 - [ ] `confianca` declarada coerente com volume de reviews (alta ≥100 / media 50-99 / baixa <50)
 - [ ] Dados brutos de scraping preservados em `output/inteligencia/_raw/`
 
-**Veto:** brief com afirmação no diagnóstico sem citação de review como evidência; briefing com menos de 10 slots; slot 9 sem selos.
+**Veto:** brief com afirmação no diagnóstico sem citação de review como evidência; brief sem `limitacoes[]` ou sem `keywords_busca`.
 
 ## Conteúdo Textual (saída de Renata Redatora)
 
@@ -91,28 +77,14 @@ Motivo: padronização visual no marketplace, previsibilidade de overlay (templa
 
 **Veto:** título fora do range 50-70 chars; descrição sem os 3 blocos; ficha incompleta.
 
-## Mídia Visual StorySelling (saída de Felipe Fotos)
+## Capas (step-07)
 
-- [ ] Exatamente 10 fotos por SKU em hierarquia psicológica fixa
-- [ ] **Toda foto com dimensão EXATA 1200×1200 px** (regra global do projeto — não aceitar maior nem menor)
-- [ ] Slot 1 (`CAPA_PURPLE_COW`) — produto preservado da `foto_base_url` via image-to-image; headline aplicada via overlay
-- [ ] Slot 2 (`ANTES_DEPOIS`) — composição split-screen ou comparação visível
-- [ ] Slot 3 (`BADGE_TAMANHO`) — objeto de referência cotidiano ao lado do produto
-- [ ] Slot 4 (`ANTI_ANSIEDADE_MATERIAL`) — close macro do material
-- [ ] Slot 5 (`CLAREZA_ABSOLUTA`) — esclarece objeção declarada no `objecao_alvo`
-- [ ] Slots 6-7 (`DETALHE_TECNICO_*`) — closes de features
-- [ ] Slot 8 (`LIFESTYLE_USO_REAL`) — produto em ambiente brasileiro contemporâneo
-- [ ] Slot 9 (`SOBRECORRECAO_ANSIEDADE`) — 4-6 selos visuais aplicados via overlay
-- [ ] Slot 10 (`MACRO_YES_CTA_FINAL`) — CTA aplicado (SEM brand_signature/logo/slogan — regra SEM MARCA, Almir 19/06)
-- [ ] Nenhuma foto com logo/slogan/brand_signature ou cores da marca aplicados (regra SEM MARCA)
-- [ ] Dimensão **exata 1200×1200 px** em todas (não mínimo — padrão fixo)
-- [ ] Toda foto preserva o produto da `foto_base_url` (image-to-image)
-- [ ] Texto (headline, subheadline, badge, selos, CTA) aplicado via overlay pós-produção (não embutido pela IA)
-- [ ] Cada foto tem JSON correspondente em `output/fotos/{sku}/prompts/foto-NN.json`
-- [ ] Cada foto tem `funcao`, `objetivo_meclabs`, `objecao_alvo`, `headline_aplicada` no `metadata.yaml`
-- [ ] Custo total do lote reportado em `metadata-fotos.yaml`
+- [ ] Toda cor de `variacoes[]` tem ≥1 foto em `capas-{pai_sku}.yaml` (máximo 10)
+- [ ] Endereço entregue ao ML abre em 1200×1200 (transformação do Cloudinary)
+- [ ] A capa mostra **este** produto **nesta** cor
+- [ ] Nenhuma foto com logo, nome de loja, slogan ou texto embutido (regra SEM MARCA)
 
-**Veto:** menos de 10 fotos; foto que distorceu o produto da base; slot 9 sem selos; slot 10 sem CTA; **qualquer foto com logo/slogan/brand_signature ou cores da marca** (viola a regra SEM MARCA, Almir 19/06); texto embutido na imagem AI em vez de overlay.
+**Veto:** cor sem capa; capa de outra cor/produto; capa com marca da loja.
 
 ## Revisão (saída de Vinicius Validador)
 
@@ -126,13 +98,13 @@ Motivo: padronização visual no marketplace, previsibilidade de overlay (templa
 Os itens abaixo são **vetos duros**: qualquer falha = reprovado automático, independente de score.
 
 - [ ] **Preço uniforme**: `preco_venda` idêntico em todas as entradas de `variacoes[]`. O parecer deve listar os valores encontrados nas notas para rastreabilidade.
-- [ ] **Foto por cor**: cada valor distinto de `cor` em `variacoes[]` possui ≥1 entrada em `fotos_cor[]` dessa variação. Imagem ambientalizada distinta por cor — regra `defines_picture` do atributo COLOR no ML.
+- [ ] **Foto por cor**: cada valor distinto de `cor` em `variacoes[]` tem ≥1 foto em `capas-{pai_sku}.yaml` (regra `defines_picture` do atributo COLOR no ML).
 - [ ] **`attribute_combinations` consistente**: (a) conjunto de chaves idêntico em todas as variações; (b) nenhum par `{atributo: valor}` repetido entre variações distintas.
 - [ ] **`SELLER_SKU` e `EAN` por variação**: campos `sku` e `ean` preenchidos e não nulos em cada item de `variacoes[]`.
 - [ ] **Categoria aceita variações**: `aceita_variacoes: true` e `cor_value_map`/`value_id` presentes para cada cor em `variacoes[]` no arquivo da Cibele.
 - [ ] **Descrição plain text**: sem HTML, markdown, emojis ou `<br>` — mesma regra do modo simples, válida também para anúncios com variações.
 
-**Veto na revisão de variações:** qualquer falha nos seis critérios acima dispara reprovação e devolve o anúncio ao agente responsável (Renata para preço/descrição, Felipe para fotos_cor, Caio para SELLER_SKU/EAN, Cibele para categoria/cor_value_map).
+**Veto na revisão de variações:** qualquer falha nos seis critérios acima dispara reprovação e devolve o anúncio ao agente responsável (Renata para preço/descrição, o Almir para a capa da cor, Caio para SELLER_SKU/EAN, Cibele para categoria/cor_value_map).
 
 ## Publicação (saída de Paula Publicação)
 

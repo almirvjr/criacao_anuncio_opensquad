@@ -1,5 +1,7 @@
 # StorySelling Framework — Inteligência de Conversão da Squad
 
+> ⚠️ **Esteira sem fotos desde 07/10/2026:** os trechos deste arquivo sobre geração de fotos (Felipe, 10 fotos, slots, overlay, bucket) **não se aplicam** — a capa vem do Almir pelo Cloudinary. Regras de foto guardadas em `_arquivo-fotos/`.
+
 Referência única para Helena Estrategista, Renata Redatora e Felipe Fotos. Define o vocabulário comum que sustenta o método de geração de anúncios baseado em quebra de objeção.
 
 Inspirado no método "Cientific Selling" (Himmel) e na heurística MECLABS, adaptado para marketplaces (Mercado Livre) e para a marca Terra Casa Decor.
