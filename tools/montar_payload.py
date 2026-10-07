@@ -15,7 +15,7 @@ import sys
 import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from esteira.payload_builder import build_payload, validate_anuncio  # noqa: E402
+from esteira.payload_builder import atributos_embalagem, build_payload, validate_anuncio  # noqa: E402
 
 
 def _yaml(p):
@@ -36,9 +36,11 @@ def item_attributes_do_copy(attrs, modo):
 
 
 def _titulo(doc):
-    if doc.get("titulo_final"):
-        return doc["titulo_final"]
-    return next(t["texto"] for t in doc.get("titles", []) if t.get("recomendado"))
+    """So o titulo escolhido no checkpoint (step-06) vai ao ar — nunca cai no recomendado."""
+    if not doc.get("titulo_final"):
+        raise ValueError("Copy sem 'titulo_final': o step-06 grava o titulo escolhido pelo Almir "
+                         "no anuncio-{pai_sku}.yaml antes da publicacao.")
+    return doc["titulo_final"]
 
 
 def _descricao(doc):
@@ -52,13 +54,26 @@ def montar(entrada, categorias, copy, capas, pai):
         anuncio = next(a for a in json.load(fh)["anuncios"] if a["pai_sku"] == pai)
     cat = next(c for c in _yaml(categorias)["categorias"] if c["pai_sku"] == pai)
     doc = _yaml(copy)
+    capas_doc = _yaml(capas)
+    for nome, d in (("copy", doc), ("capas", capas_doc)):
+        if d.get("pai_sku") != pai:
+            raise ValueError(f"Arquivo de {nome} e do produto '{d.get('pai_sku')}', nao de '{pai}'.")
+    if not isinstance(doc.get("attributes"), dict):
+        raise ValueError("Copy com 'attributes' fora do formato: tem que ser um mapa {ID: valor} "
+                         "(gabarito da Renata).")
+    descricao = _descricao(doc)
+    if not descricao.strip():
+        raise ValueError("Copy sem descricao: esperado description.bloco_* (gabarito da Renata). "
+                         "Anuncio nao vai ao ar sem descricao.")
+    if not atributos_embalagem(anuncio):
+        raise ValueError(f"{pai}: sem peso ou medida da caixa (cubagem) — o frete do ML sairia errado.")
     erros = validate_anuncio(anuncio)
     if erros:
         raise ValueError("; ".join(erros))
     return build_payload(
         anuncio, title=_titulo(doc), category_id=cat["category_id"],
-        description_plain=_descricao(doc),
-        picture_ids_por_variacao=_yaml(capas)["picture_ids_por_variacao"],
+        description_plain=descricao,
+        picture_ids_por_variacao=capas_doc["picture_ids_por_variacao"],
         cor_value_map=cat.get("cor_value_map"),
         item_attributes=item_attributes_do_copy(doc.get("attributes"), anuncio["modo"]))
 

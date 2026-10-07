@@ -133,6 +133,9 @@ def coletar_copy(copy_doc):
     out = []
     if not isinstance(copy_doc, dict):
         return out
+    if copy_doc.get("titulo_final"):
+        # titulo escolhido/editado no checkpoint (step-06) e o que vai ao ar
+        out.append(("Titulo final", copy_doc["titulo_final"]))
     for t in copy_doc.get("titles") or []:
         if isinstance(t, dict) and t.get("texto"):
             sufixo = " (recomendado)" if t.get("recomendado") else ""
@@ -236,9 +239,15 @@ def validar_claims(brief, overlays_extra=None, copy_doc=None, sem_fotos=False):
         for termo, eh_aus, _, texto_orig in termos:
             if eh_aus and termo and not declarado(termo, blob_copy):
                 destino = blocks if sem_fotos else warns
+                onde = ("Sem foto na esteira, o texto e o unico lugar que declara."
+                        if sem_fotos else "A foto declara, mas quem le so o texto nao fica sabendo.")
                 destino.append(("LIMITACAO_FORA_DA_COPY",
                               f"A limitacao '{texto_orig}' nao e declarada em nenhum lugar do titulo "
-                              f"ou da descricao. A foto declara, mas quem le so o texto nao fica sabendo."))
+                              f"ou da descricao. {onde}"))
+            elif not eh_aus and termo and norm(termo) not in blob_copy:
+                warns.append(("LIMITACAO_FORA_DA_COPY",
+                              f"A limitacao '{texto_orig}' nao aparece no titulo nem na descricao "
+                              f"(verificar se foi declarada com outras palavras)."))
     return blocks, warns
 
 

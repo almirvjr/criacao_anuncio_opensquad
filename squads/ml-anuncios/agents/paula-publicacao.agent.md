@@ -38,7 +38,7 @@ Reporta cada SKU em formato de transação webhook: hora do envio, hora da respo
 1. **Validar pré-requisitos do anúncio**: parecer aprovado em `squads/ml-anuncios/output/revisao/parecer-{pai_sku}.yaml`, capas em `squads/ml-anuncios/output/capas/capas-{pai_sku}.yaml` (step-07), copywriting de Renata, outputs de categorização de Cibele. Faltando qualquer um, pular anúncio e registrar `skipped`.
 2. **Carregar URL do webhook n8n** do `.env` (`N8N_WEBHOOK_ML_PUBLICAR`). Se ausente, parar e avisar.
 3. **Montar payload JSON** no contrato exato (ver Output Examples):
-   - Campos raiz obrigatórios em ambos os modos: `modo`, `pai_sku`, `title`, `category_id`, `listing_type_id:"gold_special"`, `condition:"new"`, `currency_id:"BRL"`, `description_plain` (lido de `description.plain_text` no YAML da Renata — campo no payload é `description_plain`), `brand`, `attributes` (nível item).
+   - Campos raiz obrigatórios em ambos os modos: `modo`, `pai_sku`, `title`, `category_id`, `listing_type_id:"gold_special"`, `condition:"new"`, `currency_id:"BRL"`, `description_plain` (lido de os blocos `description.bloco_*` no YAML da Renata — campo no payload é `description_plain`), `brand`, `attributes` (nível item).
    - **Quem monta o pacote é `tools/montar_payload.py`** (comando no step-10), a partir de `anuncios-entrada.json`, `categorias.yaml`, `anuncio-{pai_sku}.yaml` e `capas-{pai_sku}.yaml`. As fotos vêm de `capas-{pai_sku}.yaml` (1 a 10 por cor). Paula não monta nem edita o JSON: erro do comando = parar o anúncio e reportar a mensagem.
 4. **POST para o webhook** com header `Content-Type: application/json` e body do payload. Timeout: 60 segundos.
 5. **Aguardar resposta do n8n** — espera-se JSON estruturado com `status`, `mlb_id`, `permalink`, `tiny_sync`, `supabase_log_id`, `timestamps`. Se HTTP do webhook != 200, considerar falha de infraestrutura e pausar lote.
@@ -302,7 +302,7 @@ skus_nao_processados: ["VIE_1068-PAI", "VIE_1069-PAI"]
 ## Integration
 
 - **Reads from**:
-  - `squads/ml-anuncios/output/copywriting/anuncio-{pai_sku}.yaml` (Renata) — `title`, `description.plain_text` (mapear para `description_plain` no payload do webhook)
+  - `squads/ml-anuncios/output/copywriting/anuncio-{pai_sku}.yaml` (Renata) — `title`, os blocos `description.bloco_*` (mapear para `description_plain` no payload do webhook)
   - `squads/ml-anuncios/output/capas/capas-{pai_sku}.yaml` (step-07) — `picture_ids_por_variacao` (1 a 10 fotos por cor) e `squads/ml-anuncios/output/anuncios-entrada.json` (preço, EAN, peso e caixa)
   - `squads/ml-anuncios/output/categorizacao/categorias.yaml` (Cibele, filtrado por `pai_sku`) — `category_id`, `cor_value_map`, `variation_attribute`
   - `squads/ml-anuncios/output/revisao/parecer-{pai_sku}.yaml` (Vinicius) — exige `status: aprovado`

@@ -13,7 +13,7 @@ model_tier: powerful
 
 Load these files before executing:
 - `squads/ml-anuncios/output/revisao/pareceres.yaml` — filtrar apenas anúncios com `status: aprovado`
-- `squads/ml-anuncios/output/copywriting/anuncios.yaml` — `titulo_final`, `description.plain_text` (Renata — mapear para `description_plain` no payload)
+- `squads/ml-anuncios/output/copywriting/anuncios.yaml` — `titulo_final`, os blocos `description.bloco_*` (Renata — mapear para `description_plain` no payload)
 - `squads/ml-anuncios/output/categorizacao/categorias.yaml` — `category_id`, `cor_value_map`, `variation_attribute` por pai_sku (Cibele)
 - `squads/ml-anuncios/output/capas/capas-{pai_sku}.yaml` — fotos de cada cor (1 a 10, endereço 1200×1200 do Cloudinary), montadas no step-07
 - `squads/ml-anuncios/output/curadoria/dossies.json` — `brand`, `price`, atributos de nível item (Caio)

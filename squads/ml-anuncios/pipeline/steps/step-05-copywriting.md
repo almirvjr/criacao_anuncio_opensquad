@@ -101,16 +101,19 @@ anuncios:
         score_conversao: <0-10>
         justificativa: "<string>"
         recomendado: <bool>
-    description:
-      plain_text: |
+    description:                       # EXATAMENTE estas chaves: tools/montar_payload.py junta os bloco_* na ordem
+      bloco_1_abertura: |
         <bloco 1>
-        
+      bloco_2_specs: |
         <bloco 2 com bullets>
-        
-        <bloco 3 com bullets e assinatura>
+      bloco_3_features_beneficios: |
+        <bloco 3 com bullets e fechamento>
       word_count: <int>
-    attributes:
-      - { id: "<string>", name: "<string>", value_name: "<string>" }
+    titulo_final: null                 # gravado no step-06 (checkpoint) — sem ele a publicacao recusa
+    attributes:                        # MAPA {ID: valor}, nao lista
+      BRAND: "<fornecedor + palavras-chave>"
+      MODEL: "<palavras-chave>"
+      <ID_DO_ATRIBUTO>: "<valor>"
     keywords_seo_aplicadas: ["<string>", ...]
     preco_venda: <num>
 ```
@@ -154,9 +157,9 @@ anuncios:
         justificativa: "Balanço bom: 'moderna' (linguagem cliente) + SEO base preservado."
         recomendado: true
     description:
-      plain_text: |
+      bloco_1_abertura: |
         Tem detalhes que mudam completamente a sensação da casa. Uma lixeira comum pode deixar o banheiro ou a cozinha com aparência desorganizada, mesmo quando tudo está limpo. Essa lixeira de inox foi pensada pra quem quer praticidade no dia a dia sem abrir mão de um ambiente bonito, moderno e aconchegante. Aquela sensação de casa cuidada que vem dos detalhes.
-
+      bloco_2_specs: |
         - Material: aço inox AISI 430 (corpo) + plástico polipropileno reforçado (pedal e tampa)
         - Capacidade: 12 litros
         - Dimensões: 31 x 24 x 24 cm (Altura x Largura x Profundidade)
@@ -165,7 +168,7 @@ anuncios:
         - Sistema de tampa: abertura por haste interna (fio reforçado)
         - Referência: TCD-LXI12
         - Garantia: 30 dias
-
+      bloco_3_features_beneficios: |
         - Capacidade de 12 litros: menos uma preocupação na rotina
         - Corpo em aço inox: banheiro ou cozinha com aparência sofisticada
         - Pedal silencioso: abre sem usar as mãos, mais higiene no dia a dia
@@ -174,16 +177,16 @@ anuncios:
         Pode usar na cozinha, no banheiro, no escritorio ou no consultorio. Importante: este modelo nao vem com balde interno removivel e e compativel com sacolas de mercado comuns. Praticidade que combina com o seu dia a dia.
       word_count: 224
     attributes:
-      - { id: "BRAND", name: "Marca", value_name: "Viel Higiênica Consultório" }
-      - { id: "MODEL", name: "Modelo", value_name: "Lixo Quarto Escritório" }
-      - { id: "CAPACITY", name: "Capacidade", value_name: "12 L" }
-      - { id: "MAIN_MATERIAL", name: "Material principal", value_name: "Aço inox" }
-      - { id: "COLOR", name: "Cor", value_name: "Prateado escovado" }
-      - { id: "HEIGHT", name: "Altura", value_name: "31 cm" }
-      - { id: "WIDTH", name: "Largura", value_name: "24 cm" }
-      - { id: "DEPTH", name: "Profundidade", value_name: "24 cm" }
-      - { id: "WEIGHT", name: "Peso", value_name: "1.1 kg" }
-      - { id: "ACTUATION_TYPE", name: "Acionamento", value_name: "Pedal" }
+      BRAND: "Viel Higiênica Consultório"
+      MODEL: "Lixo Quarto Escritório"
+      CAPACITY: "12 L"
+      MAIN_MATERIAL: "Aço inox"
+      COLOR: "Prateado escovado"
+      HEIGHT: "31 cm"
+      WIDTH: "24 cm"
+      DEPTH: "24 cm"
+      WEIGHT: "1.1 kg"
+      ACTUATION_TYPE: "Pedal"
     keywords_seo_aplicadas: ["lixeira inox", "lixeira pedal", "lixeira 12 litros", "lixeira cozinha", "lixeira moderna"]
     preco_venda: 159.90
 ```

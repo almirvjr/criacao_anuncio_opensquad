@@ -91,19 +91,23 @@ def _vazio(x):
 
 
 def aplicar_cubagem(records, cub):
+    """Regra do Almir: peso e medida SEMPRE da cubagem; o Tiny so fica quando o SKU
+    nao esta na planilha ou o campo dela esta vazio (o Tiny vem furado)."""
     n = 0
     for rec in records:
         c = cub.get(sku_chave(rec["sku"]))
         if not c:
             continue
         mexeu = False
-        if _vazio(rec.get("peso_bruto")) and not _vazio(c["peso_bruto"]):
+        if not _vazio(c["peso_bruto"]):
             rec["peso_bruto"] = c["peso_bruto"]
             mexeu = True
-        dim = rec.get("dim_cm") or {}
-        if all(_vazio(dim.get(k)) for k in ("largura", "altura", "comprimento")):
-            rec["dim_cm"] = {k: c[k] for k in ("largura", "altura", "comprimento")}
-            mexeu = True
+        dim = dict(rec.get("dim_cm") or {})
+        for k in ("largura", "altura", "comprimento"):
+            if not _vazio(c[k]):
+                dim[k] = c[k]
+                mexeu = True
+        rec["dim_cm"] = dim
         if mexeu:
             rec["fonte_medida"] = "cubagem"
             n += 1

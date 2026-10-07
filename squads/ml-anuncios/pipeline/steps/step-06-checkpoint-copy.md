@@ -75,7 +75,7 @@ Opções:
 
 ## Registrar decisão
 
-Para cada SKU aprovado, gravar no arquivo de copy:
+Para cada SKU aprovado, gravar **no arquivo do anúncio `output/copywriting/anuncio-{pai_sku}.yaml`** (é o que as travas e o `montar_payload.py` leem; sem `titulo_final` lá a publicação recusa) e repetir no consolidado `anuncios.yaml`:
 ```yaml
 titulo_escolhido_numero: <1-5>   # ou null se foi edição livre
 titulo_final: "<string>"
@@ -83,7 +83,7 @@ aprovado_em: "<ISO timestamp>"
 aprovado_por: "checkpoint humano"
 ```
 
-Depois de gravar o `titulo_final`, rodar de novo `python squads/ml-anuncios/pipeline/validators/validar_ficha_seo.py squads/ml-anuncios/output/copywriting/anuncio-{pai_sku}.yaml` — se o Almir escolheu outro título, uma palavra de Marca/Modelo pode ter virado repetida. Reprovou → a Renata troca Marca/Modelo, sem mexer no título escolhido.
+Depois de gravar o `titulo_final`, rodar de novo `python squads/ml-anuncios/pipeline/validators/validar_ficha_seo.py squads/ml-anuncios/output/copywriting/anuncio-{pai_sku}.yaml` e `python squads/ml-anuncios/pipeline/validators/validar_claims.py squads/ml-anuncios/output/inteligencia/brief-{pai_sku}.yaml --copy squads/ml-anuncios/output/copywriting/anuncio-{pai_sku}.yaml --sem-fotos` (título editado à mão pode prometer o que o produto não tem) — se o Almir escolheu outro título, uma palavra de Marca/Modelo pode ter virado repetida. Reprovou → a Renata troca Marca/Modelo, sem mexer no título escolhido.
 
 ## Veto Conditions
 

@@ -127,6 +127,25 @@ class TestSemFotos(unittest.TestCase):
         self.assertIn("CLAIM_FALSO_COPY", [c for c, _ in blocks])
 
 
+
+class TestRevisaoFinal(unittest.TestCase):
+    def test_titulo_final_editado_com_claim_falso_bloqueia(self):
+        b = brief_base()
+        b.pop("briefing_fotos")
+        copy_doc = {"titulo_final": "Lixeira Inox 5L com Balde Interno",
+                    "titles": [{"texto": "Lixeira Inox 5L Pedal", "recomendado": True}],
+                    "description": {"bloco_3": "Modelo sem balde interno."}}
+        blocks, _ = validar_claims(b, copy_doc=copy_doc, sem_fotos=True)
+        self.assertIn("CLAIM_FALSO_COPY", [c for c, _ in blocks])
+
+    def test_limitacao_que_nao_e_ausencia_fora_da_copy_avisa(self):
+        b = {"dados_produto": {}, "limitacoes": [{"texto": "Haste do pedal em nylon", "fonte": "ficha"}]}
+        copy_doc = {"titles": [{"texto": "Lixeira Inox 5L Pedal", "recomendado": True}],
+                    "description": {"bloco_1": "Lixeira bonita para a casa."}}
+        _, warns = validar_claims(b, copy_doc=copy_doc, sem_fotos=True)
+        self.assertIn("LIMITACAO_FORA_DA_COPY", [c for c, _ in warns])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
 

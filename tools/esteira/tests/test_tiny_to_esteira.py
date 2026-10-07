@@ -7,16 +7,24 @@ def test_sku_chave_iguala_traco_e_underline():
     assert sku_chave("VIE_1066_3402_BR") == sku_chave("vie-1066-3402-br") == "VIE-1066-3402-BR"
 
 
-def test_aplicar_cubagem_preenche_so_o_zerado():
-    recs = [{"sku": "VIE-1066-3402-BR", "peso_bruto": 0.0,
-             "dim_cm": {"largura": 0.0, "altura": 0.0, "comprimento": 0.0}},
-            {"sku": "VIE-1066-3405-PT", "peso_bruto": 1.5,
+def test_cubagem_manda_e_tiny_e_reserva():
+    """Regra do Almir: peso e medida SEMPRE da cubagem; Tiny so quando o SKU nao esta la."""
+    recs = [{"sku": "VIE-1066-3402-BR", "peso_bruto": 0.1,
+             "dim_cm": {"largura": 10, "altura": 10, "comprimento": 10}},
+            {"sku": "FORA-DA-CUBAGEM", "peso_bruto": 1.5,
              "dim_cm": {"largura": 10, "altura": 10, "comprimento": 10}}]
-    cub = {"VIE-1066-3402-BR": {"peso_bruto": 0.7, "largura": 28, "altura": 21, "comprimento": 21},
-           "VIE-1066-3405-PT": {"peso_bruto": 0.7, "largura": 28, "altura": 21, "comprimento": 21}}
+    cub = {"VIE-1066-3402-BR": {"peso_bruto": 0.7, "largura": 28, "altura": 21, "comprimento": 21}}
     assert aplicar_cubagem(recs, cub) == 1
-    assert recs[0]["peso_bruto"] == 0.7 and recs[0]["dim_cm"]["largura"] == 28
-    assert recs[1]["peso_bruto"] == 1.5  # nao sobrescreve o que ja tinha
+    assert recs[0]["peso_bruto"] == 0.7 and recs[0]["dim_cm"] == {"largura": 28, "altura": 21, "comprimento": 21}
+    assert recs[1]["peso_bruto"] == 1.5  # fora da cubagem: fica o do Tiny
+
+
+def test_cubagem_com_campo_vazio_nao_apaga_o_tiny():
+    recs = [{"sku": "X-1", "peso_bruto": 0.5, "dim_cm": {"largura": 10, "altura": 10, "comprimento": 10}}]
+    cub = {"X-1": {"peso_bruto": None, "largura": 28, "altura": None, "comprimento": 21}}
+    aplicar_cubagem(recs, cub)
+    assert recs[0]["peso_bruto"] == 0.5
+    assert recs[0]["dim_cm"] == {"largura": 28, "altura": 10, "comprimento": 21}
 
 
 def test_carregar_cubagem_le_aba_produtos(tmp_path):
