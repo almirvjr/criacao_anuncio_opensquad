@@ -25,7 +25,7 @@ Consome 4 fontes: `anuncios-entrada.json` (modo e variações), dossiê do Caio,
 
 1. **Nunca inventar feature.** Só descreve o que está no dossiê do Caio. Alucinação aqui não é erro de estilo: o comprador recebe diferente do que leu e devolve.
 2. **A linguagem do cliente manda no vocabulário emocional.** Se o brief traz "chique", pode usar "chique". Se não traz, não inventa adjetivo emocional. Isso vale para a **carga emocional** — spec técnica neutra (material, capacidade, dimensão) e conectivo de português não dependem do brief.
-3. **Sem marca da loja no texto do anúncio.** Nem o nome da loja nem o slogan aparecem em título ou descrição — o motivo é não prender o anúncio a um eventual rebrand. O **tom** acolhedor fica ("sua casa", "seu dia a dia"): isso é estilo de escrita, não citação de marca. O campo estruturado `BRAND` da ficha é outra coisa — ver Contrato de saída.
+3. **Sem marca da loja no texto do anúncio.** Nem o nome da loja nem o slogan aparecem em título ou descrição — o motivo é não prender o anúncio a um eventual rebrand. O **tom** acolhedor fica ("sua casa", "seu dia a dia"): isso é estilo de escrita, não citação de marca. O campo estruturado `BRAND` da ficha é outra coisa — ver Contrato de saída. **Exceção: Mundiart (`MDA`)** — produto de marca própria; a descrição apresenta como Terra Casa Decor (título continua sem). Ver campo `BRAND`.
 4. **Declarar limitação vence escondê-la.** Se o brief traz `limitacoes[]`, a descrição declara com naturalidade ("este modelo não vem com balde interno; usa sacola comum"). Declarar custa uma fração de cliques; esconder custa devolução e reclamação, que é mais caro — e a trava barra o anúncio que afirma o que o produto não tem.
 5. **Consistência numérica.** Capacidade, dimensões e peso são idênticos no título recomendado, na descrição e na ficha. Número que diverge entre os três vira reclamação.
 6. **Tom da casa.** Casual e acolhedor. "Premium", "luxuoso" e "exclusivo" ficam de fora: descaracterizam a loja, afastam o público e, no caso de "exclusivo", complicam juridicamente.
@@ -38,7 +38,7 @@ Consome 4 fontes: `anuncios-entrada.json` (modo e variações), dossiê do Caio,
    - `categorias.yaml` (Cibele) → atributos obrigatórios, `top_keywords`, faixa de preço
    - `brief-{pai_sku}.yaml` (Helena) → `dor_interna`, `only_factor`, `linguagem_real_cliente`, `escada_e_dai`, `limitacoes`
 
-2. **Gerar 3 a 5 títulos**, cada um entre 50 e 70 caracteres, no padrão **PMME** (Produto + Marca + Modelo + Especificação). Cada título tem uma aposta diferente:
+2. **Gerar 3 a 5 títulos**, cada um entre 50 e 70 caracteres, no padrão **PMME** (Produto + Marca + Modelo + Especificação) — aqui "Marca" é o fabricante e "Modelo" é a referência/linha do produto, não o campo `MODEL` da ficha (que leva palavras-chave **fora** do título). Cada título tem uma aposta diferente:
    - **SEO forte** — máximo de `top_keywords`, ordem ótima para busca
    - **StorySelling forte** — 1 ou 2 palavras da linguagem real do cliente
    - **Balanço** — SEO + 1 palavra emocional
@@ -50,7 +50,7 @@ Consome 4 fontes: `anuncios-entrada.json` (modo e variações), dossiê do Caio,
 
 3. **Bloco 1 — abertura lifestyle**: 3-5 linhas ancoradas na `dor_interna` do brief, com 1-2 frases da linguagem real do cliente integradas naturalmente. Começa com cena concreta, nunca com "Apresentamos" nem com o nome da categoria. Não repete o título — o bloco 1 é narrativo.
 
-4. **Bloco 2 — specs em bullets**: material, capacidade, dimensões, peso, modelo, garantia, e `publico_genero` / `compatibilidade` quando o dossiê tiver. Unidades padronizadas (cm / kg / L). Spec marcada como `null` com warning no dossiê é **omitida**, nunca chutada. Em `modo: variacoes`, incluir a linha `- Cores disponíveis: [lista]` — o comprador precisa saber as opções.
+4. **Bloco 2 — specs em bullets**: material, capacidade, dimensões, peso, referência do fabricante (se houver), garantia, e `publico_genero` / `compatibilidade` quando o dossiê tiver. Unidades padronizadas (cm / kg / L). Spec marcada como `null` com warning no dossiê é **omitida**, nunca chutada. Em `modo: variacoes`, incluir a linha `- Cores disponíveis: [lista]` — o comprador precisa saber as opções.
 
 5. **Bloco 3 — features-benefícios + fechamento**: para cada degrau de `escada_e_dai`, uma bullet `Feature: benefício emocional` (a camada 3 da escada, não a técnica), com menos de 90 caracteres. Declarar aqui as `limitacoes[]` do brief. Fechar com uma frase acolhedora, sem nome de loja nem slogan.
 
@@ -86,7 +86,7 @@ Arquivo `output/copywriting/anuncio-{pai_sku}.yaml`, um por anúncio, independen
 
 **Regras do anúncio:** título entre 50 e 70 caracteres (fora disso o título é vetado); descrição entre 200 e 350 palavras; exatamente 1 título com `recomendado: true`; 100% dos atributos obrigatórios preenchidos.
 
-**Campo `BRAND` da ficha:** recebe a **marca do fabricante** (`dossie.marca`) — é o que o ML espera e o que aparece na caixa de Características. Não é o nome da loja. Quando o dossiê não traz fabricante, usar o valor padrão do ML para produto sem marca (`Sem marca`) em vez de inventar.
+**Campos `BRAND` (Marca) e `MODEL` (Modelo) — regra do Almir, 07/10/2026.** São os campos da ficha que mais indexam na busca. Neles vão as palavras-chave mais buscadas (`keywords_busca` do brief) **que não estão no título escolhido** — nada repetido entre título, Marca e Modelo. A Marca **começa pelo fornecedor** (Viel, Brinox, Bellagio, Passerini…) e segue com palavras-chave; ~30 caracteres em cada campo. **Mundiart (`MDA`)**: Marca = `Terra Casa Decor` e mais nada; a descrição apresenta o produto como da marca Terra Casa Decor (o título nunca cita a loja). A trava `validar_ficha_seo.py` é a autoridade.
 
 ### A trava
 
@@ -138,10 +138,10 @@ description:
     - Peso: 1,1 kg
     - Acionamento: pedal silencioso
     - Sistema de tampa: abertura por haste interna (fio reforçado)
-    - Modelo: TCD-LXI12
+    - Referência: TCD-LXI12
     - Garantia: 30 dias
     # em modo: variacoes, entra aqui "- Cores disponíveis: Prateado, Preto, Branco"
-    # a marca da LOJA não entra na descrição — o fabricante vai no campo BRAND
+    # a marca da LOJA não entra na descrição (exceto Mundiart) — Marca/Modelo da ficha levam palavras-chave
 
   bloco_3_features_beneficios: |
     - Capacidade de 12 litros: menos uma preocupação na rotina
@@ -159,8 +159,8 @@ description:
   word_count: 223
 
 attributes:
-  BRAND: "Viel"            # fabricante do dossiê — nunca o nome da loja
-  MODEL: "TCD-LXI12"
+  BRAND: "Viel Higiênica Consultório" # fornecedor + palavra-chave fora do título (~30 car.)
+  MODEL: "Lixo Quarto Escritório"    # palavra-chave fora do título e da Marca
   CAPACITY: "12 L"
   MAIN_MATERIAL: "Aço inox"
   COLOR: "Prateado escovado"

@@ -48,8 +48,8 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
 
 3. **Escrever descrição em 3 blocos delimitados por linha em branco** (1 descrição por anuncio, compartilhada entre todas as cores):
    - **Bloco 1 (3-5 linhas, abertura lifestyle)**: tocar a `dor_interna` do brief; integrar 1-2 frases da `linguagem_real_cliente` naturalmente; sem repetir título; tom acolhedor Terra Casa Decor. Se `modo: variacoes`, pode mencionar levemente a variedade de opções se enriquecer a narrativa.
-   - **Bloco 2 (bullets `- ` de specs)**: material, capacidade, dimensões, peso, marca, modelo, garantia. Incluir `publico_genero` e `compatibilidade` quando o dossiê tiver valor (não-`null`). Padronizar unidades (cm/kg/L). **Se `modo: variacoes`**: incluir linha `- Cores disponíveis: [lista das cores das variacoes, ex: Branco, Preto, Cinza]`.
-   - **Bloco 3 (bullets `- ` features + fechamento)**: para cada feature da `escada_e_dai` do brief, montar `Feature: Benefício emocional` (camada 3 da escada). Fechar com frase acolhedora generica, **SEM citar marca ("Terra Casa Decor") nem slogan** (regra SEM MARCA, Almir 19/06).
+   - **Bloco 2 (bullets `- ` de specs)**: material, capacidade, dimensões, peso, referência do fabricante (se houver), garantia. Incluir `publico_genero` e `compatibilidade` quando o dossiê tiver valor (não-`null`). Padronizar unidades (cm/kg/L). **Se `modo: variacoes`**: incluir linha `- Cores disponíveis: [lista das cores das variacoes, ex: Branco, Preto, Cinza]`.
+   - **Bloco 3 (bullets `- ` features + fechamento)**: para cada feature da `escada_e_dai` do brief, montar `Feature: Benefício emocional` (camada 3 da escada). Fechar com frase acolhedora generica, **SEM citar marca ("Terra Casa Decor") nem slogan** (regra SEM MARCA, Almir 19/06) — exceto Mundiart, que a descrição apresenta como Terra Casa Decor (07/10).
 
 4. **Validar totais**:
    - Descrição 200-350 palavras.
@@ -58,11 +58,20 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
    - Sem HTML, markdown ou emojis (plain text estrito).
 
 5. **Preencher ficha técnica** (`attributes`) cobrindo 100% dos atributos obrigatórios da categoria mapeados para valores do dossie. Padronizar unidades.
+   - **`BRAND` e `MODEL` — regra do Almir (07/10/2026):** são os campos da ficha que mais indexam na busca. Usar as palavras de `keywords_busca` do brief **que não estão no título recomendado** (nada repetido entre título, Marca e Modelo). Marca **começa pelo fornecedor** (Viel, Brinox, Bellagio, Passerini…) + palavras-chave; ~30 caracteres em cada. **Mundiart (`MDA`)**: Marca = `Terra Casa Decor` e mais nada, e a descrição apresenta o produto como da marca Terra Casa Decor (título nunca cita a loja).
+   - Gravar `pai_sku` no topo do `anuncio-{pai_sku}.yaml` (as travas leem dali).
 
 6. **Marcar `status_copy`**:
    - `ok`: todos os checks passam.
    - `warning`: algum critério no limite (ex: 1 atributo opcional ausente do dossie).
    - `sem_brief`: brief da Helena indisponível — Renata caiu no modo legado (1 título); requer revisão humana.
+
+6b. **TRAVA OBRIGATÓRIA — rodar antes de concluir:** para CADA anúncio
+   ```
+   python squads/ml-anuncios/pipeline/validators/validar_claims.py squads/ml-anuncios/output/inteligencia/brief-{pai_sku}.yaml --copy squads/ml-anuncios/output/copywriting/anuncio-{pai_sku}.yaml --sem-fotos
+   python squads/ml-anuncios/pipeline/validators/validar_ficha_seo.py squads/ml-anuncios/output/copywriting/anuncio-{pai_sku}.yaml
+   ```
+   As duas têm que sair com código 0. A primeira barra claim falso e limitação do brief que a descrição não declara; a segunda barra Marca sem fornecedor, palavra repetida do título e Mundiart fora da regra.
 
 7. **Salvar YAML** em `squads/ml-anuncios/output/copywriting/anuncios.yaml` consolidado + `squads/ml-anuncios/output/copywriting/anuncio-{pai_sku}.yaml` individual (1 arquivo por anuncio, independente do numero de cores).
 
@@ -154,8 +163,7 @@ anuncios:
         - Peso: 1,1 kg
         - Acionamento: pedal silencioso
         - Sistema de tampa: abertura por haste interna (fio reforçado)
-        - Marca: Terra Casa Decor
-        - Modelo: TCD-LXI12
+        - Referência: TCD-LXI12
         - Garantia: 30 dias
 
         - Capacidade de 12 litros: menos uma preocupação na rotina
@@ -166,8 +174,8 @@ anuncios:
         Pode usar na cozinha, no banheiro, no escritorio ou no consultorio. Importante: este modelo nao vem com balde interno removivel e e compativel com sacolas de mercado comuns. Praticidade que combina com o seu dia a dia.
       word_count: 224
     attributes:
-      - { id: "BRAND", name: "Marca", value_name: "Terra Casa Decor" }
-      - { id: "MODEL", name: "Modelo", value_name: "TCD-LXI12" }
+      - { id: "BRAND", name: "Marca", value_name: "Viel Higiênica Consultório" }
+      - { id: "MODEL", name: "Modelo", value_name: "Lixo Quarto Escritório" }
       - { id: "CAPACITY", name: "Capacidade", value_name: "12 L" }
       - { id: "MAIN_MATERIAL", name: "Material principal", value_name: "Aço inox" }
       - { id: "COLOR", name: "Cor", value_name: "Prateado escovado" }
