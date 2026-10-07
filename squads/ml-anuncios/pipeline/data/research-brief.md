@@ -51,7 +51,7 @@ Exemplo: `Lixeira Inox 15L Pedal Tampa Antiodor Cozinha Banheiro LHP`
 
 | Operação | Endpoint | Auth |
 |----------|----------|------|
-| Predizer categoria | `GET /sites/MLB/category_predictor/predict?title=...` | pública |
+| Predizer categoria | `GET /sites/MLB/domain_discovery/search?limit=3&q=...` (lista, sem confiança; o antigo `category_predictor` responde 404) | pública |
 | Buscar concorrentes | `GET /sites/MLB/search?q=...` | pública |
 | Detalhes de categoria | `GET /categories/{category_id}` | pública |
 | Atributos obrigatórios | `GET /categories/{category_id}/attributes` | pública |
@@ -71,7 +71,7 @@ Token de API Tiny em `.env` (`TINY_TOKEN`). Endpoint usado:
 1. Caio Curador captura URL do site do fornecedor (se disponível na planilha) na etapa 2
 2. Felipe Fotos roda `image-fetcher` sobre essa URL → traz N fotos
 3. Se N < 10, complementa com `image-ai-generator` usando descrição do produto + fotos existentes como referência (variações de ângulo, detalhes, ambientação)
-4. Todas as fotos passam por `image-creator` para padronização: fundo branco, recorte 1200x1200 mínimo, hierarquia visual (foto 1 = principal, fotos 2-5 = ângulos, fotos 6-8 = detalhes, fotos 9-10 = ambientação)
+4. Todas as fotos saem em **1200×1200 exatos** — o `render_faixa.py` normaliza a base no momento do overlay e o Felipe confere antes. A hierarquia das 10 fotos é a **Equilibrado**, definida na seção 6 do `storyselling-framework.md`: consultar lá, não repetir a lista aqui (a hierarquia antiga "2-5 ângulos / 6-8 detalhes" foi substituída em 21/06)
 
 ## Fontes da Pesquisa
 

@@ -116,11 +116,11 @@ lote:
   sem_brief: 0
 
 anuncios:
-  - nome_base: "lixeira-inox-12l"
+  - nome_base: "Lixeira Inox 12 Litros com Pedal e Tampa Antiodor"   # descritivo (do dossiê do Caio), não slug
     modo: "simples"
     variacoes: null
     sku: "TCD-LXI12"
-    category_id: "MLB264586"
+    category_id: "MLB33375"
     status_copy: "ok"
     brief_utilizado: "squads/ml-anuncios/output/inteligencia/brief-TCD-LXI12.yaml"
     dor_interna_referenciada: "Minha casa fica com aparência simples e bagunçada por causa dos detalhes."

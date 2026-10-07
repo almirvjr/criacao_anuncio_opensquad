@@ -17,7 +17,7 @@ C = 4m + 3v + 2(i − f) − 2a
 | Símbolo | Nome | Significado | Como aparece num anúncio ML |
 |---------|------|-------------|------------------------------|
 | **m** | Motivação | Quão fortemente a pessoa quer resolver o problema | Já existe antes de a pessoa abrir o anúncio — você só pode AMPLIFICAR (mostrando que o produto resolve o problema dela) |
-| **v** | Valor (proposta) | A clareza com que o anúncio promete uma transformação concreta | Headline da capa, only factor, primeiras 3 fotos |
+| **v** | Valor (proposta) | A clareza com que o anúncio promete uma transformação concreta | Composição visual da capa (produto ambientalizado, sem texto), only factor, primeiras fotos StorySelling |
 | **i** | Incentivo | Razões adicionais para comprar AGORA (frete, garantia, parcelamento, brinde) | Badge de envio, mensagem de garantia, preço, promoções |
 | **f** | Fricção | O que atrapalha entender ou decidir (texto confuso, fotos ruins, dúvidas sem resposta) | Descrição mal escrita, fotos de baixa qualidade, falta de info, dúvida no tamanho |
 | **a** | Ansiedade | Medos específicos do comprador (vai chegar quebrado? é frágil? é igual da foto?) | Reviews negativas, FAQ recorrente, comentários "achei que vinha X" |
@@ -108,12 +108,17 @@ Estrutura narrativa de 7 partes, simplificada para o contexto de Mercado Livre. 
 | 6 | **Plano** | O passo a passo claro de como o produto resolve | Bloco 3 da descrição + selos visuais nas fotos 6-8 |
 | 7 | **Chamada à ação** | O CTA final | Foto 10 (Macro-Yes) e CTA da descrição |
 
-**Implicação para o briefing das fotos:**
-- Foto 1 (CAPA) deve tocar no **problema interno** (3), não no externo (2).
-- Fotos 2-5 mostram o **plano** (6) — como o produto resolve.
-- Fotos 6-8 dão **prova** do plano (detalhes técnicos que sustentam).
-- Foto 9 elimina as ansiedades que poderiam atrapalhar a parte 6.
-- Foto 10 é a **chamada à ação** (7) com cenário aspiracional.
+**Implicação para o briefing das fotos** (segue a hierarquia **Equilibrado** da seção 6):
+- Foto 1 (CAPA, slot 1) toca no **problema interno** (3), não no externo (2) — pela composição visual do produto ambientalizado (capa textless), nunca por headline.
+- Foto 2 (Antes vs Depois, slot 2) mostra a transformação concreta: o **plano** (6) em resultado (`+v−a`).
+- Fotos 3 e 4 quebram as dúvidas racionais: dimensão (slot 3, Badge Tamanho, `−f`) e material/durabilidade (slot 4, Anti-Ansiedade Material, `−a`).
+- Foto 5 (Lifestyle Emocional, slot 5) é o respiro emocional que reaquece a motivação (`+m`).
+- Foto 6 (Clareza Absoluta, slot 6) esclarece a dúvida mais recorrente e declara a limitação (`−a−f`).
+- Foto 7 (Detalhe Técnico, slot 7) dá a **prova** de como o produto funciona — o mecanismo/pedal (`−f+v`).
+- Foto 8 (Lifestyle / Uso Real, slot 8) cria identificação com o produto em uso real (`+m`).
+- Foto 9 (Sobrecorreção, slot 9) elimina as ansiedades que poderiam atrapalhar a decisão (`−a−f`).
+- Foto 10 (Macro-Yes, slot 10) é a **chamada à ação** (7) com cenário aspiracional (`+i+v`).
+- Slot 11 (Prova Social) permanece dormente até haver review real nosso (ver seção 6).
 
 ---
 
@@ -138,7 +143,7 @@ O ONLY FACTOR é a frase única, curta e específica que descreve **por que esse
 ### Onde aparece o ONLY FACTOR
 
 - Estrutura central da **descrição** (bloco 1 abertura).
-- **Headline da CAPA** (foto 1).
+- Na **CAPA** (foto 1), o ONLY FACTOR se expressa pela **composição visual** (produto ambientalizado ao centro) — nunca por headline/texto (regra capa textless).
 - **Headline da MACRO-YES** (foto 10).
 - Refletido nos **selos da foto 9** (sobrecorreção).
 

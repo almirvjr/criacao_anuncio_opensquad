@@ -34,11 +34,30 @@ _RATIO_PATS = [
 _SCALE_CTX = re.compile(
     r"(height|altura|vanity|bancada|tall|size|escala|proporç|proporc|larg|width)", re.I)
 
+# --- "3/4" de ANGULO DE CAMERA nao e razao de tamanho ----------------------
+# "vista 3/4" e vocabulario padrao de fotografia de produto (mostra frente +
+# lateral) e o proprio photo-templates.md manda usar na CAPA. Sem esta excecao o
+# linter bloqueava quem seguia o template. Neutralizado ANTES da checagem de
+# razao — o que sobra do texto continua sendo checado normalmente.
+_CAM_ANGLE_RATIO = re.compile(
+    r"(?:vista|vis[ãa]o|[âa]ngulo|perspectiva|view|angle)\s*(?:de\s*)?3\s*/\s*4"
+    r"|3\s*/\s*4\s*(?:view|angle|diagonal|vista|[âa]ngulo)"
+    r"|three[\s-]?quarters?",
+    re.I)
+
 # --- termos de camera que incham o produto ---------------------------------
 _INFLA_PATS = [
     r"\bclose[\s-]?ups?\b", r"\blow[\s-]?angle\b", r"\bmacro\b",
     r"\bf\s*/?\s*1\.?8\b", r"\bworm'?s[\s-]?eye\b", r"\bextreme close\b",
 ]
+
+# --- "Macro-Yes" e NOME DE SLOT, nao lente macro ---------------------------
+# O slot 10 do storyselling-framework.md se chama "Macro-Yes + CTA" (MECLABS) e
+# a chave do template e MACRO_YES_CTA_FINAL. Sem esta excecao, todo prompt que
+# citasse o nome do slot levava CAMERA_INFLA — aviso que nasce errado ensina o
+# time a ignorar aviso. Neutralizado ANTES da checagem; "macro" de lente segue
+# avisando normalmente. Mesma familia do _CAM_ANGLE_RATIO acima.
+_MACRO_YES_SLOT = re.compile(r"\bmacro[\s_-]?yes\b", re.I)
 
 
 def _norm(s):
@@ -70,9 +89,11 @@ def lint_prompt(text, edit=False):
                     "Reescreva em linguagem natural."))
 
     # 2) razao de tamanho em texto
-    if _SCALE_CTX.search(text):
+    #    Tira antes os "3/4" que sao angulo de camera, senao "vista 3/4" bloqueia.
+    texto_escala = _CAM_ANGLE_RATIO.sub(" ", text)
+    if _SCALE_CTX.search(texto_escala):
         for pat in _RATIO_PATS:
-            if re.search(pat, text, re.I):
+            if re.search(pat, texto_escala, re.I):
                 if edit:
                     out.append(("WARN", "RATIO_ESCALA_EDIT",
                                 "razão de tamanho no prompt de edição é OK como direção relativa "
@@ -87,8 +108,10 @@ def lint_prompt(text, edit=False):
                 break
 
     # 3) termos de camera que incham o produto
+    #    Tira antes o nome do slot "Macro-Yes", senao citar o slot 10 vira aviso.
+    texto_camera = _MACRO_YES_SLOT.sub(" ", text)
     for pat in _INFLA_PATS:
-        if re.search(pat, text, re.I):
+        if re.search(pat, texto_camera, re.I):
             out.append(("WARN", "CAMERA_INFLA",
                         f"termo de câmera que INCHA o produto detectado (close-up/low-angle/macro/f1.8). "
                         f"Pra produto pequeno em escala correta, preferir 'wide shot, altura dos olhos, ~2m'."))

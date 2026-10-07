@@ -67,6 +67,60 @@ def _vlabel(img, x_right, ycenter, text, f, fill):
 def _mask_of(img):
     return cutout.alpha_mask(img)
 
+def _draw_profundidade(img, draw, cfg, geom, style):
+    """Cota de PROFUNDIDADE: diagonal que RECUA a partir da base do produto.
+
+    So desenha quando `dim_profundidade` vem preenchido no config — produto
+    redondo (`status: nao_aplicavel`) manda string vazia e nada aparece.
+
+    O eixo real de perspectiva NAO da pra ler da mascara (ela e uma silhueta
+    2D), entao o recuo e uma diagonal fixa pra direita-e-pra-cima, que e a
+    leitura convencional de profundidade em foto de catalogo 3/4. Sai do lado
+    DIREITO porque altura ja ocupa a esquerda e largura a base.
+    """
+    cl, cr, t, b = geom
+    txt = str(cfg.get("dim_profundidade") or "").strip()
+    if not txt:
+        return
+
+    finas = (style == "finas")
+    col = (74, 55, 42) if finas else BROWN
+    f = font(24, 700) if finas else font(31, 800)
+    dashed = cfg.get("dim_dashed", False)
+    labelbox = cfg.get("dim_label_box", True) if finas else False
+    ext = cfg.get("dim_extension", True)
+
+    def L(p0, p1, w):
+        if dashed: _dashed_line(draw, p0, p1, col, width=w)
+        else: draw.line([p0, p1], fill=col, width=w)
+
+    gap = 30
+    tw = draw.textlength(txt, font=f)
+    x0 = cr + gap
+    # a cota precisa caber ELA e o rotulo dentro da margem; senao avisa e sai.
+    x1 = min(x0 + max(90, int(0.42 * (cr - cl))), int(W - PAD - tw - 16))
+    if x1 - x0 < 60:
+        print(f"[dim] profundidade '{txt}' pulada: produto ocupa a direita, "
+              f"sobraram {max(0, x1 - x0)}px e a cota precisa de 60px")
+        return
+
+    tilt = 0.55                                   # recuo visual (~29 graus)
+    y0 = b
+    y1 = max(t + 10, y0 - int(tilt * (x1 - x0)))
+    if ext:
+        L((cr, b), (x0 - 4, b), 1)                # chamada saindo da base do produto
+    L((x0, y0), (x1, y1), 2)                      # linha de cota diagonal
+    _arrowhead(draw, (x0, y0), (x0 + 24, y0 - int(tilt * 24)), col, 10)
+    _arrowhead(draw, (x1, y1), (x1 - 24, y1 + int(tilt * 24)), col, 10)
+
+    lx = x1 + 10
+    ly = y1 - f.size // 2
+    if labelbox:
+        draw.rounded_rectangle([lx - 8, ly - 8, lx + tw + 8, ly + f.size + 8],
+                               radius=11, fill=(251, 246, 239))
+    draw.text((lx, ly), txt, font=f, fill=col)
+
+
 def draw_tecnica(img, draw, cfg):
     style=cfg.get("dim_style","modelo")
     mask=_mask_of(img); l,t,r,b=mask.getbbox()
@@ -75,6 +129,17 @@ def draw_tecnica(img, draw, cfg):
     cols=np.where(ma[ymid])[0]
     cl,cr=(int(cols.min()),int(cols.max())) if len(cols) else (l,r)
     col=BROWN; f=font(31,800); A=cfg["dim_altura"]; Wd=cfg["dim_largura"]
+
+    # As cotas de altura/largura sao desenhadas FORA da silhueta (esquerda e base).
+    # Se o produto chega perto da borda, elas caem fora do canvas e somem sem erro
+    # nenhum — falha silenciosa. Aqui nao se reposiciona nada (isso mudaria fotos ja
+    # aprovadas), so se AVISA, pra quem gerou saber que precisa reenquadrar.
+    if l < 80:
+        print(f"[dim] AVISO: so ha {l}px de folga a esquerda do produto e a cota de "
+              f"altura precisa de ~80px — ela vai sair cortada. Reenquadrar a base.")
+    if H - b < 110:
+        print(f"[dim] AVISO: so ha {H-b}px de folga abaixo do produto e a cota de "
+              f"largura precisa de ~110px — ela vai sair cortada. Reenquadrar a base.")
 
     if style=="cotas":
         xd=l-66
@@ -136,6 +201,9 @@ def draw_tecnica(img, draw, cfg):
         draw.line([(cl,yh-9),(cl,yh+9)],fill=col,width=2); draw.line([(cr,yh-9),(cr,yh+9)],fill=col,width=2)
         _arrowhead(draw,(cl,yh),(cl+24,yh),col,10); _arrowhead(draw,(cr,yh),(cr-24,yh),col,10)
         w=draw.textlength(Wd,font=f); draw.text(((cl+cr)//2-w/2,yh+9),Wd,font=f,fill=col)
+
+    # profundidade (opcional): diagonal de recuo no lado direito
+    _draw_profundidade(img, draw, cfg, (cl, cr, t, b), style)
 
     # selo de litragem = etiqueta/tag MAIOR, colada no topo-direito do produto
     if cfg.get("liters"):

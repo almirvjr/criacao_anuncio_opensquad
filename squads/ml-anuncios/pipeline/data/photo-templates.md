@@ -57,7 +57,7 @@ Todos os templates são otimizados para **Gemini 2.5 Flash Image (Nano Banana)**
   "prompt": {
     "instrucao_principal": "USE A IMAGEM ANEXADA DO PRODUTO — NÃO ALTERE O PRODUTO, apenas cenário e iluminação. Integre o produto a um ambiente real (capa AMBIENTALIZADA), com o produto ao centro em destaque.",
     "estilo_visual": "fotografia de produto premium hero shot ambientalizado estilo capa de marketplace líder",
-    "composicao": "produto centralizado em destaque no ambiente, dominante no frame, ocupando ~60% da área visual, cena clean ao redor",
+    "composicao": "produto centralizado no eixo do frame e totalmente nítido, herói da cena, ambiente clean ao redor sem elementos competindo — o tamanho do produto é governado pela direção ESCALA abaixo, não por esta linha",
     "cenario": {
       "fundo": "ambiente real clean ({{ambiente_capa|banheiro ou cozinha contemporânea brasileira, claros e organizados}}), produto ao centro como herói da cena",
       "estilo": "ambientalizado, sofisticado, alta legibilidade em thumbnail — NÃO fundo branco isolado"
@@ -86,8 +86,8 @@ Todos os templates são otimizados para **Gemini 2.5 Flash Image (Nano Banana)**
       "o produto precisa parar o scroll em menos de 1 segundo",
       "CAPA: lixeira sempre na DIAGONAL (vista 3/4), mostrando frente + lateral — nunca de frente reta",
       "POSICAO: lixeira num CANTO proprio (encostada na lateral da bancada ou no angulo bancada-parede), como nas capas aprovadas — NUNCA solta no meio do piso aberto",
-      "ENQUADRAMENTO: a lixeira fica no CENTRO da imagem (eixo) mesmo estando no canto do ambiente — pode CORTAR metade da bancada pra centralizar a lixeira no frame",
-      "ESCALA: lixeira BEM pequena — 25 cm contra bancada de ~90 cm = ATE 1/3 e na real MENOS (~0,28); a bancada deve parecer ~3,5x mais alta que a lixeira",
+      "ENQUADRAMENTO: a lixeira fica no CENTRO da imagem (eixo) mesmo estando no canto do ambiente — pode CORTAR grande parte da bancada pra centralizar a lixeira no frame",
+      "ESCALA: wide shot, câmera na altura dos olhos a ~2m de distância, lente grande-angular. A lixeira é um objeto de CHÃO de 25 cm ao lado de um gabinete de banheiro de 90 cm: o topo da tampa chega na altura da gaveta de baixo do gabinete e fica MUITO abaixo da pedra da bancada. Ela ocupa o terço inferior do enquadramento",
       "INOX: reflexo SUAVE e difuso no corpo (acabamento escovado refletindo o ambiente claro) — EVITAR a faixa preta vertical (mirror stripe) que vem da foto de estudio",
       "CAPA SEM TEXTO: nenhum overlay de headline/selo/CTA nesta foto — capa ambientalizada limpa",
       "ambiente real clean, NÃO fundo branco puro isolado — o produto é o herói dentro da cena",
@@ -807,7 +807,7 @@ Todos os templates são otimizados para **Gemini 2.5 Flash Image (Nano Banana)**
 
 ## TEMPLATE AUXILIAR — FICHA TÉCNICA DE DIMENSÕES
 
-> **Foto técnica auxiliar (fora da hierarquia de 11 slots).** Preenchido com `dados_produto.dimensoes_produto` (resolvido no checkpoint step-04b). `altura` e `largura` são obrigatórias — se qualquer uma não tiver `status: "ok"` ao iniciar o step-07, o step veta (ver seção de VETO no step-07-fotos.md). `profundidade` é opcional: passar vazio quando `status: "nao_aplicavel"` — a linha some do template HTML automaticamente.
+> **Foto técnica auxiliar (fora da hierarquia de 11 slots).** Preenchido com `dados_produto.dimensoes_produto` (resolvido no checkpoint step-04b). `altura` e `largura` são obrigatórias — se qualquer uma não tiver `status: "ok"` ao iniciar o step-07, o step veta (ver seção de VETO no step-07-fotos.md). `profundidade` é opcional e **é desenhada** desde 22/07 (cota diagonal de recuo, à direita do produto): passar vazio quando `status: "nao_aplicavel"` (produto redondo) — aí a cota simplesmente não aparece.
 
 ```json
 {
@@ -824,13 +824,13 @@ Todos os templates são otimizados para **Gemini 2.5 Flash Image (Nano Banana)**
   "prompt": {
     "instrucao_principal": "USE A IMAGEM ANEXADA DO PRODUTO — NÃO ALTERE O PRODUTO. Apresente o produto completo com fundo neutro limpo, mostrando vista frontal ou levemente em perspectiva que permita entender as três dimensões.",
     "estilo_visual": "fotografia técnica de produto estilo catálogo com fundo branco neutro",
-    "composicao": "produto centralizado ocupando 60-70% do frame, espaço lateral/inferior preservado para overlay do quadro de medidas (canto inferior direito)",
+    "composicao": "produto centralizado ocupando 60-70% do frame, com margem livre à ESQUERDA e ABAIXO do produto (é onde entram as linhas de cota) e o canto superior direito desimpedido (selo de litragem)",
     "cenario": {
       "fundo": "branco puro ou cinza muito claro neutro",
       "estilo": "técnico limpo, sem distrações"
     },
     "produto": {
-      "posicao": "centro do frame, levemente deslocado à esquerda para liberar espaço no canto inferior direito",
+      "posicao": "centro do frame, com folga generosa à esquerda e embaixo (as cotas são desenhadas ali)",
       "destaque": "produto inteiro visível — não usar close ou crop",
       "visibilidade": "todas as dimensões fisicamente compreensíveis"
     },
@@ -870,9 +870,9 @@ Todos os templates são otimizados para **Gemini 2.5 Flash Image (Nano Banana)**
 
 **Slots variáveis:** `headline_dimensoes`, `dim_altura`, `dim_largura`, `dim_profundidade`, `cor_produto`.
 
-**Fonte dos dados:** `dados_produto.dimensoes_produto.altura` e `.largura` são obrigatórias — `status: "ok"` exigido antes de chegar ao step-07, caso contrário é VETO. `profundidade` é opcional — se `status: "nao_aplicavel"`, passar `dim_profundidade` vazio (a linha some do template HTML via `:has(.dim-value:empty)`).
+**Fonte dos dados:** `dados_produto.dimensoes_produto.altura` e `.largura` são obrigatórias — `status: "ok"` exigido antes de chegar ao step-07, caso contrário é VETO. `profundidade` é opcional: vem preenchida quando existe (vira a 3ª cota) e vazia quando `status: "nao_aplicavel"`.
 
-**Overlay pós-produção:** quadro branco semi-transparente (painel) no canto inferior direito com as linhas de dimensão (`Altura` e `Largura / Diâmetro` sempre presentes; `Profundidade` apenas quando disponível); `headline_dimensoes` no topo (ex: "Dimensões"). **SEM `brand_signature` no rodapé** — regra SEM MARCA (Almir 19/06, DEFINITIVA): nenhuma foto leva logo/slogan/marca, para não prender a imagem a um eventual rebrand.
+**Overlay pós-produção (`render_faixa.py`, chave `dim_altura` presente liga o modo técnico):** cotas desenhadas **sobre a própria foto** — seta dupla vertical à esquerda do produto (altura), horizontal abaixo (largura) e **diagonal de recuo à direita (profundidade, quando informada)**, com o número dentro de uma caixinha creme; selo de litragem colado no topo-direito do produto (chave `liters`). O produto precisa de folga (~80px à esquerda, ~110px abaixo) senão a cota sai do quadro — o renderer avisa no log. Três estilos em `dim_style`: `"modelo"` (default), `"cotas"` e `"finas"` (cota de engenharia com linhas de chamada; ajustes finos em `dim_extension`, `dim_dashed`, `dim_label_box`). **Não existe mais painel de medidas no canto** — isso era o overlay por HTML, aposentado em 06/2026. **SEM marca em lugar nenhum** — regra SEM MARCA (Almir 19/06, DEFINITIVA): nenhuma foto leva logo/slogan/assinatura, para não prender a imagem a um eventual rebrand.
 
 ---
 

@@ -19,7 +19,7 @@ Erros comuns que precisam ser evitados pela squad. Cada agente deve ler os anti-
 
 ### Nunca fazer
 1. **Escolher categoria pelo nome simples sem checar atributos obrigatórios** — categoria errada = anúncio reprovado pelo ML.
-2. **Ignorar confiança do category_predictor** — confiança < 70% = risco alto, escale.
+2. **Aceitar categoria raiz/intermediária** — só categoria folha com `listing_allowed: true` publica; categoria raiz responde 200 e engana. E quando o predictor (`domain_discovery`) devolve 2+ candidatos plausíveis com os concorrentes divididos, escale em vez de chutar o #1.
 3. **Copiar palavras-chave de um único concorrente** — busque o padrão entre os top 3.
 4. **Confiar em categorias antigas em cache** — sempre busque ao vivo, taxonomia ML muda.
 

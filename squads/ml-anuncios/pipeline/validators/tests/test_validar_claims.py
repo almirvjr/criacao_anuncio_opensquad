@@ -98,3 +98,56 @@ class TestGuarda(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestCopyDaRenata(unittest.TestCase):
+    """A guarda cobria SO o overlay das fotos — titulo e descricao da Renata
+    passavam sem trava nenhuma (achado da higiene de prompts, 2026-07-19).
+    O comprador le a descricao antes de comprar: claim falso ali gera devolucao
+    igual (ou pior) que na foto.
+    """
+
+    def copy_base(self):
+        return {
+            "titles": [
+                {"texto": "Lixeira Inox 12L Pedal Antiodor Cozinha", "recomendado": True},
+            ],
+            "description": {
+                "bloco_1_abertura": "Tem detalhes que mudam a sensacao da casa.",
+                "bloco_2_specs": "- Material: aco inox\n- Capacidade: 12 litros",
+                "bloco_3_features_beneficios": "- Pedal silencioso: mais higiene no dia a dia",
+            },
+        }
+
+    def test_claim_falso_na_descricao_bloqueia(self):
+        copy = self.copy_base()
+        copy["description"]["bloco_2_specs"] += "\n- Acompanha balde interno removivel"
+        blocks, _ = validar_claims(brief_base(), copy_doc=copy)
+        self.assertTrue(any(c.startswith("CLAIM_FALSO") for c, _ in blocks),
+                        f"deveria bloquear claim falso na descricao; veio {blocks}")
+
+    def test_claim_falso_no_titulo_bloqueia(self):
+        copy = self.copy_base()
+        copy["titles"].append({"texto": "Lixeira Inox 12L com Balde Interno", "recomendado": False})
+        blocks, _ = validar_claims(brief_base(), copy_doc=copy)
+        self.assertTrue(any(c.startswith("CLAIM_FALSO") for c, _ in blocks),
+                        f"deveria bloquear claim falso no titulo; veio {blocks}")
+
+    def test_limitacao_declarada_na_descricao_passa(self):
+        """'nao vem com balde interno' e transparencia, nao claim — nao pode bloquear."""
+        copy = self.copy_base()
+        copy["description"]["bloco_3_features_beneficios"] += (
+            "\n\nEste modelo nao vem com balde interno removivel."
+        )
+        blocks, _ = validar_claims(brief_base(), copy_doc=copy)
+        self.assertEqual([], [b for b in blocks if b[0].startswith("CLAIM_FALSO")],
+                         f"disclosure honesto nao pode bloquear; veio {blocks}")
+
+    def test_copy_limpa_passa(self):
+        blocks, _ = validar_claims(brief_base(), copy_doc=self.copy_base())
+        self.assertEqual([], [b for b in blocks if "COPY" in b[0]])
+
+    def test_sem_copy_continua_funcionando(self):
+        """Retrocompatibilidade: chamar sem copy_doc nao pode mudar nada."""
+        blocks, warns = validar_claims(brief_base())
+        self.assertEqual([], blocks)

@@ -33,7 +33,7 @@ Motivo: padronização visual no marketplace, previsibilidade de overlay (templa
 - [ ] Range de preços do nicho (min, mediano, max)
 - [ ] Top-5 palavras-chave aparecendo nos títulos dos concorrentes
 
-**Veto:** se `category_predictor` retornar confiança < 70%, marcar para revisão humana e propor 2 categorias alternativas.
+**Veto:** o `domain_discovery` não retorna confiança. Marcar para revisão humana (com 2 categorias alternativas, tiradas da própria lista de candidatos) quando o predictor devolver 2+ candidatos plausíveis com os concorrentes top divididos entre eles, quando menos de 2 dos 3 concorrentes estiverem na categoria escolhida, ou quando a categoria não for folha que aceita anúncio (`listing_allowed`).
 
 ## Inteligência de Conversão (saída de Helena Estrategista)
 

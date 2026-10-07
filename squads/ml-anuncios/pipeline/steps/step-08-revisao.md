@@ -36,9 +36,10 @@ Load these files before executing:
 
      **(i) Gate determinístico** — rodar
      ```
-     python squads/ml-anuncios/pipeline/validators/qa_imagens.py squads/ml-anuncios/output/fotos/{pai_sku}/ --brief squads/ml-anuncios/output/inteligencia/brief-{pai_sku}.yaml
+     python squads/ml-anuncios/pipeline/validators/qa_imagens.py squads/ml-anuncios/output/fotos/{pai_sku}/ --brief squads/ml-anuncios/output/inteligencia/brief-{pai_sku}.yaml --lock squads/ml-anuncios/pipeline/data/produtos-travados/{pai_sku}.json
      ```
-     Ele abre cada JPG e trava: dimensão **1200×1200 exata**, **produto presente** (cutout achou o produto — pega geração que perdeu/distorceu o produto) e **cor do inox** (veredito `dourado` BLOQUEIA — acabou o "marca falha e segue"). Código != 0 = mídia visual reprovada.
+     Ele abre cada JPG e trava: dimensão **1200×1200 exata**, **produto presente** (cutout achou o produto — pega geração que perdeu/distorceu o produto), **cor do inox** (veredito `dourado` BLOQUEIA — acabou o "marca falha e segue") e **proveniência do produto** (`--lock`). Código != 0 = mídia visual reprovada.
+     - **`--lock` é obrigatório (arquitetura produto-travado, DEFINITIVA):** confere o sha256 da camada do produto de cada foto composta contra o manifesto travado (`produtos-travados/{pai_sku}.json`). É a prova de que o produto colado é o PNG fiel aprovado, não um produto trocado ou re-renderizado (edit-drift). Sem `--lock` a conferência de proveniência não roda e o veto de "produto infiel" fica cego.
 
      **Override estreito do dourado:** o gate mede o cast quente dentro da máscara do produto. Se a foto tem um objeto NÃO-metálico dominante que a máscara pode pegar por engano (ex.: a caixa de papelão na foto de Clareza), o `dourado` pode ser falso-positivo. Nesse caso o Vinicius ABRE a imagem, confirma que o corpo de inox real está prata neutro, e **documenta o override** no parecer (`override_dourado: "papelao, nao o inox"`). Override só vale com a imagem aberta e justificativa escrita — nunca presumir.
 
@@ -58,7 +59,7 @@ Load these files before executing:
    - **Categoria aceita variações**: no `categorias.yaml` da Cibele, o produto deve ter `variacoes_suportadas: true` e `cor_value_map` preenchido para cada cor presente em `variacoes[]`. `value_id` ausente para qualquer cor é veto — devolver à Cibele.
    - **Descrição plain text**: confirmar ausência de HTML, markdown, emojis e `<br>` na descrição (mesma regra do modo simples). Regex: `/<[^>]+>/` e `\*\*|__|\#{1,}|>[ ]+`.
 4. Atribuir status: `aprovado` se zero veto e score >= 80; `reprovado` se algum veto ou score < 80, com lista de correções específicas por bloco.
-5. Escrever parecer consolidado em `output/revisao/pareceres.yaml`.
+5. Escrever **dois** arquivos, sem duplicar verdade: um parecer por SKU em `output/revisao/parecer-{pai_sku}.yaml` (é esse que a Paula lê no step-10) e o consolidado do lote em `output/revisao/pareceres.yaml` (o `lote:` + a lista, para leitura humana). Mesmo conteúdo de `checks`, `score_total` e `breakdown` nos dois.
 
 ## Output Format
 
@@ -73,6 +74,15 @@ pareceres:
   - sku: "<string>"
     modo: "simples|variacoes"          # reflete o campo modo do anúncio
     status: "aprovado|reprovado"
+    score_total: <int>                 # 0-100; aprovado exige >= 80 E zero veto
+    breakdown:                         # tabela fixa, IGUAL nos dois modos, soma 100
+      titulo: <int>                    # teto 15
+      descricao: <int>                 # teto 20
+      ficha_tecnica: <int>             # teto 15
+      midia_visual: <int>              # teto 20
+      storyselling: <int>              # teto 15
+      compliance_ml: <int>             # teto 10
+      tom_marca: <int>                 # teto 5
     titulo_final_validado: "<string>"
     checks:
       titulo:        { ok: <bool>, notas: ["<string>", ...] }
@@ -82,7 +92,8 @@ pareceres:
       tom_marca:     { ok: <bool>, notas: ["<string>", ...] }
       compliance_ml: { ok: <bool>, notas: ["<string>", ...] }
       storyselling:  { ok: <bool>, notas: ["<string>", ...] }
-      # bloco abaixo presente apenas para modo: variacoes
+      # bloco abaixo presente apenas para modo: variacoes — é PORTÃO, não pontua:
+      # não entra no breakdown, e qualquer ok:false reprova independente do score
       variacoes_ml:
         ok: <bool>
         preco_uniforme:             { ok: <bool>, notas: ["<string>", ...] }
@@ -107,6 +118,15 @@ lote:
 pareceres:
   - sku: "TCD-LXI12"
     status: "aprovado"
+    score_total: 100
+    breakdown:
+      titulo: 15
+      descricao: 20
+      ficha_tecnica: 15
+      midia_visual: 20
+      storyselling: 15
+      compliance_ml: 10
+      tom_marca: 5
     titulo_final_validado: "Lixeira Inox 12L Pedal Antiodor Cozinha Banheiro Moderna"
     checks:
       titulo:        { ok: true, notas: ["56 chars", "padrão PMME OK", "escolha entre as alternativas válida"] }

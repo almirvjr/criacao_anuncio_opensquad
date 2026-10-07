@@ -27,7 +27,7 @@ agents:
     title: "Especialista em Categorização ML"
     icon: "🗂️"
     execution: "subagent"
-    responsibility: "Para cada produto, descobre a categoria correta no Mercado Livre usando a API category_predictor, identifica os 3 concorrentes top-ranqueados na categoria e extrai padrões aplicáveis (palavras-chave, atributos comuns, range de preços)."
+    responsibility: "Para cada produto, descobre a categoria correta no Mercado Livre usando a API domain_discovery, identifica os 3 concorrentes top-ranqueados na categoria e extrai padrões aplicáveis (palavras-chave, atributos comuns, range de preços)."
     skills: ["web_search", "web_fetch"]
     tools: ["Read", "Write", "WebFetch", "Bash"]
 

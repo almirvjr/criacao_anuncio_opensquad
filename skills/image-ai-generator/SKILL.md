@@ -1,15 +1,17 @@
 ---
 name: image-ai-generator
 description: >
-  Generates and ITERATIVELY EDITS images via the Openrouter API using Nano Banana
-  (Gemini image) models. Encodes the Nano Banana interaction protocol: natural-language
-  first generation, then single isolated edits (never regenerate to fix one detail),
-  photographic framing for scale control, and style/reference transfer.
+  Generates images via the Openrouter API using Nano Banana (Gemini image) models, and
+  edits ONLY the background/scenery of an existing image. Encodes the Nano Banana
+  interaction protocol: natural-language first generation, background-only isolated edits
+  (the PRODUCT is never fixed with --edit — that is composition/one-shot, to avoid
+  edit-drift), photographic framing for scale control, and style/reference transfer.
 description_pt-BR: >
-  Gera e EDITA imagens de forma iterativa via API do Openrouter usando Nano Banana
-  (Gemini image). Codifica o protocolo de interacao com o Nano Banana: 1a geracao em
-  linguagem natural, depois edicoes isoladas (nunca regerar pra corrigir um detalhe),
-  framing de fotografo pra controlar escala, e transferencia de estilo por referencia.
+  Gera imagens via API do Openrouter usando Nano Banana (Gemini image) e edita APENAS o
+  fundo/cenario de uma imagem existente. Codifica o protocolo de interacao com o Nano
+  Banana: 1a geracao em linguagem natural, edicoes isoladas so de fundo (o PRODUTO nunca
+  se conserta com --edit — isso e composicao/one-shot, pra evitar edit-drift), framing de
+  fotografo pra controlar escala, e transferencia de estilo por referencia.
 type: script
 version: "2.0.0"
 script:
@@ -36,28 +38,60 @@ chamar a ferramenta sem as boas práticas serem checadas. Ele **BLOQUEIA** antes
 E **avisa** termos de câmera que incham o produto (close-up/low-angle/macro/f1.8). Em modo `--edit`,
 fração vira só aviso (ali é direção relativa). Override consciente: `--no-lint`.
 
-## A regra de ouro: EDITE, não regere
+## Qual API (17/09/2026)
 
-O maior erro é pedir "regere a imagem com o detalhe X corrigido". O modelo **recalcula a cena do
-zero** e estraga o que já estava certo (a "amnésia"). Quando a cena/produto já estão bons e falta
-ajustar UMA coisa (escala, centro, cor, um prop), use o **modo edição** (`--edit`): ele muda só
-aquilo e preserva o resto.
+Por padrao (`--api images`) a skill chama **`/images/generations`**, nao `/chat/completions`.
+Motivo: so essa aceita tamanho. Gera em **2048x2048** e reduz pra **1200x1200**, o canvas
+que os moldes do overlay exigem. O caminho antigo devolve 1024 e ignora `--size`; ele
+continua valendo pra `--edit` e pra `--api chat`.
+
+🔴 **A referencia so chega pelo parametro `input_references`.** Com o nome errado
+(`image`, `image_urls`) a API **aceita, cobra e ignora a referencia em silencio** — sai
+outro produto, sem erro nenhum. Ha trava embutida (confere `prompt_tokens`), mas quem
+mexer aqui confere a IMAGEM, nao o codigo.
+
+Modos: `test` · `production` (Nano Banana 2 Flash) · `pro` (Nano Banana Pro) ·
+**`gpt` (GPT Image 2) — PADRAO desde 17/09/2026** (o padrao era `test`). No bake-off do 8L (`tests/motor-bakeoff/`) o `gpt` errou a
+escala pela metade do `pro`. Nenhum acerta sozinho — medir continua obrigatorio.
+
+## A regra de ouro: o PRODUTO nunca se conserta com `--edit`
+
+Pedir "regere/edite pra corrigir o detalhe X do produto" é o maior erro: o Nano Banana **recalcula a
+cena do zero** e regride o que já estava aprovado no produto (a "amnésia" = *edit-drift*; o slot 6
+custou 9 iterações). Por isso a **arquitetura produto-travado (CLAUDE.md, 2026-06-23, DEFINITIVA)**:
+o produto **NÃO é re-renderizado, é composição** — recorte fiel (PNG travado por hash) colado por
+código sobre a cena.
+
+**`--edit` serve SÓ pra FUNDO/CENÁRIO que não toca o produto** (trocar o ambiente, a luz, um prop do
+fundo). NUNCA pra corrigir **escala, centro, cor, forma, partes ou acabamento do produto** — isso é
+edit-drift garantido.
+
+Como corrigir o PRODUTO, sem `--edit` (política por slot do CLAUDE.md):
+- **Escala / centro / posição**: composição — `compose.py` cola o PNG travado no tamanho e lugar
+  certos (fidelidade por hash, custo IA zero). É onde escala e centralização são resolvidas, não no
+  modelo.
+- **Cor / variação**: `--faithful` (recolor idêntico da base real) ou usar a base real da cor;
+  produto travado por proveniência.
+- **Forma / partes / desastre**: one-shot regenerado do hero fiel (SEM `--edit`), com gate de
+  produto (`--lock`) + olho humano + `inox_cast`.
 
 ```bash
-# 1) Gera a cena base (uma vez)
+# 1) Cena base (uma vez)
 python3 skills/image-ai-generator/scripts/generate.py --mode pro \
   --reference <base do produto> --output foto.jpg --prompt "<cena, linguagem natural>"
 
-# 2) Trava e ajusta UMA coisa por vez, reusando a propria imagem como referencia:
+# 2) --edit SO pra mexer no fundo/cenario (o produto fica IDENTICO):
 python3 .../generate.py --mode pro --edit --reference foto.jpg --output foto.jpg \
-  --prompt "deixe a lixeira visivelmente menor, chegando so na gaveta de baixo do gabinete"
+  --prompt "troque o fundo por um banheiro de piso de madeira clara, mantendo o produto igual"
 python3 .../generate.py --mode pro --edit --reference foto.jpg --output foto.jpg \
-  --prompt "centralize a lixeira no eixo horizontal do quadro"
+  --prompt "deixe a luz do ambiente mais quente e suave, sem alterar o produto"
+
+# 3) Escala/centro/cor do PRODUTO -> composicao (compose.py + PNG travado), NAO --edit.
 ```
 
 **Regras do modo edição:** UMA mudança por chamada (nunca duas). Sempre `--reference` = a imagem
-ATUAL. Se a edição estragar algo, volte a editar (não regere a cena). Centralizar e redimensionar
-são MUITO mais confiáveis como edição do que num one-shot.
+ATUAL. A mudança tem que ser SÓ de fundo/cenário. Se precisou mexer no produto, PARE o `--edit` e vá
+pra composição ou one-shot — não insista editando.
 
 ## A 1ª geração: linguagem natural, NÃO JSON cru
 
@@ -125,7 +159,7 @@ produto anexado". Isso reduz drasticamente a tentativa-e-erro de descrever o amb
 - `--mode pro` (`google/gemini-3-pro-image`): **Nano Banana Pro** — muito mais fiel, usar pra cenas/lifestyle/capa.
 - `--reference <img>`: contexto visual (produto/logo/molde de estilo).
 - `--faithful`: reproduz a referência idêntica + aplica só a edição (recolor fiel).
-- `--edit`: **edição iterativa** — referência = imagem atual, prompt = UMA mudança, preserva o resto.
+- `--edit`: **edição só de FUNDO/CENÁRIO** — referência = imagem atual, prompt = UMA mudança que NÃO toca o produto (fundo/luz/prop). PROIBIDO pra corrigir escala/centro/cor/forma do produto (edit-drift) — isso é composição ou one-shot.
 
 ## Custo
 

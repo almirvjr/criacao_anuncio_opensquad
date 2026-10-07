@@ -52,11 +52,11 @@ Para cada **anúncio** em `anuncios-entrada.json` cujo `pai_sku` conste em `brie
 
 **FASE A — StorySelling + foto técnica (compartilhadas, 1× por anúncio)**
 
-1. **Identificar cor herói**: usar `brief.cor_heroi` se presente; senão usar a primeira variação em `variacoes[]`.
+1. **Identificar cor herói**: usar `brief.cor_heroi` — sempre preenchida e já confirmada no step-04b. Cor ausente = brief que não passou pela trava: parar e reportar, nunca adivinhar pela primeira variação.
 
 2. **Validar `fotos_bucket[0]` da cor herói**: HEAD request na URL. Se 4xx/5xx, marcar anúncio como `bloqueado_sem_foto_base` e pular.
 
-3. **Criar estrutura de pasta**: `squads/ml-anuncios/output/fotos/{pai_sku}/`, com subpastas `prompts/`, `_overlay_html/`, `ambientalizadas/`.
+3. **Criar estrutura de pasta**: `squads/ml-anuncios/output/fotos/{pai_sku}/`, com subpastas `prompts/` e `ambientalizadas/`. (Não criar `_overlay_html/` — era do overlay por navegador, aposentado em 06/2026; hoje o overlay é Pillow e o que se guarda é o config JSON em `prompts/overlay-{NN}.json`.)
 
 3b. **GATE anti-claim-falso (VETO — Fase 2 da blindagem)**: antes de gerar qualquer foto, rodar a guarda sobre o brief:
    ```
@@ -75,7 +75,7 @@ Para cada **anúncio** em `anuncios-entrada.json` cujo `pai_sku` conste em `brie
       - **Slot `FICHA_TECNICA_DIMENSOES` (foto técnica)**:
         - `{{dim_altura}}` ← `dados_produto.dimensoes_produto.altura`
         - `{{dim_largura}}` ← `dados_produto.dimensoes_produto.largura`
-        - `{{dim_profundidade}}` ← `dados_produto.dimensoes_produto.profundidade` (omitir/deixar vazio se `status: "nao_aplicavel"` — linha some do template HTML)
+        - `{{dim_profundidade}}` ← `dados_produto.dimensoes_produto.profundidade` (preencher quando existir: vira a 3ª cota, a diagonal de recuo à direita. Vazio se `status: "nao_aplicavel"` — produto redondo)
         - `{{headline_dimensoes}}` ← `briefing_fotos[N].headline` (padrão: "Dimensões")
       - **Slots cor-neutros** (DETALHE_TECNICO_*, FICHA_TECNICA_DIMENSOES): usar descrição de material/dimensão — campo `{{cor_produto}}` não se aplica, omitir ou deixar genérico.
       - **Slots CAPA e LIFESTYLE**: referenciar a cor herói explicitamente.
@@ -158,8 +158,8 @@ Para cada **anúncio** em `anuncios-entrada.json` cujo `pai_sku` conste em `brie
 **FASE C — Montar `picture_ids` e fechar metadata**
 
 6. Para cada variação:
-   - `modo: variacoes`: `picture_ids = fotos_cor + [foto-01..foto-10]` (11 itens; ambientalizada obrigatoriamente primeira).
-   - `modo: simples`: `picture_ids = [foto-01..foto-10]` (10 itens).
+   - `modo: variacoes`: `picture_ids = fotos_cor + [foto-02..foto-10]` (**10 itens**; ambientalizada obrigatoriamente primeira). O slot 1 (`CAPA_PURPLE_COW`) é gerado e guardado, mas **não entra** — a ambientalizada já é a capa da cor, e publicar as duas deixa o anúncio com duas capas, a segunda numa cor que pode não ser a que o comprador escolheu.
+   - `modo: simples`: `picture_ids = [foto-01..foto-10]` (10 itens). Aqui não há ambientalizada, então o slot 1 é a capa.
 
 7. **Marcar `status_fotos` do anúncio**:
    - `pronto`: todas as fotos (StorySelling + foto técnica + ambientalizadas) geradas com sucesso.

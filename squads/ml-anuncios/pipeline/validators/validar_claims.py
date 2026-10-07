@@ -11,14 +11,18 @@ Como funciona:
   1. De `limitacoes[]`, deriva os "termos policiados" (o que o produto NAO tem).
      Ex.: "Modelo sem balde interno" -> termo policiado "balde interno".
   2. Varre TODO texto de overlay do brief (headline/subheadline/badge/cta/selos
-     dos 10 slots) — e, se informado, o overlay que o Felipe de fato renderizou.
+     dos 10 slots) — e, se informado, o overlay que o Felipe de fato renderizou
+     E a copy da Renata (`--copy anuncio-{pai_sku}.yaml`: titulos + blocos da
+     descricao). Ate 19/07/2026 a guarda cobria SO as fotos: o comprador le o
+     titulo e a descricao antes de olhar foto por foto, entao claim falso ali
+     gerava devolucao igual, sem trava nenhuma.
   3. Se algum overlay AFIRMA um termo policiado (sem negacao) -> BLOQUEIA (claim falso).
      Se o mesmo termo aparece NEGADO ("sem balde") -> e transparencia, OK.
   4. Para cada limitacao com `disclosure_foto`, exige que a foto declare a
      limitacao (transparencia obrigatoria — inverte a regra de "esconder ponto fraco").
 
 Uso:
-  python validar_claims.py <brief.yaml> [--overlay <arquivo overlay do Felipe>]
+  python validar_claims.py <brief.yaml> [--overlay <overlay do Felipe>] [--copy <anuncio-{pai_sku}.yaml>]
 
 Saida: codigo 0 = SEM CLAIM FALSO | codigo 1 = BLOQUEADO.
 A autoridade e este script; ele roda no step-04 (apos validar_brief) e no step-07 (gate do Felipe).
@@ -119,8 +123,38 @@ def coletar_overlays(brief):
     return out
 
 
-def validar_claims(brief, overlays_extra=None):
-    """Retorna (blocks, warns). blocks vazio = passou."""
+def coletar_copy(copy_doc):
+    """Retorna [(rotulo, texto)] com os titulos e os blocos da descricao da Renata.
+
+    A guarda nasceu cobrindo so o overlay das fotos. Mas o comprador le o titulo
+    e a descricao ANTES de olhar foto por foto — claim falso ali gera devolucao
+    igual. Este coletor traz a copy pro mesmo escrutinio.
+    """
+    out = []
+    if not isinstance(copy_doc, dict):
+        return out
+    for t in copy_doc.get("titles") or []:
+        if isinstance(t, dict) and t.get("texto"):
+            sufixo = " (recomendado)" if t.get("recomendado") else ""
+            out.append((f"Titulo{sufixo}", t["texto"]))
+        elif isinstance(t, str):
+            out.append(("Titulo", t))
+    desc = copy_doc.get("description") or {}
+    if isinstance(desc, dict):
+        for chave, valor in desc.items():
+            if isinstance(valor, str) and str(chave).startswith("bloco"):
+                out.append((f"Descricao/{chave}", valor))
+    return out
+
+
+def validar_claims(brief, overlays_extra=None, copy_doc=None):
+    """Retorna (blocks, warns). blocks vazio = passou.
+
+    `copy_doc` = output da Renata (`anuncio-{pai_sku}.yaml`), opcional. Quando
+    informado, titulo e descricao passam pelas mesmas checagens de claim falso e
+    de feature de alto risco que o overlay das fotos. A checagem de transparencia
+    (item 2) continua so nas fotos: `disclosure_foto` aponta pra um slot de foto.
+    """
     blocks, warns = [], []
     if not isinstance(brief, dict):
         return [("BRIEF_INVALIDO", "brief nao e mapa")], []
@@ -128,6 +162,7 @@ def validar_claims(brief, overlays_extra=None):
     overlays = coletar_overlays(brief)
     if overlays_extra:
         overlays += [(None, t) for t in overlays_extra]
+    copys = coletar_copy(copy_doc)
 
     carac_norm = norm(" ".join(
         str(v) for v in _flatten(brief.get("dados_produto", {}).get("caracteristicas", {}))
@@ -150,6 +185,11 @@ def validar_claims(brief, overlays_extra=None):
                 blocks.append(("CLAIM_FALSO",
                                f"Foto {numero}: overlay afirma '{txt.strip()}' mas o produto "
                                f"TEM a limitacao '{texto_orig}'. Claim falso = devolucao."))
+        for rotulo, txt in copys:
+            if afirmado(termo, norm(txt)):
+                blocks.append(("CLAIM_FALSO_COPY",
+                               f"{rotulo}: afirma '{_linha_culpada(txt, termo)}' mas o produto TEM a "
+                               f"limitacao '{texto_orig}'. O comprador le isso antes de comprar = devolucao."))
 
     # 2) TRANSPARENCIA: limitacao com disclosure_foto tem que ser declarada na foto
     overlays_por_foto = {}
@@ -173,15 +213,41 @@ def validar_claims(brief, overlays_extra=None):
 
     # 3) WARN: feature de alto risco afirmada sem respaldo
     cobertos = {t for t, _, _, _ in termos if t}
-    for numero, txt in overlays:
+    for origem, txt in [(f"Foto {n}", t) for n, t in overlays] + copys:
         on = norm(txt)
         for feat in FEATURES_ALTO_RISCO:
             fn = norm(feat)
             if afirmado(fn, on) and fn not in carac_norm and fn not in cobertos:
                 warns.append(("CLAIM_RISCO_NAO_CONFIRMADO",
-                              f"Foto {numero}: afirma '{feat}' — nao consta em dados_produto.caracteristicas "
+                              f"{origem}: afirma '{feat}' — nao consta em dados_produto.caracteristicas "
                               f"nem em limitacoes. Confirmar que o produto realmente tem antes de publicar."))
+
+    # 4) WARN: limitacao que a descricao nunca declara (so vale quando ha copy)
+    if copys:
+        blob_copy = " ".join(norm(t) for _, t in copys)
+        for termo, eh_aus, _, texto_orig in termos:
+            if eh_aus and termo and not declarado(termo, blob_copy):
+                warns.append(("LIMITACAO_FORA_DA_COPY",
+                              f"A limitacao '{texto_orig}' nao e declarada em nenhum lugar do titulo "
+                              f"ou da descricao. A foto declara, mas quem le so o texto nao fica sabendo."))
     return blocks, warns
+
+
+def _trecho(txt, n=70):
+    t = " ".join(str(txt).split())
+    return t if len(t) <= n else t[:n] + "..."
+
+
+def _linha_culpada(txt, termo, n=90):
+    """Devolve a LINHA que contem o termo, nao o comeco do bloco.
+
+    Bloco de descricao tem varias linhas; mostrar os primeiros 70 caracteres
+    mandava o operador procurar no lugar errado.
+    """
+    for linha in str(txt).splitlines():
+        if linha.strip() and afirmado(termo, norm(linha)):
+            return _trecho(linha.strip(), n)
+    return _trecho(txt, n)
 
 
 def _flatten(x):
@@ -205,6 +271,8 @@ def main():
     ap = argparse.ArgumentParser(description="Guarda anti-claim-falso do overlay.")
     ap.add_argument("brief", help="Caminho do brief .yaml")
     ap.add_argument("--overlay", help="Arquivo opcional com overlays renderizados pelo Felipe (1 texto por linha)")
+    ap.add_argument("--copy", dest="copy_path",
+                    help="Opcional: anuncio-{pai_sku}.yaml da Renata — poe titulo e descricao sob a mesma guarda")
     args = ap.parse_args()
 
     if not os.path.isfile(args.brief):
@@ -216,7 +284,14 @@ def main():
     if args.overlay and os.path.isfile(args.overlay):
         extra = [ln.strip() for ln in open(args.overlay, encoding="utf-8") if ln.strip()]
 
-    blocks, warns = validar_claims(brief, overlays_extra=extra)
+    copy_doc = None
+    if args.copy_path:
+        if not os.path.isfile(args.copy_path):
+            print(f"ERRO: copy nao encontrada: {args.copy_path}", file=sys.stderr)
+            sys.exit(2)
+        copy_doc = carregar_yaml(args.copy_path)
+
+    blocks, warns = validar_claims(brief, overlays_extra=extra, copy_doc=copy_doc)
 
     for code, msg in warns:
         print(f"  [aviso] {code}: {msg}")

@@ -1,160 +1,118 @@
 ---
 name: image-overlay
 description: >
-  Aplica overlay de texto (headline, subheadline, badge, selos, CTA) sobre
-  uma imagem base via HTML/CSS renderizado por Playwright. Especializado em
-  marketplaces (Mercado Livre): cada um dos 10 slots da hierarquia psicológica
-  StorySelling tem um template de posicionamento próprio. Depende da skill
-  image-creator para o motor de renderização HTML→PNG.
+  Applies the StorySelling text overlay (eyebrow, headline, subheadline, badge, selos,
+  CTA, technical dimensions) on top of an already-generated 1200x1200 product photo.
+  Deterministic Python/Pillow renderer -- no browser, no HTML. Three layout archetypes
+  (faixa clara, scrim, plate) chosen by photo slot. Also hosts the companion product-photo
+  tooling used by the ml-anuncios pipeline: BiRefNet cutout, product lock/composition,
+  framing gate and stainless-color gate.
 description_pt-BR: >
-  Aplica overlay de texto (headline, subheadline, badge, selos, CTA) sobre
-  uma imagem base via HTML/CSS renderizado por Playwright. Especializado em
-  marketplaces (Mercado Livre): cada um dos 10 slots da hierarquia psicológica
-  StorySelling tem um template de posicionamento próprio. Depende da skill
-  image-creator para o motor de renderização HTML→PNG.
-type: mcp
-version: "1.0.0"
-mcp:
-  server_name: playwright
+  Aplica o overlay de texto StorySelling (eyebrow, headline, subheadline, badge, selos,
+  CTA, cotas tecnicas) sobre uma foto de produto ja gerada em 1200x1200. Render
+  deterministico em Python/Pillow -- sem navegador, sem HTML. Tres arquetipos de layout
+  (faixa clara, scrim, plate) escolhidos por slot da foto. Tambem abriga as ferramentas
+  vizinhas de foto de produto usadas no pipeline ml-anuncios: recorte BiRefNet, trava e
+  composicao do produto, gate de enquadramento e gate de cor do inox.
+type: script
+version: "2.0.0"
+script:
+  path: scripts/render_faixa.py
+  runtime: python3
+  invoke: "python3 {skill_path}/scripts/render_faixa.py --config \"{config}\""
 categories: [design, automation, marketplace]
-depends_on: [image-creator]
 ---
 
 # Image Overlay — Texto sobreposto em fotos de anúncio ML
 
 ## When to use
 
-Use esta skill quando precisar adicionar texto (headline, subheadline, badge, selos visuais, CTA) sobre uma imagem JÁ GERADA do produto, no contexto do pipeline de fotos da squad `ml-anuncios`.
+Use quando precisar aplicar texto (eyebrow, headline, subheadline, badge, selos, CTA, cotas de medida) sobre uma imagem JÁ GERADA do produto, no pipeline de fotos da squad `ml-anuncios`.
 
-Não é para gerar imagens do zero (isso é `image-ai-generator`) nem para padronizar dimensão/recorte (isso é `image-creator`). É especificamente o overlay de texto seguindo o método StorySelling.
+Não é para gerar imagem do zero (isso é `image-ai-generator`). **A ambientalizada (capa da cor) nunca leva overlay** — ela é onde o comprador compara cor, e texto atrapalha a comparação.
 
-## Inputs
+## O motor
 
-A skill recebe 1 arquivo JSON com os seguintes campos:
+`scripts/render_faixa.py` — render **determinístico em Python/Pillow**, fonte Montserrat variável (`assets/fonts/Montserrat.ttf`), saída **1200×1200 exata**.
 
-```json
-{
-  "background_image_path": "absolute/path/to/foto-base-gerada.jpg",
-  "slot": "CAPA_PURPLE_COW",
-  "headline": "Seu banheiro com aparência mais moderna em segundos",
-  "subheadline": "Visual sofisticado por preço acessível",
-  "badge": null,
-  "cta": null,
-  "selos_visuais": [
-    { "texto": "✔ Corpo em aço inox", "objetivo": "reduzir medo de material ruim" }
-  ],
-  "brand_signature": "Terra Casa Decor — O seu melhor lugar é a sua casa",
-  "output_path": "absolute/path/to/foto-01.jpg"
-}
+**Não use navegador para overlay.** O render por browser (chrome-devtools/Playwright) foi abandonado em 06/2026: no Windows o `dpr` fica 0,5 e a janela varia, cortando a imagem. Pillow dá o mesmo resultado toda vez. A skill `image-creator` (HTML→PNG via Playwright) continua existindo para outros usos, mas **não participa mais do overlay** — não monte HTML, não suba `http.server`, não tire screenshot.
+
+## Como chamar
+
+```
+python skills/image-overlay/scripts/render_faixa.py --config caminho/overlay-NN.json
 ```
 
-`slot` deve ser um destes 11 valores (correspondendo a `photo-templates.md`):
-`CAPA_PURPLE_COW`, `ANTES_DEPOIS`, `BADGE_TAMANHO`, `ANTI_ANSIEDADE_MATERIAL`, `CLAREZA_ABSOLUTA`, `DETALHE_TECNICO_FUNCIONAMENTO`, `DETALHE_TECNICO_DURABILIDADE`, `LIFESTYLE_USO_REAL`, `SOBRECORRECAO_ANSIEDADE`, `MACRO_YES_CTA_FINAL`, `FICHA_TECNICA_DIMENSOES`.
+Um único argumento: `--config`, apontando para um JSON. O script imprime `OK <output> (1200, 1200)` no sucesso. O config de cada foto fica versionado em `output/fotos/{pai_sku}/prompts/overlay-{NN}.json` (auditoria).
 
-## Output
+## Os 3 arquétipos (chave `layout`)
 
-Imagem JPG/PNG com dimensão **exata 1200×1200 px** com texto sobreposto, salva no `output_path` indicado.
+| `layout` | O que é | Slots |
+|---|---|---|
+| *ausente* (default) | **Faixa clara** — painel sólido de texto no rodapé, legibilidade máxima | 3, 6, 9 e os slim |
+| `"scrim"` | Sombra suave em degradê sobre a foto, texto respirando | 5, 7, 8, 10 |
+| `"plate"` | Texto em **espaço negativo limpo** da própria cena — sem faixa e sem sombra | quando a cena já tem área vazia boa |
 
-A skill EXIGE input em 1200×1200 e PRODUZ saída em 1200×1200 — esse é o padrão fixo do projeto. Se o `background_image_path` apontado vier em dimensão diferente, a skill deve falhar com erro `dimensao_invalida` (não tentar redimensionar — quem redimensiona é o Felipe antes de chamar overlay).
+O slot 6 (Clareza) precisa declarar a limitação de forma inequívoca — **painel vence sombra** nisso, por isso faixa. O slot 5 é respiro emocional e pede pouco texto, por isso scrim.
 
-## Posicionamento por slot (regras de layout)
+**Foto técnica** não é um `layout`: é a chave `dim_altura` presente no config (só no arquétipo faixa). Ela liga as setas de cota + selo de litragem por cima do produto.
 
-Cada slot tem regras fixas de onde o texto entra para não cobrir o produto:
+## Contrato do config
 
-| Slot | Headline | Subheadline | Badge | Selos | CTA |
-|------|----------|-------------|-------|-------|-----|
-| CAPA_PURPLE_COW | topo, 64px, white shadow | abaixo, 28px | — | — | — |
-| ANTES_DEPOIS | centro horizontal (na divisão), 48px | abaixo, 24px | — | — | — |
-| BADGE_TAMANHO | topo, 44px | abaixo, 22px | canto inferior direito, pill verde | — | — |
-| ANTI_ANSIEDADE_MATERIAL | direita vertical, 40px | abaixo, 20px | — | — | — |
-| CLAREZA_ABSOLUTA | topo, 44px, fundo branco semi | abaixo, 22px | canto superior direito | — | — |
-| DETALHE_TECNICO_FUNCIONAMENTO | topo, 38px | — | — | — | — |
-| DETALHE_TECNICO_DURABILIDADE | topo, 38px | — | — | — | — |
-| LIFESTYLE_USO_REAL | inferior, 34px, fundo gradient bottom | — | — | — | — |
-| SOBRECORRECAO_ANSIEDADE | topo, 44px | abaixo, 22px | canto inferior, pill | 4-6 selos ao redor do produto, cada um pill branca | — |
-| MACRO_YES_CTA_FINAL | topo, 56px | abaixo, 26px | canto superior direito, pill dourada | — | inferior centralizado, 32px, fundo escuro com sombra |
-| FICHA_TECNICA_DIMENSOES | topo, 40px, white shadow | — | quadro medidas: painel branco semi canto inf. direito (DIM_ALTURA / DIM_LARGURA / DIM_PROFUNDIDADE) | — | — |
+Chaves lidas de fato pelo `render_faixa.py` (extraídas do próprio script — não invente chave nova, ela é silenciosamente ignorada):
 
-Todas as configurações detalhadas estão em `references/templates/*.html` (gerar quando esta skill for usada pela primeira vez).
+| Grupo | Chaves |
+|---|---|
+| **Obrigatórias** | `base` (foto de entrada), `output` (arquivo final) |
+| Texto | `eyebrow`, `headline_ink`, `headline_accent`, `sub`, `selos[]`, `badge`, `cta`, `liters` |
+| Layout / ajuste | `layout`, `band_h`, `scrim_h`, `scrim_alpha`, `halo`, `autofit`, `text_x`, `text_y`, `text_maxw`, `headline_size`, `sub_size` |
+| Cores | `ink_color`, `accent_color`, `sub_color` |
+| Foto técnica | `dim_altura` (liga o modo), `dim_largura`, `dim_profundidade` (opcional), `dim_style`, `dim_extension`, `dim_dashed`, `dim_label_box` |
+| Marca — **gate desligado, ver abaixo** | `show_brand`, `brand`, `brand_logo`, `brand_logo_h`, `logo`, `logo_align`, `slogan` |
+| Escape | `no_qa` (pula o gate de enquadramento) |
 
-## Core Workflow
+A headline é dividida em duas partes de cor: `headline_ink` (tinta normal) + `headline_accent` (destaque). `dim_style` aceita `"modelo"` (default), `"cotas"` e `"finas"`.
 
-1. **Carregar input JSON** — ler o arquivo com background_image_path, slot, textos e output_path.
+**Cotas (modo técnico):** altura sai à esquerda do produto, largura na base e **profundidade como diagonal de recuo à direita** (só desenha se `dim_profundidade` vier preenchida — produto redondo manda vazio e ela some). O produto precisa de folga: ~80px à esquerda e ~110px abaixo. Sem essa folga a cota é desenhada fora do quadro e some — o renderer **avisa no log** (`[dim] AVISO: ...`) em vez de falhar calado, mas quem reenquadra é quem gerou a base.
 
-2. **Selecionar template HTML** baseado no `slot`. Os 10 templates ficam em `references/templates/{slot}.html` (gerar sob demanda na primeira execução; consultar regras de posicionamento acima).
+## SEM MARCA — regra definitiva do projeto
 
-3. **Compor HTML**:
-   - Copiar template do slot.
-   - Substituir placeholders: `{{BACKGROUND_IMAGE}}`, `{{HEADLINE}}`, `{{SUBHEADLINE}}`, `{{BADGE}}`, `{{CTA}}`, `{{SELOS_HTML}}`, `{{BRAND_SIGNATURE}}`.
-   - `{{BACKGROUND_IMAGE}}` deve ser caminho absoluto file:// OU base64 inline.
-   - Campos `null` no input viram strings vazias / sections ocultas via display:none.
-   - `{{SELOS_HTML}}` é gerado iterando o array de selos, cada um virando `<div class="selo">{{texto}}</div>`.
+**Nenhuma foto leva logo, slogan ou assinatura** (Almir, 19/06, DEFINITIVA): a marca não aparece em foto, título nem descrição, para não prender o anúncio a um eventual rebrand. Também não se apoiar nas cores da marca.
 
-4. **Salvar HTML** em `{output_dir}/_overlay_html/{filename}.html` (mesmo diretório do `output_path`, subpasta `_overlay_html`).
+Na prática: o `show_brand` nasce **desligado** e **não se passa** `logo`, `slogan`, `logo_align`, `brand` nem `brand_signature` no config. As chaves continuam no script como gate, não como opção de uso.
 
-5. **Renderizar via image-creator** seguindo o workflow padrão:
-   - Iniciar HTTP server local (Python `http.server`) na pasta do HTML.
-   - Playwright `browser_navigate` para `http://localhost:PORT/{filename}.html`.
-   - `browser_resize` para 1200×1200.
-   - `browser_take_screenshot` para o `output_path`.
-   - Parar HTTP server.
+O **tom** acolhedor ("casa", "lar", "dia a dia") permanece — isso é estilo de escrita, não citação de marca.
 
-6. **Verificar resultado**: ler o arquivo final, conferir que dimensões batem 1200×1200 e que texto está legível.
+## Gates embutidos
 
-## Identidade visual Terra Casa Decor
+- **`framing_gate`** (só no arquétipo faixa — é a faixa que corta o produto): se o produto invade o degradê da faixa, a imagem vai para `_rejeitado/` ao lado do output e o script sai com **código 3**. Pular só com `no_qa`. Nos arquétipos `scrim` e `plate` não há esse gate.
+- **`autofit`**: quando ligado, reenquadra antes de checar e informa o motivo no log.
+- **`cutout` (BiRefNet)**: a máscara/bbox do produto vem de `rembg` + `onnxruntime`, offline e sem custo. Sem essas bibliotecas, cai para a heurística antiga do pixel-de-canto (qualidade menor, mas funciona). `CUTOUT_DISABLE=1` força o fallback.
+- **`inox_cast`** (chamado antes do overlay, pelo Felipe): reprova foto de inox que puxou dourado — **código 2**. Não corrigir em pós; regenerar.
 
-Todos os templates aplicam por padrão:
+## Scripts vizinhos (mesma pasta)
 
-- **Fonte principal:** Inter, Bold para headlines e regular para body. Fallback: system-ui sans-serif.
-- **Paleta:**
-  - Texto sobre fundo claro: `#1a1a1a` (preto suave)
-  - Texto sobre fundo escuro: `#ffffff`
-  - Pill verde confirmação (selos OK): `#2d8a4a` background, `#ffffff` texto
-  - Pill dourada incentivo (Macro-Yes): `#c79a3a` background, `#ffffff` texto
-  - Sombra de texto para legibilidade: `text-shadow: 0 2px 8px rgba(0,0,0,0.35)` quando texto fica direto sobre foto
-  - Fundo branco semi (Clareza, Sobrecorreção): `rgba(255,255,255,0.92)`, border-radius 12px, padding 16-24px
-
-- **Tamanhos mínimos (anti-pattern de fonte pequena demais):**
-  - Headline: nunca abaixo de 34px (mesmo em slots com headline pequena)
-  - Subheadline: nunca abaixo de 20px
-  - Selo: 18px
-  - CTA: 28px
-  - Brand signature: 16px
-
-- **Margens:** todos os templates têm `padding: 48px` mínimo nas bordas para não cortar texto em thumbnails.
+`cutout.py` (máscara/bbox) · `lock_product.py` (PNG travado + sha256 da arquitetura produto-travado) · `compose.py`, `compose_two.py`, `compose_scale.py` (colagem do produto travado sobre a cena) · `fit_product.py`, `fit_scale.py` (escala/encaixe) · `framing_gate.py` · `inox_cast.py`.
 
 ## Anti-patterns
 
-### Nunca fazer
-1. **Texto cobrindo o produto** — o produto é o herói; texto vai em áreas livres definidas no template.
-2. **Fonte abaixo do mínimo declarado** — vira ilegível em thumbnail de busca ML.
-3. **Selos sem ícone (✔, ✕, número)** — selo sem prefixo visual perde escaneabilidade.
-4. **Mais de 6 selos no slot 9** — sobrecarrega; reduz a 4-6 mesmo que a Helena tenha proposto mais.
-5. **Cor de pill verde em selo de limitação** — selo "✕ Não vem com balde" pede pill cinza neutra, não verde de confirmação.
-
-### Sempre fazer
-1. **Validar contraste** — texto sobre foto sem text-shadow é proibido a menos que haja fundo de pill por trás.
-2. **Renderizar 1 imagem completa de teste antes de batch** — fonte pode falhar em sistemas sem Inter instalada.
-3. **Preservar HTML em `_overlay_html/`** — auditoria futura precisa.
+1. **Texto cobrindo o produto** — o produto é o herói; é para isso que existem os 3 arquétipos.
+2. **Selo sem ícone** (✔, ✕, número) — perde escaneabilidade na miniatura.
+3. **Mais de 6 selos no slot 9** — sobrecarrega; ficar em 4-6 mesmo que a Helena tenha proposto mais.
+4. **Pill verde em selo de limitação** — "✕ Não vem com balde" pede neutro, não o verde de confirmação.
+5. **Marca em qualquer forma** — ver a seção SEM MARCA.
+6. **Montar HTML / abrir navegador para overlay** — motor aposentado.
 
 ## Quality Criteria
 
-- [ ] Output salvo no `output_path` declarado
-- [ ] Dimensões 1200×1200 exatas
-- [ ] Texto não corta nas bordas (padding mínimo respeitado)
-- [ ] Fonte legível em thumbnail (verificável reduzindo para 300×300 mentalmente)
-- [ ] Selos com ícone visual prefixado
-- [ ] Brand signature presente onde o template prevê (Macro-Yes especialmente)
-- [ ] HTML correspondente preservado em `_overlay_html/`
+- [ ] Saída no `output` declarado, **1200×1200 exatos** (nem maior nem menor — os dois são veto)
+- [ ] `framing_gate` retornou OK (e não foi pulado com `no_qa`)
+- [ ] Texto não corta nas bordas
+- [ ] Legível na miniatura (reduzir mentalmente a 300×300)
+- [ ] Selos com ícone prefixado
+- [ ] **Zero marca**: sem logo, slogan ou assinatura
+- [ ] Config salvo em `prompts/overlay-{NN}.json`
 
-## Available operations
+## Legado
 
-- **Apply overlay** — Adicionar texto sobre uma imagem usando o template do slot informado
-- **Batch overlay** — Processar as 10 fotos de um SKU em sequência (reutilizando HTTP server)
-- **Preview** — Gerar HTML sem renderizar PNG (para revisar antes de bater no servidor)
-
-## Notes
-
-- Esta skill é **dependente** da `image-creator` para o motor de renderização. Não duplique o setup do HTTP server — chame os passos da `image-creator`.
-- Os templates HTML em `references/templates/` são criados lazy (na primeira invocação de cada slot). Versionar quando estabilizar.
-- Para a v1, fonte Inter é carregada via Google Fonts CDN. Em v2, embedar a fonte como base64 para funcionar offline.
+`references/templates/*.html` e o `README.md` de lá são do motor por navegador (até 05/2026). **Não são lidos pelo `render_faixa.py`.** Ficam como registro do posicionamento por slot da época; a versão anterior deste manual está em `SKILL.md.snapshot-2026-07-22`.

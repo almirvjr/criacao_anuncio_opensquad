@@ -9,7 +9,7 @@ Exemplos reais de como deve ficar o output final por produto. Use como referênc
 (54 caracteres)
 
 ### Categoria
-- ID: `MLB263532`
+- ID: `MLB33375`
 - Breadcrumb: `Casa, Móveis e Decoração > Cozinha > Acessórios de Cozinha > Lixeiras`
 
 ### Descrição
