@@ -2,6 +2,17 @@
 
 <!-- Decisoes tecnicas importantes. Formato: data - contexto - decisao - motivo. -->
 
+## 2026-10-08 — Publicacao no modelo novo do ML (User Products) + tela de aprovacao
+
+**Contexto:** 1a publicacao real (Viel 5L e 8L) foi recusada pelo ML: "variations is invalid with family name" / falta `family_name`. A conta tem a tag `user_product_seller`; o `ML Publicar` (maio/2026) montava 1 anuncio com `variations`, modelo que a conta nao aceita mais. Conferido na documentacao e com `POST /items/validate` (confere sem criar).
+**Decisao:**
+- **Um anuncio por cor**, todos com o mesmo `family_name` = titulo aprovado pelo Almir. **O ML recusa `title`** ("fields [title] are invalid"): ele mesmo monta o titulo = nome da familia + cor (ex.: "... Lavabo Redonda Branco", 66 caracteres, aceito). As cores da mesma familia ficam agrupadas (mesmo `family_id`).
+- `montar_payload.py` grava um pacote por cor; o no `Montar Payload` do `ML Publicar` troca `title` por `family_name` no modo simples. Ferramentas novas: `conferir_no_ml.py` (validate), `disparar_publicacao.py`, `ler_anuncio_ml.py`.
+- Frete gratis e obrigatorio nessa faixa de preco (o ML liga sozinho). Anuncio nasce pausado (`picture_download_pending`) ate o ML baixar a foto.
+- Aprovacao do texto pela **tela local** (`tools/aprovacao/`, botao `2 - Aprovar anuncios` na pasta `ANUNCIOS` do Drive). Marca propria: a tela troca a linha "Marca:" da descricao e a trava acusa o fornecedor que sobrar.
+- Preco do Tiny e simbolico (R$ 10, um cadastro para todos os canais): preco real vem de planilha do Almir (ainda a definir); nesta rodada ele passou os valores na conversa. Codigo de barras: os novos da GS1 (lidos no Tiny).
+**Motivo:** e o unico formato que a conta aceita; mantem o texto aprovado (vira o nome da familia).
+
 ## 2026-10-07 — Esteira sem fotos
 
 **Contexto:** gerar as fotos com IA travou o projeto por semanas (8L: escala, forma esticada, inox dourado, StorySelling contradizendo o prompt original do Almir). O Almir decidiu separar as fotos num projeto proprio.
