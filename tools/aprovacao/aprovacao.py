@@ -8,13 +8,17 @@ docs/superpowers/specs/2026-10-08-tela-aprovacao-design.md
 
 Uso:  python aprovacao.py [--saida PASTA] [--esperar] [--sem-navegador]
 """
+import argparse
 import copy
 import json
 import os
 import re
 import shutil
 import sys
+import threading
+import webbrowser
 from datetime import datetime
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import yaml
@@ -200,3 +204,88 @@ def devolver(saida, pai, nota, agora=None):
     doc["devolvido_em"] = f"{agora:%Y-%m-%d %H:%M}"
     _gravar_seguro(caminho, doc, agora)
     return {"ok": True}
+
+
+PAGINA = Path(__file__).resolve().parent / "pagina.html"
+
+
+def criar_servidor(saida, esperar=False):
+    saida = Path(saida)
+
+    class H(BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def _responder(self, codigo, corpo, tipo="application/json; charset=utf-8"):
+            dados = corpo if isinstance(corpo, bytes) else json.dumps(corpo, ensure_ascii=False).encode("utf-8")
+            self.send_response(codigo)
+            self.send_header("Content-Type", tipo)
+            self.send_header("Content-Length", str(len(dados)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(dados)
+
+        def do_GET(self):
+            if self.path == "/":
+                return self._responder(200, PAGINA.read_bytes(), "text/html; charset=utf-8")
+            if self.path == "/api/pendentes":
+                return self._responder(200, {"cartoes": listar_pendentes(saida)})
+            self._responder(404, {"erro": "nao existe"})
+
+        def do_POST(self):
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self._responder(415, {"erro": "so JSON"})
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                corpo = json.loads(self.rfile.read(n) or b"{}")
+                pai = corpo.get("pai")
+                if self.path == "/api/conferir":
+                    return self._responder(200, {"itens": conferir(saida, pai, corpo.get("edicao") or {})})
+                if self.path == "/api/aprovar":
+                    r = aprovar(saida, pai, corpo.get("edicao") or {})
+                elif self.path == "/api/devolver":
+                    r = devolver(saida, pai, corpo.get("nota"))
+                    if r["ok"]:
+                        srv.estado["devolvidos"] += 1
+                else:
+                    return self._responder(404, {"erro": "nao existe"})
+            except ValueError as e:
+                return self._responder(400, {"erro": str(e)})
+            except Exception as e:  # noqa: BLE001
+                return self._responder(500, {"erro": f"Falhou ({type(e).__name__}). Chame o Claude."})
+            if r["ok"]:
+                srv.estado["acoes"] += 1
+                if esperar and not listar_pendentes(saida):
+                    threading.Thread(target=lambda: (srv.shutdown(), srv.encerrado.set()), daemon=True).start()
+            self._responder(200, r)
+
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
+    srv.estado = {"devolvidos": 0, "acoes": 0}
+    srv.encerrado = threading.Event()
+    return srv
+
+
+def main():
+    p = argparse.ArgumentParser(description="Tela de aprovacao do anuncio.")
+    p.add_argument("--saida", default=str(SAIDA_PADRAO), help="pasta de saida da esteira")
+    p.add_argument("--esperar", action="store_true",
+                   help="encerra quando nao sobrar pendente; sai 0 = todos aprovados, 3 = algum devolvido")
+    p.add_argument("--sem-navegador", action="store_true")
+    a = p.parse_args()
+    srv = criar_servidor(a.saida, esperar=a.esperar)
+    url = f"http://127.0.0.1:{srv.server_address[1]}/"
+    pend = listar_pendentes(a.saida)
+    print(f"Tela de aprovacao aberta em {url}")
+    print(f"{len(pend)} anuncio(s) esperando aprovacao. Feche esta janela para desligar a tela.")
+    if not a.sem_navegador:
+        webbrowser.open(url)
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    if a.esperar:
+        sys.exit(3 if srv.estado["devolvidos"] else 0)
+
+
+if __name__ == "__main__":
+    main()

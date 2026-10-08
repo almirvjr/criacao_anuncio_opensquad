@@ -1,5 +1,8 @@
 # tools/aprovacao/tests/test_aprovacao.py
 import json
+import threading
+import urllib.error
+import urllib.request
 from datetime import datetime
 import os
 import sys
@@ -209,3 +212,61 @@ class TestDevolver:
 
     def test_nota_vazia_nao_devolve(self, saida):
         assert ap.devolver(saida, PAI, "   ", agora=AGORA)["ok"] is False
+
+
+def _subir(saida, esperar=False):
+    srv = ap.criar_servidor(saida, esperar=esperar)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv, f"http://127.0.0.1:{srv.server_address[1]}"
+
+
+def _post(url, corpo, tipo="application/json"):
+    req = urllib.request.Request(url, data=json.dumps(corpo).encode(), method="POST",
+                                 headers={"Content-Type": tipo})
+    with urllib.request.urlopen(req) as r:
+        return json.loads(r.read())
+
+
+class TestServidor:
+    def test_pagina_e_pendentes(self, saida):
+        srv, base = _subir(saida)
+        try:
+            html = urllib.request.urlopen(base + "/").read().decode("utf-8")
+            assert "<title>Aprovar anúncios</title>" in html
+            dados = json.loads(urllib.request.urlopen(base + "/api/pendentes").read())
+            assert dados["cartoes"][0]["pai_sku"] == PAI
+        finally:
+            srv.shutdown()
+
+    def test_conferir_e_aprovar(self, saida):
+        srv, base = _subir(saida)
+        try:
+            assert _post(base + "/api/conferir", {"pai": PAI, "edicao": _edicao()})["itens"] == []
+            assert _post(base + "/api/aprovar", {"pai": PAI, "edicao": _edicao()})["ok"] is True
+        finally:
+            srv.shutdown()
+
+    def test_recusa_pedido_que_nao_e_json(self, saida):
+        srv, base = _subir(saida)
+        try:
+            with pytest.raises(urllib.error.HTTPError) as e:
+                _post(base + "/api/aprovar", {"pai": PAI, "edicao": _edicao()}, tipo="text/plain")
+            assert e.value.code == 415
+        finally:
+            srv.shutdown()
+
+    def test_pai_invalido_responde_400(self, saida):
+        srv, base = _subir(saida)
+        try:
+            with pytest.raises(urllib.error.HTTPError) as e:
+                _post(base + "/api/conferir", {"pai": "../x", "edicao": _edicao()})
+            assert e.value.code == 400
+        finally:
+            srv.shutdown()
+
+    def test_esperar_encerra_quando_acaba(self, saida):
+        srv, base = _subir(saida, esperar=True)
+        _post(base + "/api/devolver", {"pai": PAI, "nota": "refazer"})
+        srv.encerrado.wait(5)
+        assert srv.encerrado.is_set()
+        assert srv.estado["devolvidos"] == 1

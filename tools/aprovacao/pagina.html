@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aprovar anúncios</title>
+<style>
+:root{--fundo:#f4f5f7;--cartao:#fff;--texto:#1d2330;--suave:#667085;--borda:#d8dce3;--ok:#127a3e;--erro:#b42318;--aviso:#9a6700;--acento:#2457c5;--fundoerro:#fdecea;--fundoaviso:#fff6db;--fundook:#e7f6ec}
+@media (prefers-color-scheme:dark){:root{--fundo:#14171c;--cartao:#1d2128;--texto:#e7e9ee;--suave:#9aa3b2;--borda:#343a45;--ok:#5ccf8a;--erro:#ff8a80;--aviso:#f0c75e;--acento:#7aa2ff;--fundoerro:#3a1d1b;--fundoaviso:#3a3017;--fundook:#18321f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fundo);color:var(--texto);font:15px/1.45 system-ui,Segoe UI,sans-serif}
+main{max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:8px 0 16px}
+.cartao{background:var(--cartao);border:1px solid var(--borda);border-radius:10px;padding:16px;margin-bottom:20px}
+.topo{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline}
+.topo h2{font-size:17px;margin:0}
+.sku{color:var(--suave);font-size:13px}
+.selo{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;background:var(--fundoaviso);color:var(--aviso)}
+.secao{margin-top:14px}
+.secao>b{display:block;margin-bottom:6px}
+.capas{display:flex;gap:10px;flex-wrap:wrap}
+.capas figure{margin:0;text-align:center;font-size:12px;color:var(--suave)}
+.capas img{width:110px;height:110px;object-fit:contain;background:#fff;border:1px solid var(--borda);border-radius:6px}
+label.opcao{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;border-radius:6px;cursor:pointer}
+label.opcao:hover{background:var(--fundo)}
+.just{color:var(--suave);font-size:13px}
+input[type=text],textarea{width:100%;font:inherit;color:inherit;background:var(--cartao);border:1px solid var(--borda);border-radius:6px;padding:7px 9px}
+textarea{min-height:110px;resize:vertical}
+.conta{font-size:12px;color:var(--suave);text-align:right}
+.conta.passou{color:var(--erro);font-weight:600}
+.linha2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.linha2{grid-template-columns:1fr}}
+table{border-collapse:collapse;font-size:14px}
+td{padding:2px 12px 2px 0;vertical-align:top}
+td:first-child{color:var(--suave)}
+ul.conf{list-style:none;padding:0;margin:0}
+ul.conf li{padding:6px 8px;border-radius:6px;margin-bottom:4px}
+li.bloqueio,li.erro{background:var(--fundoerro);color:var(--erro)}
+li.aviso{background:var(--fundoaviso);color:var(--aviso)}
+li.tudook{background:var(--fundook);color:var(--ok)}
+.botoes{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
+button{font:inherit;padding:8px 16px;border-radius:6px;border:1px solid var(--borda);background:var(--cartao);color:var(--texto);cursor:pointer}
+button.principal{background:var(--acento);border-color:var(--acento);color:#fff}
+button.principal.mesmo{background:var(--erro);border-color:var(--erro)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.feito{background:var(--fundook);color:var(--ok);border-radius:8px;padding:8px 12px;margin-bottom:8px}
+.falha{background:var(--fundoerro);color:var(--erro);border-radius:8px;padding:8px 12px}
+.vazio{color:var(--suave);padding:40px 0;text-align:center}
+</style>
+</head>
+<body>
+<main>
+<h1>Anúncios esperando sua aprovação</h1>
+<div id="feitos"></div>
+<div id="lista"><p class="vazio">Carregando…</p></div>
+</main>
+<script>
+const TETO_TITULO = 60, TETO_MODELO = 30;
+const BLOCOS = {bloco_1_abertura: "Abertura", bloco_2_specs: "Medidas e materiais", bloco_3_features_beneficios: "Benefícios"};
+const CAMPOS = {VOLUME_CAPACITY: "Capacidade", UNITS_PER_PACK: "Unidades", MATERIAL: "Material", COLOR: "Cor",
+  STRUCTURE_MATERIALS: "Material do corpo", LID_MATERIAL: "Material da tampa", WASTE_BASKET_OPENING_TYPES: "Tipo de abertura"};
+
+function el(tag, attrs = {}, ...filhos) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const f of filhos.flat()) if (f != null) e.append(f instanceof Node ? f : document.createTextNode(String(f)));
+  return e;
+}
+async function api(caminho, corpo) {
+  const r = await fetch(caminho, corpo ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(corpo)} : {});
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.erro || ("Erro " + r.status));
+  return d;
+}
+const reais = v => v == null ? "—" : v.toLocaleString("pt-BR", {style: "currency", currency: "BRL"});
+
+function contador(input, teto) {
+  const c = el("div", {class: "conta"});
+  const at = () => { c.textContent = `${input.value.length}/${teto}`; c.classList.toggle("passou", input.value.length > teto); };
+  input.addEventListener("input", at); at();
+  return c;
+}
+
+function cartao(c) {
+  if (c.erro) return el("div", {class: "cartao"}, el("b", {}, c.arquivo), el("p", {class: "falha"}, c.erro + " Chame o Claude."));
+
+  const nomeRadio = "t_" + c.pai_sku;
+  const proprio = el("input", {type: "text", placeholder: "Escreva o seu título"});
+  const opcoes = c.titles.map(t => {
+    const r = el("input", {type: "radio", name: nomeRadio, value: t.texto});
+    if (t.texto === c.titulo_inicial) r.checked = true;
+    return el("label", {class: "opcao"}, r,
+      el("span", {}, `${t.texto} (${t.texto.length})`, t.recomendado ? " ⭐ recomendado" : "", el("br"), el("span", {class: "just"}, t.justificativa)));
+  });
+  const rProprio = el("input", {type: "radio", name: nomeRadio, value: "__proprio__"});
+  if (!c.titles.some(t => t.texto === c.titulo_inicial)) { rProprio.checked = true; proprio.value = c.titulo_inicial || ""; }
+  proprio.addEventListener("focus", () => { rProprio.checked = true; mudou(); });
+  const contaProprio = contador(proprio, TETO_TITULO);
+
+  const marca = el("input", {type: "text", value: c.marca});
+  const modelo = el("input", {type: "text", value: c.modelo});
+  const caixas = {};
+  const crescer = t => { t.style.height = "auto"; t.style.height = (t.scrollHeight + 4) + "px"; };
+  for (const [k, v] of Object.entries(c.descricao)) { const t = el("textarea", {}); t.value = v; t.addEventListener("input", () => crescer(t)); caixas[k] = t; }
+
+  const conf = el("ul", {class: "conf"}, el("li", {}, "Conferindo…"));
+  const btAprovar = el("button", {class: "principal"}, "Aprovar");
+  const nota = el("input", {type: "text", placeholder: "O que a Renata deve refazer?"});
+  const btDevolver = el("button", {}, "Devolver pra refazer");
+  const msg = el("div");
+
+  const titulo = () => {
+    const sel = caixa.querySelector(`input[name="${CSS.escape(nomeRadio)}"]:checked`);
+    return !sel ? "" : sel.value === "__proprio__" ? proprio.value : sel.value;
+  };
+  const edicao = () => ({titulo: titulo(), marca: marca.value, modelo: modelo.value,
+    descricao: Object.fromEntries(Object.entries(caixas).map(([k, t]) => [k, t.value]))});
+
+  let espera, ultimo = [];
+  async function conferirAgora() {
+    try {
+      const {itens} = await api("/api/conferir", {pai: c.pai_sku, edicao: edicao()});
+      ultimo = itens;
+      conf.replaceChildren(...(itens.length ? itens.map(i => el("li", {class: i.nivel},
+        (i.nivel === "aviso" ? "⚠ " : "❌ ") + i.texto)) : [el("li", {class: "tudook"}, "✅ Tudo certo nas conferências")]));
+      const bloq = itens.some(i => i.nivel === "bloqueio"), errado = itens.some(i => i.nivel === "erro");
+      btAprovar.disabled = bloq;
+      btAprovar.textContent = bloq ? "Aprovar (corrija o bloqueio)" : errado ? "Aprovar mesmo assim" : "Aprovar";
+      btAprovar.classList.toggle("mesmo", errado && !bloq);
+    } catch (e) { conf.replaceChildren(el("li", {class: "erro"}, "A conferência falhou: " + e.message)); btAprovar.disabled = true; }
+  }
+  function mudou() { clearTimeout(espera); espera = setTimeout(conferirAgora, 400); }
+  [proprio, marca, modelo, ...Object.values(caixas)].forEach(i => i.addEventListener("input", mudou));
+
+  const caixa = el("div", {class: "cartao"});
+  btAprovar.addEventListener("click", async () => {
+    btAprovar.disabled = true;
+    try {
+      const r = await api("/api/aprovar", {pai: c.pai_sku, edicao: edicao()});
+      if (!r.ok) { msg.replaceChildren(el("p", {class: "falha"}, r.motivo)); btAprovar.disabled = false; return; }
+      feito(`✅ ${c.nome_base} aprovado às ${new Date().toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"})}` +
+        (ultimo.length ? ` (com ${ultimo.length} aviso(s) aceito(s))` : ""));
+      caixa.remove(); vazio();
+    } catch (e) { msg.replaceChildren(el("p", {class: "falha"}, "Não gravou: " + e.message)); btAprovar.disabled = false; }
+  });
+  btDevolver.addEventListener("click", async () => {
+    try {
+      const r = await api("/api/devolver", {pai: c.pai_sku, nota: nota.value});
+      if (!r.ok) { msg.replaceChildren(el("p", {class: "falha"}, r.motivo)); return; }
+      feito(`↩ ${c.nome_base} devolvido para a Renata`); caixa.remove(); vazio();
+    } catch (e) { msg.replaceChildren(el("p", {class: "falha"}, "Não gravou: " + e.message)); }
+  });
+  caixa.addEventListener("change", e => { if (e.target.type === "radio") mudou(); });
+
+  const capas = c.capas ? el("div", {class: "capas"}, c.capas.map(k => el("figure", {},
+      k.urls[0] ? el("img", {src: k.urls[0], alt: "capa " + k.cor}) : el("div", {}, "sem foto"), el("figcaption", {}, `${k.cor} (${k.urls.length})`))))
+    : el("p", {class: "just"}, "Capas ainda não buscadas.");
+  const ficha = el("table", {}, Object.entries(c.ficha).map(([k, v]) => el("tr", {}, el("td", {}, CAMPOS[k] || k), el("td", {}, String(v)))));
+  const cx = c.caixa_cm || {};
+
+  caixa.append(
+    el("div", {class: "topo"}, el("div", {}, el("h2", {}, c.nome_base), el("div", {class: "sku"}, c.pai_sku)),
+      el("div", {}, c.precos.map(p => `${p.cor} ${reais(p.preco)}`).join(" · "), " ",
+        c.preco_provisorio ? el("span", {class: "selo"}, "preço provisório") : null)),
+    el("div", {class: "secao"}, el("b", {}, "Capas"), capas),
+    el("div", {class: "secao"}, el("b", {}, "Título"), opcoes,
+      el("label", {class: "opcao"}, rProprio, el("span", {style: "flex:1"}, proprio, contaProprio))),
+    el("div", {class: "secao linha2"},
+      el("div", {}, el("b", {}, "Marca"), marca, contador(marca, TETO_MODELO),
+        el("div", {class: "just"}, "Só o fornecedor, ou só Terra Casa Decor.")),
+      el("div", {}, el("b", {}, "Modelo"), modelo, contador(modelo, TETO_MODELO),
+        el("div", {class: "just"}, "Palavras de busca que não estão no título."))),
+    el("div", {class: "secao"}, el("b", {}, "Descrição"),
+      Object.entries(caixas).map(([k, t]) => el("div", {style: "margin-bottom:8px"}, el("div", {class: "just"}, BLOCOS[k] || k), t))),
+    el("div", {class: "secao linha2"},
+      el("div", {}, el("b", {}, "Ficha técnica"), ficha),
+      el("div", {}, el("b", {}, "Caixa de envio"),
+        el("div", {}, `Peso: ${c.peso_kg ?? "—"} kg`), el("div", {}, `Medidas: ${cx.largura ?? "—"} × ${cx.altura ?? "—"} × ${cx.comprimento ?? "—"} cm`))),
+    c.observacoes.length ? el("div", {class: "secao"}, el("b", {}, "Observações da Renata"), el("ul", {}, c.observacoes.map(o => el("li", {}, o)))) : null,
+    el("div", {class: "secao"}, el("b", {}, "Conferência"), conf),
+    el("div", {class: "botoes"}, btAprovar, el("span", {style: "flex:1"}), nota, btDevolver),
+    msg);
+  requestAnimationFrame(() => Object.values(caixas).forEach(crescer));
+  conferirAgora();
+  return caixa;
+}
+
+const lista = document.getElementById("lista");
+function feito(t) { document.getElementById("feitos").append(el("div", {class: "feito"}, t)); }
+function vazio() { if (!lista.querySelector(".cartao")) lista.replaceChildren(el("p", {class: "vazio"}, "Nada esperando aprovação. Pode fechar esta página.")); }
+
+api("/api/pendentes").then(({cartoes}) => {
+  lista.replaceChildren(...cartoes.map(cartao)); vazio();
+}).catch(e => lista.replaceChildren(el("p", {class: "falha"}, "A tela não conseguiu ler os anúncios: " + e.message + ". A janela preta está aberta?")));
+</script>
+</body>
+</html>
