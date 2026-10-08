@@ -1,5 +1,6 @@
 # tools/aprovacao/tests/test_aprovacao.py
 import json
+from datetime import datetime
 import os
 import sys
 from pathlib import Path
@@ -156,3 +157,55 @@ class TestConferir:
         assert novo["attributes"]["BRAND"] == "Terra Casa Decor"
         assert novo["titulo_final"] == TIT_OK
         assert novo["description"]["word_count"] == 20
+
+
+AGORA = datetime(2026, 10, 8, 14, 32, 5)
+
+
+class TestAprovar:
+    def test_grava_a_escolha(self, saida):
+        r = ap.aprovar(saida, PAI, _edicao(marca="Terra Casa Decor"), agora=AGORA)
+        assert r["ok"] is True
+        doc = yaml.safe_load((saida / "copywriting" / f"anuncio-{PAI}.yaml").read_text(encoding="utf-8"))
+        assert doc["status_copy"] == "aprovado"
+        assert doc["titulo_final"] == TIT_OK
+        assert doc["attributes"]["BRAND"] == "Terra Casa Decor"
+        assert doc["aprovado_em"] == "2026-10-08 14:32"
+        assert doc["avisos_aceitos"] == []
+        assert ap.listar_pendentes(saida) == []
+
+    def test_guarda_copia_do_anterior(self, saida):
+        antes = (saida / "copywriting" / f"anuncio-{PAI}.yaml").read_text(encoding="utf-8")
+        ap.aprovar(saida, PAI, _edicao(), agora=AGORA)
+        copia = saida / "copywriting" / "_antes" / f"anuncio-{PAI}-20261008-143205.yaml"
+        assert copia.read_text(encoding="utf-8") == antes
+
+    def test_bloqueio_nao_grava(self, saida):
+        antes = (saida / "copywriting" / f"anuncio-{PAI}.yaml").read_text(encoding="utf-8")
+        r = ap.aprovar(saida, PAI, _edicao(titulo="L" * 61), agora=AGORA)
+        assert r["ok"] is False
+        assert (saida / "copywriting" / f"anuncio-{PAI}.yaml").read_text(encoding="utf-8") == antes
+
+    def test_aviso_aceito_fica_registrado(self, saida):
+        ap.aprovar(saida, PAI, _edicao(marca="Viel Inox"), agora=AGORA)
+        doc = yaml.safe_load((saida / "copywriting" / f"anuncio-{PAI}.yaml").read_text(encoding="utf-8"))
+        assert "MARCA_FORA_DO_PADRAO" in doc["avisos_aceitos"]
+
+    def test_ja_aprovado_nao_aprova_de_novo(self, saida):
+        ap.aprovar(saida, PAI, _edicao(), agora=AGORA)
+        r = ap.aprovar(saida, PAI, _edicao(titulo="Outro"), agora=AGORA)
+        assert r["ok"] is False
+
+
+class TestDevolver:
+    def test_grava_a_nota(self, saida):
+        r = ap.devolver(saida, PAI, "Trocar o titulo, quero cozinha primeiro", agora=AGORA)
+        assert r["ok"] is True
+        doc = yaml.safe_load((saida / "copywriting" / f"anuncio-{PAI}.yaml").read_text(encoding="utf-8"))
+        assert doc["status_copy"] == "devolvido"
+        assert doc["nota_almir"] == "Trocar o titulo, quero cozinha primeiro"
+        assert doc["devolvido_em"] == "2026-10-08 14:32"
+        assert (saida / "copywriting" / "_antes" / f"anuncio-{PAI}-20261008-143205.yaml").is_file()
+
+    def test_nota_vazia_nao_devolve(self, saida):
+        assert ap.devolver(saida, PAI, "   ", agora=AGORA)["ok"] is False

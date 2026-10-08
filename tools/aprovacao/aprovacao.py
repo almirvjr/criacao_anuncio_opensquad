@@ -152,3 +152,51 @@ def conferir(saida, pai, edicao):
         itens += [{"codigo": c, "nivel": "erro", "texto": m} for c, m in blocks]
         itens += [{"codigo": c, "nivel": "aviso", "texto": m} for c, m in warns]
     return itens
+
+
+def _gravar_seguro(caminho, doc, agora):
+    caminho = Path(caminho)
+    antes = caminho.parent / "_antes"
+    antes.mkdir(exist_ok=True)
+    shutil.copy2(caminho, antes / f"{caminho.stem}-{agora:%Y%m%d-%H%M%S}.yaml")
+    tmp = caminho.with_name(caminho.name + ".novo")
+    with open(tmp, "w", encoding="utf-8") as fh:
+        yaml.safe_dump(doc, fh, allow_unicode=True, sort_keys=False, width=100000)
+    os.replace(tmp, caminho)
+
+
+def aprovar(saida, pai, edicao, agora=None):
+    agora = agora or datetime.now()
+    caminho = caminho_anuncio(saida, pai)
+    doc = _ler_yaml(caminho)
+    if doc.get("status_copy") in FINAIS:
+        return {"ok": False, "motivo": f"Este anuncio ja esta '{doc['status_copy']}'.", "conferencia": []}
+    itens = conferir(saida, pai, edicao)
+    if any(i["nivel"] == "bloqueio" for i in itens):
+        return {"ok": False, "motivo": "Tem bloqueio: corrija antes de aprovar.", "conferencia": itens}
+    novo = aplicar_edicao(doc, edicao)
+    novo["status_copy"] = "aprovado"
+    novo["aprovado_em"] = f"{agora:%Y-%m-%d %H:%M}"
+    novo["avisos_aceitos"] = [i["codigo"] for i in itens]
+    _gravar_seguro(caminho, novo, agora)
+    salvo = _ler_yaml(caminho)
+    depois = conferir(saida, pai, {"titulo": salvo["titulo_final"], "marca": salvo["attributes"]["BRAND"],
+                                   "modelo": salvo["attributes"]["MODEL"],
+                                   "descricao": salvo.get("description") or {}})
+    return {"ok": True, "conferencia": depois}
+
+
+def devolver(saida, pai, nota, agora=None):
+    agora = agora or datetime.now()
+    nota = (nota or "").strip()
+    if not nota:
+        return {"ok": False, "motivo": "Escreva o que a Renata deve refazer."}
+    caminho = caminho_anuncio(saida, pai)
+    doc = _ler_yaml(caminho)
+    if doc.get("status_copy") in FINAIS:
+        return {"ok": False, "motivo": f"Este anuncio ja esta '{doc['status_copy']}'."}
+    doc["status_copy"] = "devolvido"
+    doc["nota_almir"] = nota
+    doc["devolvido_em"] = f"{agora:%Y-%m-%d %H:%M}"
+    _gravar_seguro(caminho, doc, agora)
+    return {"ok": True}
