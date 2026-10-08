@@ -77,6 +77,14 @@ O step-06 passa a dizer: a aprovação é feita na tela (`Aprovar anuncios.bat`)
 
 5L (`VIE-1066-PAI`) e 8L (`VIE-1067-PAI`), que estão parados no step-06. O Almir aprova pela tela; confiro que `titulo_final`, Marca, Modelo e descrição gravados passam nas travas.
 
-## 9. Fora deste trabalho
+## 9. Onde a tela se encaixa no dia a dia (combinado em 08/10)
 
-Atalho que dispara a esteira inteira; usar a mesma tela para o "sim" final de publicação (step-09) — fica para depois de a tela de texto estar aprovada no uso.
+1. Almir exporta a planilha do Tiny e salva em `G:\Meu Drive\TERRA CASA DECOR\ANUNCIOS\A CRIAR` (a pasta é a "caixa de entrada"; não se manda para ninguém).
+2. Clique duplo em `Criar anuncios.bat` → a esteira roda sozinha (Claude sem conversa) até as capas → **abre esta tela**.
+3. Aprovado → esteira segue até o "sim" final → planilha vai para `A CRIAR\FEITOS`.
+
+**Ordem combinada:** esta tela primeiro; pasta + `Criar anuncios.bat` logo em seguida, com desenho próprio. Para o encaixe não exigir retrabalho, `aprovacao.py` aceita a pasta de saída da esteira por parâmetro (`--saida`, padrão `squads/ml-anuncios/output`) e tem a opção `--esperar`: só encerra quando todos os anúncios pendentes forem aprovados ou devolvidos, e sai com 0 = todos aprovados, 3 = algum devolvido — o atalho usa isso para saber se segue.
+
+## 10. Fora deste trabalho
+
+A pasta `A CRIAR` e o `Criar anuncios.bat`; usar a mesma tela para o "sim" final de publicação (step-09) — depois de a tela de texto estar aprovada no uso.
