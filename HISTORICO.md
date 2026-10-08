@@ -2,6 +2,13 @@
 
 <!-- Tarefas concluidas (arquivo morto). Formato: data - resumo. -->
 
+## 2026-10-08 - 1o teste da esteira sem fotos: Viel 5L e 8L publicadas (6 anuncios)
+- Regra da Marca revista (so fornecedor ou so Terra Casa Decor; cauda longa fica no Modelo); trava `FORNECEDOR_NA_DESCRICAO`.
+- Tela de aprovacao local (`tools/aprovacao/`, spec+plano 2026-10-08, revisao final com 6 correcoes), botao `2 - Aprovar anuncios` na pasta `ANUNCIOS` do Drive. Almir aprovou 5L e 8L nela; marca trocada para Terra Casa Decor.
+- Capas (step-07), revisao Vinicius (96 e 97/100), preco definitivo (92,71 / 112,71) e EANs novos da GS1 (lidos no Tiny).
+- 1a publicacao recusada (conta no modelo User Products); esteira e `ML Publicar` adaptados: 1 anuncio por cor com `family_name`, conferencia previa com `/items/validate`, descricao e Flex em 2o envio, preta primeiro.
+- No ar e ativos: 5L MLB7771661140/MLB5354173009/MLB7771661510, 8L MLB7771685954/MLB7771661556/MLB7771706672; estoque sincronizado pelo Tiny (10 por cor).
+
 ## 2026-10-07 - Fotos do 8L encerradas aqui; esteira passa a nao gerar foto
 
 O Almir separou a geracao de fotos num projeto proprio. O estado em que o trabalho de fotos parou (copiado do PROGRESSO de 23/09):

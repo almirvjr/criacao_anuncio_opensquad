@@ -408,7 +408,7 @@ Contrato de auditoria do Vinicius (4 blocos vs os 7 do step-08, que inclui Story
 
 **Motivo:** sem duplicacao, custo controlado, manutencao simples.
 
-### Payload ML de variacoes (POST /items)
+### [SUPERADA 2026-10-08 -> ver 2026-10-08 no topo: modelo novo do ML, 1 anuncio por cor com family_name; a conta nao aceita mais variations] Payload ML de variacoes (POST /items)
 **Contexto:** publicar 1 anuncio com 3 cores.
 
 **Decisao:** `variations[]` com `attribute_combinations` (`COLOR` value_id+value_name), `price` (uniforme entre variacoes — regra do ML), `available_quantity: 1` por variacao (Tiny e a fonte de estoque), `attributes` (SELLER_SKU + EAN por variacao), `picture_ids` por cor = [ambientalizada da cor] + [fotos compartilhadas]. `pictures` item-level = uniao de todas. Idempotencia por `pai_sku` (variacoes) ou `sku` (simples). Coluna `modo` em `ml_tools.publicacoes`.
