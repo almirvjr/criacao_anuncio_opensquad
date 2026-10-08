@@ -321,3 +321,11 @@ class TestRevisaoFinal:
         _post(base + "/api/aprovar", {"pai": PAI, "edicao": _edicao(), "vistos": []})
         srv.encerrado.wait(5)
         assert srv.encerrado.is_set()
+
+
+class TestMarcaPropria:
+    def test_fornecedor_sobrando_na_descricao_aparece(self, saida):
+        d = _edicao()["descricao"]
+        d["bloco_2_specs"] = "- Capacidade: 5 litros\n- Marca: Viel\n"
+        itens = ap.conferir(saida, PAI, _edicao(marca="Terra Casa Decor", descricao=d))
+        assert "FORNECEDOR_NA_DESCRICAO" in _codigos(itens, "erro")

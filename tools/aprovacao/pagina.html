@@ -137,6 +137,13 @@ function cartao(c) {
   }
   function mudou() { clearTimeout(espera); espera = setTimeout(conferirAgora, 400); }
   [proprio, marca, modelo, ...Object.values(caixas)].forEach(i => i.addEventListener("input", mudou));
+  // trocou a Marca: a linha "Marca: ..." da descricao acompanha (08/10)
+  marca.addEventListener("input", () => {
+    for (const t of Object.values(caixas)) {
+      const novo = t.value.replace(/^(\s*[-•]?\s*Marca:[ \t]*).*$/gim, (_, ini) => ini + marca.value.trim());
+      if (novo !== t.value) { t.value = novo; crescer(t); }
+    }
+  });
 
   const caixa = el("div", {class: "cartao"});
   btAprovar.addEventListener("click", async () => {
@@ -180,7 +187,7 @@ function cartao(c) {
       el("label", {class: "opcao"}, rProprio, el("span", {style: "flex:1"}, proprio, contaProprio))),
     el("div", {class: "secao linha2"},
       el("div", {}, el("b", {}, "Marca"), marca, contador(marca, TETO_MODELO),
-        el("div", {class: "just"}, "Só o fornecedor, ou só Terra Casa Decor.")),
+        el("div", {class: "just"}, "Só o fornecedor, ou só Terra Casa Decor. A linha \"Marca:\" da descrição muda junto.")),
       el("div", {}, el("b", {}, "Modelo"), modelo, contador(modelo, TETO_MODELO),
         el("div", {class: "just"}, "Palavras de busca que não estão no título."))),
     el("div", {class: "secao"}, el("b", {}, "Descrição"),

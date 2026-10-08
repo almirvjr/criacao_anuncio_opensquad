@@ -78,6 +78,9 @@ def validar_ficha(pai_sku, titulo, marca, modelo, descricao):
         if loja in norm(descricao) and not marca_propria:
             E("DESCRICAO_CITA_LOJA",
               "A descricao so cita 'Terra Casa Decor' quando a Marca e a propria.")
+        if marca_propria and fornecedor and tokens(fornecedor) & tokens(descricao):
+            E("FORNECEDOR_NA_DESCRICAO",
+              f"A Marca e '{MARCA_PROPRIA}', mas a descricao ainda cita '{fornecedor}'. Trocar ou tirar.")
 
     rep_titulo = sorted(tokens(modelo) & tokens(titulo))
     if rep_titulo:

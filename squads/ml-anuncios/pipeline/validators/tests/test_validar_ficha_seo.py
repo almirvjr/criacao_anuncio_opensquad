@@ -110,3 +110,22 @@ class TestTitulo(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestMarcaPropriaSemFornecedor(unittest.TestCase):
+    # 08/10: com a marca propria, o nome do fornecedor nao pode sobrar no texto
+    def test_marca_propria_com_fornecedor_na_descricao_bloqueia(self):
+        e = validar_ficha("VIE-1066-PAI", TIT, "Terra Casa Decor", "Quarto", DESC + "\n- Marca: Viel")
+        self.assertIn("FORNECEDOR_NA_DESCRICAO", codigos(e))
+
+    def test_marca_propria_sem_fornecedor_ok(self):
+        e = validar_ficha("VIE-1066-PAI", TIT, "Terra Casa Decor", "Quarto", DESC + "\n- Marca: Terra Casa Decor")
+        self.assertEqual(codigos(e), [])
+
+    def test_palavra_que_contem_o_nome_nao_engana(self):
+        e = validar_ficha("VIE-1066-PAI", TIT, "Terra Casa Decor", "Quarto", DESC + " Vielas e becos.")
+        self.assertEqual(codigos(e), [])
+
+    def test_marca_do_fornecedor_pode_citar_o_fornecedor(self):
+        e = validar_ficha("VIE-1066-PAI", TIT, "Viel", "Quarto", DESC + "\n- Marca: Viel")
+        self.assertEqual(codigos(e), [])
