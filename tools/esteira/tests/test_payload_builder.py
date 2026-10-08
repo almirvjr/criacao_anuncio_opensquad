@@ -158,7 +158,7 @@ def _ctx_familia():
 
 def test_familia_um_pacote_por_cor():
     ps = build_payloads_familia(_anuncio_var(), **_ctx_familia())
-    assert [p["sku"] for p in ps] == ["VIE_1066_3402_BR", "VIE_1066_3405_PT"]
+    assert sorted(p["sku"] for p in ps) == ["VIE_1066_3402_BR", "VIE_1066_3405_PT"]
     for p in ps:
         assert p["modo"] == "simples"
         assert p["family_name"] == "Lixeira 5L Inox Pedal"
@@ -167,7 +167,7 @@ def test_familia_um_pacote_por_cor():
 
 
 def test_familia_cor_sku_e_gtin_em_cada_anuncio():
-    br = build_payloads_familia(_anuncio_var(), **_ctx_familia())[0]
+    br = next(p for p in build_payloads_familia(_anuncio_var(), **_ctx_familia()) if p["sku"] == "VIE_1066_3402_BR")
     attrs = {a["id"]: a for a in br["attributes"]}
     assert attrs["COLOR"] == {"id": "COLOR", "value_id": "52049", "value_name": "Branco"}
     assert attrs["SELLER_SKU"]["value_name"] == "VIE_1066_3402_BR"
@@ -176,7 +176,7 @@ def test_familia_cor_sku_e_gtin_em_cada_anuncio():
 
 
 def test_familia_fotos_da_propria_cor():
-    br = build_payloads_familia(_anuncio_var(), **_ctx_familia())[0]
+    br = next(p for p in build_payloads_familia(_anuncio_var(), **_ctx_familia()) if p["sku"] == "VIE_1066_3402_BR")
     assert br["pictures"] == _fotos("VIE_1066_3402_BR")
 
 
@@ -198,3 +198,16 @@ def test_familia_produto_sem_cor_nao_inventa_color():
     a = {"modo": "simples", "pai_sku": "X-PAI", "variacoes": [{"sku": "X-1", "cor": None, "ean": "9", "preco_venda": 10}]}
     [p] = build_payloads_familia(a, **_ctx_familia() | {"picture_ids_por_variacao": [{"sku_variacao": "X-1", "picture_ids": ["u"]}]})
     assert "COLOR" not in [x["id"] for x in p["attributes"]]
+
+
+def test_familia_preto_vem_primeiro():
+    # Almir 08/10/2026: a cor preta e sempre a principal -> publicada primeiro na familia
+    ps = build_payloads_familia(_anuncio_var(), **_ctx_familia())
+    assert ps[0]["sku"] == "VIE_1066_3405_PT"
+
+
+def test_familia_sem_preto_mantem_ordem():
+    a = _anuncio_var()
+    a["variacoes"][1]["cor"] = "Cinza"
+    ps = build_payloads_familia(a, **_ctx_familia() | {"cor_value_map": []})
+    assert [p["sku"] for p in ps] == ["VIE_1066_3402_BR", "VIE_1066_3405_PT"]

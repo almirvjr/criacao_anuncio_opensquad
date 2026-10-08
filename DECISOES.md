@@ -8,6 +8,7 @@
 **Decisao:**
 - **Um anuncio por cor**, todos com o mesmo `family_name` = titulo aprovado pelo Almir. **O ML recusa `title`** ("fields [title] are invalid"): ele mesmo monta o titulo = nome da familia + cor (ex.: "... Lavabo Redonda Branco", 66 caracteres, aceito). As cores da mesma familia ficam agrupadas (mesmo `family_id`).
 - `montar_payload.py` grava um pacote por cor; o no `Montar Payload` do `ML Publicar` troca `title` por `family_name` no modo simples. Ferramentas novas: `conferir_no_ml.py` (validate), `disparar_publicacao.py`, `ler_anuncio_ml.py`.
+- **Descricao vai num 2o envio** (o ML ignora a do POST no modelo novo; `completar_anuncio.py`), que tambem **liga o Flex** em todo anuncio novo (pedido do Almir). **Preta primeiro**: nao existe mais "variacao principal"; a familia guarda as cores na ordem de criacao, entao a preta e publicada primeiro (pedido do Almir). Os 6 da Viel foram criados antes dessa regra (Branco, Cinza, Preto).
 - Frete gratis e obrigatorio nessa faixa de preco (o ML liga sozinho). Anuncio nasce pausado (`picture_download_pending`) ate o ML baixar a foto.
 - Aprovacao do texto pela **tela local** (`tools/aprovacao/`, botao `2 - Aprovar anuncios` na pasta `ANUNCIOS` do Drive). Marca propria: a tela troca a linha "Marca:" da descricao e a trava acusa o fornecedor que sobrar.
 - Preco do Tiny e simbolico (R$ 10, um cadastro para todos os canais): preco real vem de planilha do Almir (ainda a definir); nesta rodada ele passou os valores na conversa. Codigo de barras: os novos da GS1 (lidos no Tiny).

@@ -133,7 +133,10 @@ def build_payloads_familia(anuncio, *, family_name, category_id, description_pla
     cores = _mapa_de_cores(cor_value_map)
     fotos = _fotos_por_sku(picture_ids_por_variacao)
     pacotes = []
-    for v in anuncio["variacoes"]:
+    # Almir 08/10/2026: a preta e sempre a cor principal -> criada primeiro na familia
+    # (a familia guarda as cores na ordem de criacao). Sem preta, mantem a ordem.
+    variacoes = sorted(anuncio["variacoes"], key=lambda v: str(v.get("cor") or "").strip().lower() != "preto")
+    for v in variacoes:
         attrs = list(base_attrs)
         if v.get("cor"):
             cor = {"id": "COLOR", "value_name": v["cor"]}
