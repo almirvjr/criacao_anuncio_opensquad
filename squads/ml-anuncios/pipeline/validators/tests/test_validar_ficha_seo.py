@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Testes da regra Marca/Modelo (Almir 07/10/2026). Stdlib unittest."""
+"""Testes da regra Marca/Modelo (Almir 07/10/2026; Marca revista em 08/10). Stdlib unittest."""
 import os
 import sys
 import unittest
@@ -25,30 +25,44 @@ class TestFornecedor(unittest.TestCase):
 
 class TestFicha(unittest.TestCase):
     def test_viel_ok(self):
-        e = validar_ficha("VIE-1066-PAI", TIT, "Viel Higiênica Antiodor", "Lixo Quarto Escritório", DESC)
+        e = validar_ficha("VIE-1066-PAI", TIT, "Viel", "Lixo Quarto Escritório", DESC)
         self.assertEqual(codigos(e), [])
 
-    def test_marca_sem_fornecedor_bloqueia(self):
-        e = validar_ficha("VIE-1066-PAI", TIT, "Lixeira Higiênica Viel", "Quarto", DESC)
-        self.assertIn("MARCA_SEM_FORNECEDOR", codigos(e))
+    def test_marca_com_palavra_chave_bloqueia(self):
+        # regra de 08/10: Marca = so o fornecedor (ou a marca propria), sem cauda longa
+        e = validar_ficha("VIE-1066-PAI", TIT, "Viel Higiênica Antiodor", "Quarto", DESC)
+        self.assertIn("MARCA_FORA_DO_PADRAO", codigos(e))
 
-    def test_palavra_do_titulo_repetida_bloqueia(self):
-        e = validar_ficha("VIE-1066-PAI", TIT, "Viel Lixeira Inox", "Quarto", DESC)
+    def test_marca_de_outro_fornecedor_bloqueia(self):
+        e = validar_ficha("VIE-1066-PAI", TIT, "Brinox", "Quarto", DESC)
+        self.assertIn("MARCA_FORA_DO_PADRAO", codigos(e))
+
+    def test_marca_maiuscula_diferente_ok(self):
+        e = validar_ficha("VIE-1066-PAI", TIT, "VIEL", "Quarto", DESC)
+        self.assertEqual(codigos(e), [])
+
+    def test_marca_propria_em_produto_de_fornecedor_ok(self):
+        e = validar_ficha("VIE-1066-PAI", TIT, "Terra Casa Decor", "Quarto", DESC)
+        self.assertEqual(codigos(e), [])
+
+    def test_marca_propria_libera_loja_na_descricao(self):
+        e = validar_ficha("VIE-1066-PAI", TIT, "Terra Casa Decor", "Quarto",
+                          DESC + " Da marca Terra Casa Decor.")
+        self.assertEqual(codigos(e), [])
+
+    def test_palavra_do_titulo_repetida_no_modelo_bloqueia(self):
+        e = validar_ficha("VIE-1066-PAI", TIT, "Viel", "Lixeira Quarto", DESC)
         self.assertIn("PALAVRA_REPETIDA_TITULO", codigos(e))
 
     def test_acento_nao_engana_repeticao(self):
         e = validar_ficha("VIE-1066-PAI", "Lixeira Aço Inox 5L Pedal Cozinha Banheiro Higiênica",
-                          "Viel Higienica", "Quarto", DESC)
+                          "Viel", "Higienica Quarto", DESC)
         self.assertIn("PALAVRA_REPETIDA_TITULO", codigos(e))
 
-    def test_marca_e_modelo_nao_repetem_entre_si(self):
-        e = validar_ficha("VIE-1066-PAI", TIT, "Viel Escritório", "Escritório Quarto", DESC)
-        self.assertIn("PALAVRA_REPETIDA_MARCA_MODELO", codigos(e))
-
-    def test_acima_de_30_so_avisa(self):
-        e = validar_ficha("VIE-1066-PAI", TIT, "Viel Higiênica Antiodor Escritório", "Quarto", DESC)
+    def test_modelo_acima_de_30_so_avisa(self):
+        e = validar_ficha("VIE-1066-PAI", TIT, "Viel", "Quarto Escritório Consultório Antiodor", DESC)
         self.assertEqual(codigos(e), [])
-        self.assertIn("WARN_MARCA_LONGA", codigos(e, so_bloqueio=False))
+        self.assertIn("WARN_MODELO_LONGO", codigos(e, so_bloqueio=False))
 
     def test_vazios_bloqueiam(self):
         e = validar_ficha("VIE-1066-PAI", TIT, "", "", DESC)
@@ -59,8 +73,8 @@ class TestFicha(unittest.TestCase):
         e = validar_ficha("KOU_1", TIT, "Kou Algo", "Quarto", DESC)
         self.assertIn("FORNECEDOR_DESCONHECIDO", codigos(e))
 
-    def test_loja_na_descricao_de_nao_mundiart_bloqueia(self):
-        e = validar_ficha("VIE-1066-PAI", TIT, "Viel Higiênica", "Quarto", DESC + " Terra Casa Decor.")
+    def test_loja_na_descricao_com_marca_do_fornecedor_bloqueia(self):
+        e = validar_ficha("VIE-1066-PAI", TIT, "Viel", "Quarto", DESC + " Terra Casa Decor.")
         self.assertIn("DESCRICAO_CITA_LOJA", codigos(e))
 
     def test_loja_no_titulo_sempre_bloqueia(self):
@@ -73,7 +87,7 @@ class TestFicha(unittest.TestCase):
                           "Arte Moderna Parede", "Um quadro da marca Terra Casa Decor para sua casa.")
         self.assertEqual(codigos(e), [])
 
-    def test_mundiart_marca_com_palavra_chave_bloqueia(self):
+    def test_mundiart_marca_do_fornecedor_nao_existe_so_a_propria(self):
         e = validar_ficha("MDA_9", "Quadro Decorativo Sala", "Terra Casa Decor Arte", "Parede",
                           "Marca Terra Casa Decor.")
         self.assertIn("MARCA_MUNDIART", codigos(e))

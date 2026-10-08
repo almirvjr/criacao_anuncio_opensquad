@@ -2,10 +2,12 @@
 """
 validar_ficha_seo.py — regra de Marca e Modelo da ficha (Almir, 07/10/2026).
 
-Marca e Modelo sao os campos da ficha que mais indexam na busca do ML. Neles vao
-palavras-chave que NAO estao no titulo. A Marca comeca pelo fornecedor. Mundiart
-(MDA) e marca propria: Marca = "Terra Casa Decor" e so; a descricao apresenta o
-produto como Terra Casa Decor. O titulo nunca cita a loja.
+Marca (revista 08/10): SO o nome do fornecedor (padrao) ou SO "Terra Casa Decor"
+(o Almir troca na mao quando quiser) -- sem palavra-chave na sequencia. Modelo leva
+palavras-chave de busca que NAO estao no titulo (~30 caracteres). Mundiart (MDA) e
+marca propria: Marca = "Terra Casa Decor" e a descricao apresenta o produto como
+Terra Casa Decor. Descricao so cita a loja quando a Marca e a propria. O titulo
+nunca cita a loja.
 
 Uso:  python validar_ficha_seo.py <anuncio-{pai_sku}.yaml>
 Saida: 0 = OK (avisos podem aparecer) | 1 = BLOQUEADO.
@@ -62,28 +64,25 @@ def validar_ficha(pai_sku, titulo, marca, modelo, descricao):
     if loja in norm(titulo):
         E("TITULO_CITA_LOJA", "O titulo nunca cita 'Terra Casa Decor'.")
 
+    marca_propria = norm(marca) == loja
     if mundiart:
-        if marca and marca != MARCA_PROPRIA:
+        if marca and not marca_propria:
             E("MARCA_MUNDIART", f"Mundiart: Marca tem que ser exatamente '{MARCA_PROPRIA}', veio '{marca}'.")
         if loja not in norm(descricao):
             E("DESCRICAO_SEM_MARCA_PROPRIA",
               "Mundiart: a descricao precisa apresentar o produto como da marca Terra Casa Decor.")
-        chaves_marca = set()
     else:
-        if fornecedor and marca and not norm(marca).startswith(norm(fornecedor)):
-            E("MARCA_SEM_FORNECEDOR", f"Marca tem que comecar por '{fornecedor}', veio '{marca}'.")
-        if loja in norm(descricao):
-            E("DESCRICAO_CITA_LOJA", "So produto Mundiart cita 'Terra Casa Decor' na descricao.")
-        chaves_marca = tokens(marca) - tokens(fornecedor or "")
+        if fornecedor and marca and not marca_propria and norm(marca) != norm(fornecedor):
+            E("MARCA_FORA_DO_PADRAO",
+              f"Marca tem que ser so '{fornecedor}' ou so '{MARCA_PROPRIA}', veio '{marca}'.")
+        if loja in norm(descricao) and not marca_propria:
+            E("DESCRICAO_CITA_LOJA",
+              "A descricao so cita 'Terra Casa Decor' quando a Marca e a propria.")
 
-    chaves_modelo = tokens(modelo)
-    rep_titulo = sorted((chaves_marca | chaves_modelo) & tokens(titulo))
+    rep_titulo = sorted(tokens(modelo) & tokens(titulo))
     if rep_titulo:
         E("PALAVRA_REPETIDA_TITULO",
-          f"Palavras de Marca/Modelo que ja estao no titulo: {rep_titulo}. Trocar por termos novos.")
-    rep_mm = sorted(chaves_marca & chaves_modelo)
-    if rep_mm:
-        E("PALAVRA_REPETIDA_MARCA_MODELO", f"Mesma palavra na Marca e no Modelo: {rep_mm}.")
+          f"Palavras do Modelo que ja estao no titulo: {rep_titulo}. Trocar por termos novos.")
     return err
 
 

@@ -58,7 +58,7 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
    - Sem HTML, markdown ou emojis (plain text estrito).
 
 5. **Preencher ficha técnica** (`attributes`) cobrindo 100% dos atributos obrigatórios da categoria mapeados para valores do dossie. Padronizar unidades.
-   - **`BRAND` e `MODEL` — regra do Almir (07/10/2026):** são os campos da ficha que mais indexam na busca. Usar as palavras de `keywords_busca` do brief **que não estão no título recomendado** (nada repetido entre título, Marca e Modelo). Marca **começa pelo fornecedor** (Viel, Brinox, Bellagio, Passerini…) + palavras-chave; ~30 caracteres em cada. **Mundiart (`MDA`)**: Marca = `Terra Casa Decor` e mais nada, e a descrição apresenta o produto como da marca Terra Casa Decor (título nunca cita a loja).
+   - **`BRAND` e `MODEL` — regra do Almir (07/10/2026, Marca revista em 08/10):** **Marca = só o nome do fornecedor** (Viel, Brinox, Bellagio, Passerini…), nada depois. **Modelo** = palavras de `keywords_busca` do brief **que não estão no título recomendado**, ~30 caracteres. **Mundiart (`MDA`)**: Marca = `Terra Casa Decor` e mais nada, e a descrição apresenta o produto como da marca Terra Casa Decor (título nunca cita a loja).
    - Gravar `pai_sku` no topo do `anuncio-{pai_sku}.yaml` (as travas leem dali).
 
 6. **Marcar `status_copy`**:

@@ -54,7 +54,7 @@ Frameworks de referência: `pipeline/data/storyselling-framework.md` (MECLABS, e
 
    Fechar as listas `pendencias[]` (atributos ainda `pendente`) e `divergencias[]` (atributos `divergente`).
 
-5. **Palavras-chave (`keywords_busca`).** Nos títulos dos concorrentes e no autocompletar da busca do ML, levantar as 8–12 palavras mais buscadas do produto, da mais para a menos buscada. A Renata usa nos campos Marca e Modelo (regra do Almir, 07/10/2026).
+5. **Palavras-chave (`keywords_busca`).** Nos títulos dos concorrentes e no autocompletar da busca do ML, levantar as 8–12 palavras mais buscadas do produto, da mais para a menos buscada. A Renata usa no campo Modelo (regra do Almir, 07/10/2026).
 
 6. **Diagnóstico MECLABS.**
    - **Dor interna mais forte**: ler as reviews 5-estrelas (não as 1-estrela) e achar a frase emocional recorrente. Citar 2-3 trechos como evidência.

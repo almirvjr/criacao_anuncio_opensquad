@@ -30,8 +30,7 @@
 
 ## 3. Ficha técnica — Marca e Modelo (regra de 07/10)
 
-- Marca e Modelo carregam **palavras-chave de busca que não estão no título**. Teto ~30 caracteres cada.
-- Marca **começa pelo fornecedor** (ex.: `Viel Lixeira Banheiro Cozinha`).
+- **Revisto 08/10:** Marca = **só o fornecedor** (ex.: `Viel`); o Almir troca por só `Terra Casa Decor` quando quiser. Modelo carrega **palavras-chave de busca que não estão no título**, ~30 caracteres.
 - **Mundiart (`MDA_`):** Marca = `Terra Casa Decor` e só; a descrição apresenta o produto como Terra Casa Decor; título sem o nome.
 - Fonte das palavras-chave: busca do ML (autocompletar + títulos dos concorrentes da Helena). Renata escolhe, Vinicius confere que não repete o título.
 

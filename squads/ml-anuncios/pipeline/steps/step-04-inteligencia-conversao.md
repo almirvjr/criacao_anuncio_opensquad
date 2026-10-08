@@ -61,7 +61,7 @@ Load these files before executing:
 
 6b. **Limitações do produto (`limitacoes[]`) — OBRIGATÓRIO**: a partir de `dados_produto` + reviews dos concorrentes, listar o que o produto **NÃO tem** ou seu ponto fraco real (ex.: `sem balde interno`, `haste do pedal em nylon`, `garantia curta`). Cada item: `{texto, fonte}`. A limitação é declarada **na descrição** (a Renata cobre; a trava `validar_claims --sem-fotos` bloqueia se faltar). Princípio: **transparência > esconder** (confiança vende mais que perfeição); limitação dita com naturalidade, nunca buraco escondido. Se de fato não houver limitação relevante, `limitacoes: []` **e** preencher `limitacoes_nota` justificando (decisão consciente, não silêncio). **Nunca** afirmar feature que o produto não tem (ver [[feedback_referencia_so_metodo_nao_feature]]).
 
-7. **Palavras-chave para a ficha (`keywords_busca`)**: levantar, nos títulos dos concorrentes e no autocompletar da busca do ML, as 8–12 palavras mais buscadas do produto e gravar em `keywords_busca: [..]` no brief, da mais para a menos buscada. A Renata usa para os campos Marca e Modelo (regra do Almir, 07/10/2026: palavra-chave que não está no título).
+7. **Palavras-chave para a ficha (`keywords_busca`)**: levantar, nos títulos dos concorrentes e no autocompletar da busca do ML, as 8–12 palavras mais buscadas do produto e gravar em `keywords_busca: [..]` no brief, da mais para a menos buscada. A Renata usa no campo Modelo (regra do Almir, 07/10/2026: palavra-chave que não está no título).
 
 8. **Validar âncoras**: conferir que cada afirmação do diagnóstico tem trecho de review como evidência. Se algum item ficou sem âncora, rebaixar `confianca` ou ajustar.
 
@@ -100,7 +100,7 @@ briefs:
     diagnostico_neutro: <bool>
     risco_produto: <bool>
     sem_concorrente: <bool>
-    keywords_busca: ["<palavra mais buscada>", "..."]   # 8-12, usadas em Marca/Modelo
+    keywords_busca: ["<palavra mais buscada>", "..."]   # 8-12, usadas no Modelo
     pendencias: ["<string>", "..."]      # atributos de dados_produto ainda pendentes
     divergencias: ["<string>", "..."]    # atributos de dados_produto com divergência
     arquivo: "squads/ml-anuncios/output/inteligencia/brief-<pai_sku>.yaml"

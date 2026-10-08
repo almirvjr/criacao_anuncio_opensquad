@@ -38,7 +38,7 @@ gates:
   - id: ficha_seo
     script: validators/validar_ficha_seo.py
     roda_em: [step-05, step-06, step-08]
-    bloqueia: "Marca sem o fornecedor na frente, palavra de Marca/Modelo repetida do titulo, Mundiart fora da regra, loja citada fora do lugar"
+    bloqueia: "Marca diferente de so o fornecedor (ou so a marca propria), palavra do Modelo repetida do titulo, Mundiart fora da regra, loja citada fora do lugar"
   - id: capas
     script: validators/capas.py
     roda_em: [step-07]

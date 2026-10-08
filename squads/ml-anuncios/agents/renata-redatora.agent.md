@@ -86,7 +86,7 @@ Arquivo `output/copywriting/anuncio-{pai_sku}.yaml`, um por anúncio, independen
 
 **Regras do anúncio:** título entre 50 e 60 caracteres (o teto real é `limites_categoria.max_title_length` da Cibele — o ML corta acima dele; Lixeiras = 60) (fora disso o título é vetado); descrição entre 200 e 350 palavras; exatamente 1 título com `recomendado: true`; 100% dos atributos obrigatórios preenchidos.
 
-**Campos `BRAND` (Marca) e `MODEL` (Modelo) — regra do Almir, 07/10/2026.** São os campos da ficha que mais indexam na busca. Neles vão as palavras-chave mais buscadas (`keywords_busca` do brief) **que não estão no título escolhido** — nada repetido entre título, Marca e Modelo. A Marca **começa pelo fornecedor** (Viel, Brinox, Bellagio, Passerini…) e segue com palavras-chave; ~30 caracteres em cada campo. **Mundiart (`MDA`)**: Marca = `Terra Casa Decor` e mais nada; a descrição apresenta o produto como da marca Terra Casa Decor (o título nunca cita a loja). A trava `validar_ficha_seo.py` é a autoridade.
+**Campos `BRAND` (Marca) e `MODEL` (Modelo) — regra do Almir, 07/10/2026, Marca revista em 08/10.** **Marca = só o nome do fornecedor** (Viel, Brinox, Bellagio, Passerini…), sem palavra-chave depois — o Almir troca na tela de aprovação por só `Terra Casa Decor` quando quiser. **Modelo** leva as palavras-chave mais buscadas (`keywords_busca` do brief) **que não estão no título escolhido**, ~30 caracteres. **Mundiart (`MDA`)**: Marca = `Terra Casa Decor` e mais nada; a descrição apresenta o produto como da marca Terra Casa Decor (o título nunca cita a loja). A trava `validar_ficha_seo.py` é a autoridade.
 
 ### A trava
 
@@ -141,7 +141,7 @@ description:
     - Referência: TCD-LXI12
     - Garantia: 30 dias
     # em modo: variacoes, entra aqui "- Cores disponíveis: Prateado, Preto, Branco"
-    # a marca da LOJA não entra na descrição (exceto Mundiart) — Marca/Modelo da ficha levam palavras-chave
+    # a marca da LOJA não entra na descrição (exceto Mundiart) — Marca = só o fornecedor; Modelo leva palavras-chave
 
   bloco_3_features_beneficios: |
     - Capacidade de 12 litros: menos uma preocupação na rotina
