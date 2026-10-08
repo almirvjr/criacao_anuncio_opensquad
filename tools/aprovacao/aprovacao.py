@@ -96,20 +96,47 @@ def listar_pendentes(saida):
     pasta = saida / "copywriting"
     if not pasta.is_dir():
         return []
-    entrada = _entrada_por_pai(saida)
     cartoes = []
+    try:
+        entrada = _entrada_por_pai(saida)
+    except Exception as e:  # noqa: BLE001
+        entrada = {}
+        cartoes.append({"arquivo": "anuncios-entrada.json",
+                        "erro": f"Este arquivo nao abriu ({type(e).__name__}): preco, peso e caixa nao aparecem."})
     for f in sorted(pasta.glob("anuncio-*.yaml")):
         try:
             doc = _ler_yaml(f)
             if not isinstance(doc, dict) or not doc.get("pai_sku"):
                 raise ValueError("arquivo sem pai_sku")
+            if doc.get("status_copy") in FINAIS:
+                continue
+            cartoes.append(_cartao(saida, doc, entrada))
         except Exception as e:  # noqa: BLE001
-            cartoes.append({"arquivo": f.name, "erro": f"Este arquivo nao abriu ({type(e).__name__})."})
-            continue
-        if doc.get("status_copy") in FINAIS:
-            continue
-        cartoes.append(_cartao(saida, doc, entrada))
+            cartoes.append({"arquivo": f.name, "erro": f"Este anuncio nao abriu ({type(e).__name__}): "
+                                                        f"o arquivo dele ou o das capas tem defeito."})
     return cartoes
+
+
+def situacao_lote(saida):
+    """0 = todos aprovados; 3 = algum devolvido; 2 = algum pendente, com defeito ou lote vazio."""
+    devolvido = False
+    arquivos = sorted((Path(saida) / "copywriting").glob("anuncio-*.yaml"))
+    if not arquivos:
+        return 2
+    for f in arquivos:
+        try:
+            st = (_ler_yaml(f) or {}).get("status_copy")
+        except Exception:  # noqa: BLE001
+            return 2
+        if st == "devolvido":
+            devolvido = True
+        elif st != "aprovado":
+            return 2
+    return 3 if devolvido else 0
+
+
+def _pendentes_validos(saida):
+    return [c for c in listar_pendentes(saida) if not c.get("erro")]
 
 
 PAI_OK = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -144,6 +171,14 @@ def conferir(saida, pai, edicao):
     elif len(titulo) > TETO_TITULO:
         itens.append({"codigo": "TITULO_LONGO", "nivel": "bloqueio",
                       "texto": f"Titulo com {len(titulo)} letras; o Mercado Livre aceita ate {TETO_TITULO}."})
+    blocos = {k: v for k, v in (novo.get("description") or {}).items() if str(k).startswith("bloco")}
+    if not any(str(v or "").strip() for v in blocos.values()):
+        itens.append({"codigo": "DESCRICAO_VAZIA", "nivel": "bloqueio", "texto": "A descricao esta vazia."})
+    else:
+        for k, v in blocos.items():
+            if not str(v or "").strip():
+                itens.append({"codigo": "BLOCO_VAZIO", "nivel": "erro",
+                              "texto": f"Uma parte da descricao ficou vazia ({k})."})
     attrs = novo["attributes"]
     for cod, msg in validar_ficha(pai, titulo, attrs["BRAND"], attrs["MODEL"], descricao_do_copy(novo)):
         itens.append({"codigo": cod, "nivel": "aviso" if cod.startswith("WARN") else "erro", "texto": msg})
@@ -169,7 +204,7 @@ def _gravar_seguro(caminho, doc, agora):
     os.replace(tmp, caminho)
 
 
-def aprovar(saida, pai, edicao, agora=None):
+def aprovar(saida, pai, edicao, vistos=None, agora=None):
     agora = agora or datetime.now()
     caminho = caminho_anuncio(saida, pai)
     doc = _ler_yaml(caminho)
@@ -178,6 +213,10 @@ def aprovar(saida, pai, edicao, agora=None):
     itens = conferir(saida, pai, edicao)
     if any(i["nivel"] == "bloqueio" for i in itens):
         return {"ok": False, "motivo": "Tem bloqueio: corrija antes de aprovar.", "conferencia": itens}
+    novos = [i for i in itens if i["nivel"] == "erro" and i["codigo"] not in set(vistos or [])]
+    if novos:
+        return {"ok": False, "conferencia": itens,
+                "motivo": "A conferencia mudou e tem erro que voce ainda nao viu. Confira e clique de novo."}
     novo = aplicar_edicao(doc, edicao)
     novo["status_copy"] = "aprovado"
     novo["aprovado_em"] = f"{agora:%Y-%m-%d %H:%M}"
@@ -242,7 +281,7 @@ def criar_servidor(saida, esperar=False):
                 if self.path == "/api/conferir":
                     return self._responder(200, {"itens": conferir(saida, pai, corpo.get("edicao") or {})})
                 if self.path == "/api/aprovar":
-                    r = aprovar(saida, pai, corpo.get("edicao") or {})
+                    r = aprovar(saida, pai, corpo.get("edicao") or {}, vistos=corpo.get("vistos") or [])
                 elif self.path == "/api/devolver":
                     r = devolver(saida, pai, corpo.get("nota"))
                     if r["ok"]:
@@ -255,7 +294,7 @@ def criar_servidor(saida, esperar=False):
                 return self._responder(500, {"erro": f"Falhou ({type(e).__name__}). Chame o Claude."})
             if r["ok"]:
                 srv.estado["acoes"] += 1
-                if esperar and not listar_pendentes(saida):
+                if esperar and not _pendentes_validos(saida):
                     threading.Thread(target=lambda: (srv.shutdown(), srv.encerrado.set()), daemon=True).start()
             self._responder(200, r)
 
@@ -269,9 +308,12 @@ def main():
     p = argparse.ArgumentParser(description="Tela de aprovacao do anuncio.")
     p.add_argument("--saida", default=str(SAIDA_PADRAO), help="pasta de saida da esteira")
     p.add_argument("--esperar", action="store_true",
-                   help="encerra quando nao sobrar pendente; sai 0 = todos aprovados, 3 = algum devolvido")
+                   help="encerra quando nao sobrar pendente; sai 0 = todos aprovados, 3 = algum devolvido, 2 = pendente/defeito")
     p.add_argument("--sem-navegador", action="store_true")
     a = p.parse_args()
+    if a.esperar and not _pendentes_validos(a.saida):
+        print("Nada esperando aprovacao.")
+        sys.exit(situacao_lote(a.saida))
     srv = criar_servidor(a.saida, esperar=a.esperar)
     url = f"http://127.0.0.1:{srv.server_address[1]}/"
     pend = listar_pendentes(a.saida)
@@ -284,7 +326,7 @@ def main():
     except KeyboardInterrupt:
         pass
     if a.esperar:
-        sys.exit(3 if srv.estado["devolvidos"] else 0)
+        sys.exit(situacao_lote(a.saida))
 
 
 if __name__ == "__main__":

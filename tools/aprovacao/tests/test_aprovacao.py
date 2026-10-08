@@ -190,7 +190,7 @@ class TestAprovar:
         assert (saida / "copywriting" / f"anuncio-{PAI}.yaml").read_text(encoding="utf-8") == antes
 
     def test_aviso_aceito_fica_registrado(self, saida):
-        ap.aprovar(saida, PAI, _edicao(marca="Viel Inox"), agora=AGORA)
+        ap.aprovar(saida, PAI, _edicao(marca="Viel Inox"), vistos=["MARCA_FORA_DO_PADRAO"], agora=AGORA)
         doc = yaml.safe_load((saida / "copywriting" / f"anuncio-{PAI}.yaml").read_text(encoding="utf-8"))
         assert "MARCA_FORA_DO_PADRAO" in doc["avisos_aceitos"]
 
@@ -270,3 +270,54 @@ class TestServidor:
         srv.encerrado.wait(5)
         assert srv.encerrado.is_set()
         assert srv.estado["devolvidos"] == 1
+
+class TestRevisaoFinal:
+    # I1: defeito em arquivo auxiliar nao derruba a lista
+    def test_capas_com_defeito_so_afeta_o_proprio_cartao(self, saida):
+        (saida / "capas").mkdir()
+        (saida / "capas" / f"capas-{PAI}.yaml").write_text("a: [", encoding="utf-8")
+        [c] = ap.listar_pendentes(saida)
+        assert c.get("erro") and PAI in c["arquivo"]
+
+    def test_entrada_com_defeito_nao_derruba(self, saida):
+        (saida / "anuncios-entrada.json").write_text("{", encoding="utf-8")
+        cartoes = ap.listar_pendentes(saida)
+        assert any(c.get("erro") and c["arquivo"] == "anuncios-entrada.json" for c in cartoes)
+        assert any(c.get("pai_sku") == PAI for c in cartoes)
+
+    # I2: descricao vazia
+    def test_descricao_toda_vazia_bloqueia(self, saida):
+        d = {k: "" for k in _edicao()["descricao"]}
+        assert "DESCRICAO_VAZIA" in _codigos(ap.conferir(saida, PAI, _edicao(descricao=d)), "bloqueio")
+
+    def test_um_bloco_vazio_e_erro(self, saida):
+        d = _edicao()["descricao"]
+        d["bloco_2_specs"] = "  "
+        assert "BLOCO_VAZIO" in _codigos(ap.conferir(saida, PAI, _edicao(descricao=d)), "erro")
+
+    # I3: so aprova com erro que a pagina mostrou
+    def test_recusa_erro_que_o_almir_nao_viu(self, saida):
+        r = ap.aprovar(saida, PAI, _edicao(marca="Viel Inox"), vistos=[], agora=AGORA)
+        assert r["ok"] is False
+        assert "MARCA_FORA_DO_PADRAO" in [i["codigo"] for i in r["conferencia"]]
+        assert ap.listar_pendentes(saida)[0]["pai_sku"] == PAI
+
+    # I4: codigo de saida le os arquivos
+    def test_situacao_do_lote(self, saida):
+        assert ap.situacao_lote(saida) == 2
+        ap.aprovar(saida, PAI, _edicao(), agora=AGORA)
+        assert ap.situacao_lote(saida) == 0
+        _gravar(saida, _doc(status_copy="devolvido"))
+        assert ap.situacao_lote(saida) == 3
+
+    def test_arquivo_com_defeito_nao_e_tudo_aprovado(self, saida):
+        ap.aprovar(saida, PAI, _edicao(), agora=AGORA)
+        (saida / "copywriting" / "anuncio-VIE-2-PAI.yaml").write_text("a: [", encoding="utf-8")
+        assert ap.situacao_lote(saida) == 2
+
+    def test_esperar_encerra_mesmo_com_cartao_de_erro(self, saida):
+        (saida / "copywriting" / "anuncio-VIE-2-PAI.yaml").write_text("a: [", encoding="utf-8")
+        srv, base = _subir(saida, esperar=True)
+        _post(base + "/api/aprovar", {"pai": PAI, "edicao": _edicao(), "vistos": []})
+        srv.encerrado.wait(5)
+        assert srv.encerrado.is_set()

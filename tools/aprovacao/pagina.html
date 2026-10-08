@@ -118,10 +118,8 @@ function cartao(c) {
   const edicao = () => ({titulo: titulo(), marca: marca.value, modelo: modelo.value,
     descricao: Object.fromEntries(Object.entries(caixas).map(([k, t]) => [k, t.value]))});
 
-  let espera, ultimo = [];
-  async function conferirAgora() {
-    try {
-      const {itens} = await api("/api/conferir", {pai: c.pai_sku, edicao: edicao()});
+  let espera, ultimo = [], seq = 0;
+  function mostrar(itens) {
       ultimo = itens;
       conf.replaceChildren(...(itens.length ? itens.map(i => el("li", {class: i.nivel},
         (i.nivel === "aviso" ? "⚠ " : "❌ ") + i.texto)) : [el("li", {class: "tudook"}, "✅ Tudo certo nas conferências")]));
@@ -129,6 +127,12 @@ function cartao(c) {
       btAprovar.disabled = bloq;
       btAprovar.textContent = bloq ? "Aprovar (corrija o bloqueio)" : errado ? "Aprovar mesmo assim" : "Aprovar";
       btAprovar.classList.toggle("mesmo", errado && !bloq);
+  }
+  async function conferirAgora() {
+    const meu = ++seq;
+    try {
+      const {itens} = await api("/api/conferir", {pai: c.pai_sku, edicao: edicao()});
+      if (meu === seq) mostrar(itens);
     } catch (e) { conf.replaceChildren(el("li", {class: "erro"}, "A conferência falhou: " + e.message)); btAprovar.disabled = true; }
   }
   function mudou() { clearTimeout(espera); espera = setTimeout(conferirAgora, 400); }
@@ -138,19 +142,26 @@ function cartao(c) {
   btAprovar.addEventListener("click", async () => {
     btAprovar.disabled = true;
     try {
-      const r = await api("/api/aprovar", {pai: c.pai_sku, edicao: edicao()});
-      if (!r.ok) { msg.replaceChildren(el("p", {class: "falha"}, r.motivo)); btAprovar.disabled = false; return; }
+      clearTimeout(espera); seq++;
+      const vistos = ultimo.map(i => i.codigo);
+      const r = await api("/api/aprovar", {pai: c.pai_sku, edicao: edicao(), vistos});
+      if (!r.ok) {
+        if (r.conferencia && r.conferencia.length) mostrar(r.conferencia); else btAprovar.disabled = false;
+        msg.replaceChildren(el("p", {class: "falha"}, r.motivo)); return;
+      }
+      const depois = r.conferencia || [];
       feito(`✅ ${c.nome_base} aprovado às ${new Date().toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"})}` +
-        (ultimo.length ? ` (com ${ultimo.length} aviso(s) aceito(s))` : ""));
+        (depois.length ? ` — conferência do arquivo gravado: ${depois.map(i => i.texto).join(" | ")}` : " — conferência do arquivo gravado: tudo certo"));
       caixa.remove(); vazio();
     } catch (e) { msg.replaceChildren(el("p", {class: "falha"}, "Não gravou: " + e.message)); btAprovar.disabled = false; }
   });
   btDevolver.addEventListener("click", async () => {
+    btDevolver.disabled = true;
     try {
       const r = await api("/api/devolver", {pai: c.pai_sku, nota: nota.value});
-      if (!r.ok) { msg.replaceChildren(el("p", {class: "falha"}, r.motivo)); return; }
+      if (!r.ok) { msg.replaceChildren(el("p", {class: "falha"}, r.motivo)); btDevolver.disabled = false; return; }
       feito(`↩ ${c.nome_base} devolvido para a Renata`); caixa.remove(); vazio();
-    } catch (e) { msg.replaceChildren(el("p", {class: "falha"}, "Não gravou: " + e.message)); }
+    } catch (e) { msg.replaceChildren(el("p", {class: "falha"}, "Não gravou: " + e.message)); btDevolver.disabled = false; }
   });
   caixa.addEventListener("change", e => { if (e.target.type === "radio") mudou(); });
 
