@@ -8,7 +8,7 @@ Ferramentas de anúncio do Mercado Livre da Terra Casa Decor. **Três frentes:**
 
 1. **Criar anúncio novo** — squad `ml-anuncios` do Opensquad: pipeline de papéis
    (categoria → estrategista → copy → **capas do Almir no Cloudinary** → revisão → publicação) que produz
-   título, descrição e ficha. **Aprovação do texto pela tela** `tools/aprovacao/Aprovar anuncios.bat` (clique duplo, abre no Chrome). **Desde 07/10/2026 não gera foto** (ver "Fotos" abaixo). Runbook em `PROGRESSO.md`.
+   título, descrição e ficha. **Aprovação do texto pela tela** `tools/aprovacao/Aprovar anuncios.bat` (clique duplo, abre no Chrome) — o Almir usa pelo botao `2 - Aprovar anuncios` na pasta `ANUNCIOS` do Drive (atalho que so funciona no hub, como os da GS1). **Desde 07/10/2026 não gera foto** (ver "Fotos" abaixo). Runbook em `PROGRESSO.md`.
 2. **Auditar e consertar a ficha dos anúncios JÁ no ar** — `tools/auditoria_ficha/` (ver seção própria abaixo).
 3. **Entrar em catálogo sem "Vender um igual"** (catálogo sem oferta ativa) — `tools/catalogo_sem_oferta/Entrar no catalogo.bat`
    (clique duplo; pede link, preço e estoque; confere no ML antes e só publica com "s"; anota em `historico.csv`).
