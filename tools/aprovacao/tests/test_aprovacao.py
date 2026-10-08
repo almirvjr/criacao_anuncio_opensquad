@@ -98,3 +98,61 @@ class TestListar:
 
     def test_pasta_vazia(self, tmp_path):
         assert ap.listar_pendentes(tmp_path) == []
+def _edicao(**kw):
+    e = {"titulo": TIT_OK, "marca": "Viel", "modelo": "Cesto Lixo Redondo",
+         "descricao": {"bloco_1_abertura": "Lixeira bonita. Este modelo nao tem balde interno removivel.\n",
+                       "bloco_2_specs": "- Capacidade: 5 litros\n",
+                       "bloco_3_features_beneficios": "- Pedal: abre sem as maos\n"}}
+    e.update(kw)
+    return e
+
+
+def _codigos(itens, nivel=None):
+    return [i["codigo"] for i in itens if nivel is None or i["nivel"] == nivel]
+
+
+class TestConferir:
+    def test_tudo_certo(self, saida):
+        assert ap.conferir(saida, PAI, _edicao()) == []
+
+    def test_titulo_acima_de_60_bloqueia(self, saida):
+        itens = ap.conferir(saida, PAI, _edicao(titulo="L" * 61))
+        assert "TITULO_LONGO" in _codigos(itens, "bloqueio")
+
+    def test_titulo_vazio_bloqueia(self, saida):
+        assert "TITULO_VAZIO" in _codigos(ap.conferir(saida, PAI, _edicao(titulo="  ")), "bloqueio")
+
+    def test_marca_fora_do_padrao_e_erro_nao_bloqueio(self, saida):
+        itens = ap.conferir(saida, PAI, _edicao(marca="Viel Inox"))
+        assert "MARCA_FORA_DO_PADRAO" in _codigos(itens, "erro")
+        assert _codigos(itens, "bloqueio") == []
+
+    def test_promessa_falsa_aparece(self, saida):
+        d = _edicao()["descricao"]
+        d["bloco_3_features_beneficios"] = "- Com balde interno removivel\n"
+        assert "CLAIM_FALSO_COPY" in _codigos(ap.conferir(saida, PAI, _edicao(descricao=d)), "erro")
+
+    def test_bloco_apagado_nao_volta_o_texto_antigo(self, saida):
+        d = _edicao()["descricao"]
+        d["bloco_1_abertura"] = ""
+        assert "LIMITACAO_FORA_DA_COPY" in _codigos(ap.conferir(saida, PAI, _edicao(descricao=d)))
+
+    def test_modelo_longo_e_aviso(self, saida):
+        itens = ap.conferir(saida, PAI, _edicao(modelo="Cesto Redondo Consultorio Escritorio Lavabo"))
+        assert "WARN_MODELO_LONGO" in _codigos(itens, "aviso")
+
+    def test_sem_brief_e_erro_visivel(self, saida):
+        (saida / "inteligencia" / f"brief-{PAI}.yaml").unlink()
+        assert "BRIEF_AUSENTE" in _codigos(ap.conferir(saida, PAI, _edicao()), "erro")
+
+    def test_pai_invalido(self, saida):
+        with pytest.raises(ValueError):
+            ap.conferir(saida, "../x", _edicao())
+
+    def test_aplicar_nao_mexe_no_original(self):
+        doc = _doc()
+        novo = ap.aplicar_edicao(doc, _edicao(marca="Terra Casa Decor"))
+        assert doc["attributes"]["BRAND"] == "Viel"
+        assert novo["attributes"]["BRAND"] == "Terra Casa Decor"
+        assert novo["titulo_final"] == TIT_OK
+        assert novo["description"]["word_count"] == 20

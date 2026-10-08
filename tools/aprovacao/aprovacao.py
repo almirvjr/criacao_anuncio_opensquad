@@ -106,3 +106,49 @@ def listar_pendentes(saida):
             continue
         cartoes.append(_cartao(saida, doc, entrada))
     return cartoes
+
+
+PAI_OK = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+def caminho_anuncio(saida, pai):
+    if not PAI_OK.match(str(pai or "")):
+        raise ValueError(f"SKU pai invalido: {pai!r}")
+    return Path(saida) / "copywriting" / f"anuncio-{pai}.yaml"
+
+
+def aplicar_edicao(doc, edicao):
+    novo = copy.deepcopy(doc)
+    novo["titulo_final"] = (edicao.get("titulo") or "").strip()
+    attrs = novo.setdefault("attributes", {})
+    attrs["BRAND"] = (edicao.get("marca") or "").strip()
+    attrs["MODEL"] = (edicao.get("modelo") or "").strip()
+    desc = novo.setdefault("description", {})
+    for k, v in (edicao.get("descricao") or {}).items():
+        if str(k).startswith("bloco"):
+            desc[k] = v or ""
+    return novo
+
+
+def conferir(saida, pai, edicao):
+    doc = _ler_yaml(caminho_anuncio(saida, pai))
+    novo = aplicar_edicao(doc, edicao)
+    titulo = novo["titulo_final"]
+    itens = []
+    if not titulo:
+        itens.append({"codigo": "TITULO_VAZIO", "nivel": "bloqueio", "texto": "Falta escolher o titulo."})
+    elif len(titulo) > TETO_TITULO:
+        itens.append({"codigo": "TITULO_LONGO", "nivel": "bloqueio",
+                      "texto": f"Titulo com {len(titulo)} letras; o Mercado Livre aceita ate {TETO_TITULO}."})
+    attrs = novo["attributes"]
+    for cod, msg in validar_ficha(pai, titulo, attrs["BRAND"], attrs["MODEL"], descricao_do_copy(novo)):
+        itens.append({"codigo": cod, "nivel": "aviso" if cod.startswith("WARN") else "erro", "texto": msg})
+    brief_p = Path(saida) / "inteligencia" / f"brief-{pai}.yaml"
+    if not brief_p.is_file():
+        itens.append({"codigo": "BRIEF_AUSENTE", "nivel": "erro",
+                      "texto": "Nao achei a pesquisa deste anuncio: a conferencia de promessas NAO rodou."})
+    else:
+        blocks, warns = validar_claims(_ler_yaml(brief_p), copy_doc=novo, sem_fotos=True)
+        itens += [{"codigo": c, "nivel": "erro", "texto": m} for c, m in blocks]
+        itens += [{"codigo": c, "nivel": "aviso", "texto": m} for c, m in warns]
+    return itens
