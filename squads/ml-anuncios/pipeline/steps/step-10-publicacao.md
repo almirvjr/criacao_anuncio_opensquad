@@ -4,10 +4,12 @@ agent: paula-publicacao
 inputFile: squads/ml-anuncios/output/revisao/pareceres.yaml
 outputFile: squads/ml-anuncios/output/publicacao/resultados.yaml
 model_tier: powerful
-# Unidade de trabalho: 1 anúncio (pai_sku). modo:variacoes = N cores; modo:simples = N=1.
+# Unidade de trabalho: 1 COR (sku da cor). Modelo novo do ML (08/10/2026): cada cor e um anuncio proprio.
 ---
 
 # Step 10: Disparo de Publicação via Webhook n8n
+
+> 🔑 **Modelo novo do ML (User Products), desde 08/10/2026.** A conta tem a tag `user_product_seller`: o ML **recusa `title` e `variations`**. Cada cor vira **um anúncio próprio** com o mesmo `family_name` (= `titulo_final` aprovado); o ML monta o título (nome da família + cor) e junta as cores da mesma família na mesma página. `montar_payload.py` grava **um `payload-{sku da cor}.json` por cor** e o `ML Publicar` (nó Montar Payload, modo simples) troca `title` por `family_name`. Conferir antes, sem criar nada: `python tools/conferir_no_ml.py <corpo.json>` (pede ao ML `POST /items/validate`; resposta 400 só com avisos = OK). Disparar: `python tools/disparar_publicacao.py <payload.json> <resultado.yaml>` (lê o endereço do `.env`, nunca imprime; manda User-Agent de navegador porque o Cloudflare barra o do Python com erro 1010). Ler de volta: `python tools/ler_anuncio_ml.py MLB...`. Publicar a 1ª cor, conferir, depois as outras. Anúncio nasce pausado com `picture_download_pending` até o ML baixar a foto.
 
 ## Context Loading
 
@@ -27,10 +29,10 @@ Load these files before executing:
 2. **Filtrar anúncios aprovados**: ler `pareceres.yaml` e selecionar apenas os com `status: aprovado` (ou subconjunto que o usuário escolheu no checkpoint do step 09).
 3. **Montar o pacote com o comando (não à mão):** para cada anúncio aprovado
    ```
-   python tools/montar_payload.py --entrada squads/ml-anuncios/output/anuncios-entrada.json --categorias squads/ml-anuncios/output/categorizacao/categorias.yaml --copy squads/ml-anuncios/output/copywriting/anuncio-{pai_sku}.yaml --capas squads/ml-anuncios/output/capas/capas-{pai_sku}.yaml --pai {pai_sku} --saida squads/ml-anuncios/output/publicacao/payload-{pai_sku}.json
+   python tools/montar_payload.py --entrada squads/ml-anuncios/output/anuncios-entrada.json --categorias squads/ml-anuncios/output/categorizacao/categorias.yaml --copy squads/ml-anuncios/output/copywriting/anuncio-{pai_sku}.yaml --capas squads/ml-anuncios/output/capas/capas-{pai_sku}.yaml --pai {pai_sku} --saida squads/ml-anuncios/output/publicacao/
    ```
    O comando aplica o contrato do webhook (modo variações/simples, preço igual entre cores, 1 a 10 fotos por cor, `SELLER_SKU`/`EAN` por cor, medida da caixa em `SELLER_PACKAGE_*`, `COLOR` só na variação). Erro do comando = parar o anúncio e reportar a mensagem (ela diz qual cor/campo). **Nunca editar o JSON gerado.**
-4. **POST para o webhook n8n** com o conteúdo de `payload-{pai_sku}.json`, header `Content-Type: application/json` e timeout de 60 segundos. Capturar HTTP code e corpo da resposta.
+4. **POST para o webhook n8n**, uma chamada por cor, com o conteúdo de cada `payload-{sku}.json` (via `tools/disparar_publicacao.py`), header `Content-Type: application/json` e timeout de 60 segundos. Capturar HTTP code e corpo da resposta.
 5. **Interpretar a resposta** segundo o contrato do n8n:
    - HTTP webhook != 200 OR timeout → falha de infra; marcar anúncio como `infra_failure` e PAUSAR o lote.
    - HTTP webhook 200 e `status: "success"` → registrar `mlb_id`, `permalink`, `tiny_sync` (espera-se `status: "manual_pending"`), `supabase_log_id`, `timestamps`.

@@ -144,3 +144,57 @@ def test_medida_da_caixa_vai_como_atributo():
 def test_sem_medida_nao_inventa_atributo():
     p = build_payload(_anuncio_var(), **_ctx())
     assert not [x for x in p["attributes"] if x["id"].startswith("SELLER_PACKAGE")]
+
+
+# --- Modelo novo do ML (User Products, 08/10/2026): 1 anuncio por cor, mesmo family_name, sem title ---
+from esteira.payload_builder import build_payloads_familia  # noqa: E402
+
+
+def _ctx_familia():
+    c = _ctx()
+    c["family_name"] = c.pop("title")
+    return c
+
+
+def test_familia_um_pacote_por_cor():
+    ps = build_payloads_familia(_anuncio_var(), **_ctx_familia())
+    assert [p["sku"] for p in ps] == ["VIE_1066_3402_BR", "VIE_1066_3405_PT"]
+    for p in ps:
+        assert p["modo"] == "simples"
+        assert p["family_name"] == "Lixeira 5L Inox Pedal"
+        assert "title" not in p and "variacoes" not in p and "variation_attribute" not in p
+        assert p["price"] == 150 and p["available_quantity"] == 1
+
+
+def test_familia_cor_sku_e_gtin_em_cada_anuncio():
+    br = build_payloads_familia(_anuncio_var(), **_ctx_familia())[0]
+    attrs = {a["id"]: a for a in br["attributes"]}
+    assert attrs["COLOR"] == {"id": "COLOR", "value_id": "52049", "value_name": "Branco"}
+    assert attrs["SELLER_SKU"]["value_name"] == "VIE_1066_3402_BR"
+    assert attrs["GTIN"]["value_name"] == "111"
+    assert attrs["BRAND"]["value_name"] == "Viel"
+
+
+def test_familia_fotos_da_propria_cor():
+    br = build_payloads_familia(_anuncio_var(), **_ctx_familia())[0]
+    assert br["pictures"] == _fotos("VIE_1066_3402_BR")
+
+
+def test_familia_cor_sem_foto_falha():
+    ctx = _ctx_familia()
+    ctx["picture_ids_por_variacao"] = ctx["picture_ids_por_variacao"][:1]
+    with pytest.raises(ValueError, match="VIE_1066_3405_PT"):
+        build_payloads_familia(_anuncio_var(), **ctx)
+
+
+def test_familia_nome_acima_de_60_falha():
+    ctx = _ctx_familia()
+    ctx["family_name"] = "L" * 61
+    with pytest.raises(ValueError, match="60"):
+        build_payloads_familia(_anuncio_var(), **ctx)
+
+
+def test_familia_produto_sem_cor_nao_inventa_color():
+    a = {"modo": "simples", "pai_sku": "X-PAI", "variacoes": [{"sku": "X-1", "cor": None, "ean": "9", "preco_venda": 10}]}
+    [p] = build_payloads_familia(a, **_ctx_familia() | {"picture_ids_por_variacao": [{"sku_variacao": "X-1", "picture_ids": ["u"]}]})
+    assert "COLOR" not in [x["id"] for x in p["attributes"]]

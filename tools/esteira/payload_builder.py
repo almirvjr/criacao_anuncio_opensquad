@@ -111,3 +111,44 @@ def build_payload(anuncio, *, title, category_id, description_plain,
             "picture_ids": _fotos_da_variacao(fotos, v["sku"]),
         })
     return base
+
+
+TETO_FAMILIA = 60  # family_name <= max_title_length do dominio (MLB33375 = 60)
+
+
+def build_payloads_familia(anuncio, *, family_name, category_id, description_plain,
+                           picture_ids_por_variacao, cor_value_map, item_attributes,
+                           listing_type_id="gold_special"):
+    """Modelo novo do ML (User Products, conta com a tag user_product_seller, 08/10/2026).
+
+    O ML nao aceita mais `variations` nem `title`: cada cor e um anuncio proprio, e os
+    anuncios da mesma familia levam o mesmo `family_name` (o ML monta o titulo e junta as
+    cores na mesma pagina). Devolve um pacote por cor, no contrato `modo: simples` do
+    webhook ML Publicar.
+    """
+    family_name = (family_name or "").strip()
+    if not family_name or len(family_name) > TETO_FAMILIA:
+        raise ValueError(f"Nome da familia com {len(family_name)} caracteres; o ML aceita de 1 a {TETO_FAMILIA}.")
+    base_attrs = list(item_attributes) + atributos_embalagem(anuncio)
+    cores = _mapa_de_cores(cor_value_map)
+    fotos = _fotos_por_sku(picture_ids_por_variacao)
+    pacotes = []
+    for v in anuncio["variacoes"]:
+        attrs = list(base_attrs)
+        if v.get("cor"):
+            cor = {"id": "COLOR", "value_name": v["cor"]}
+            if cores.get(v["cor"]):
+                cor = {"id": "COLOR", "value_id": cores[v["cor"]], "value_name": v["cor"]}
+            attrs.append(cor)
+        attrs.append({"id": "SELLER_SKU", "value_name": v["sku"]})
+        if v.get("ean"):
+            attrs.append({"id": "GTIN", "value_name": v["ean"]})
+        pacotes.append({
+            "modo": "simples", "pai_sku": anuncio["pai_sku"], "sku": v["sku"],
+            "family_name": family_name, "category_id": category_id,
+            "listing_type_id": listing_type_id, "condition": "new", "currency_id": "BRL",
+            "description_plain": description_plain, "attributes": attrs,
+            "price": v["preco_venda"], "available_quantity": 1,
+            "pictures": _fotos_da_variacao(fotos, v["sku"]),
+        })
+    return pacotes

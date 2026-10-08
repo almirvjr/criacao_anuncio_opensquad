@@ -5,7 +5,9 @@ igual, medida da caixa) moram no payload_builder e tem teste.
 
 Uso:
   python montar_payload.py --entrada anuncios-entrada.json --categorias categorias.yaml \
-      --copy anuncio-{pai}.yaml --capas capas-{pai}.yaml --pai {pai} --saida payload-{pai}.json
+      --copy anuncio-{pai}.yaml --capas capas-{pai}.yaml --pai {pai} --saida <pasta>
+
+Grava um payload-{sku da cor}.json por cor (modelo novo do ML, 08/10/2026).
 """
 import argparse
 import json
@@ -15,7 +17,7 @@ import sys
 import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from esteira.payload_builder import atributos_embalagem, build_payload, validate_anuncio  # noqa: E402
+from esteira.payload_builder import atributos_embalagem, build_payloads_familia, validate_anuncio  # noqa: E402
 
 
 def _yaml(p):
@@ -70,12 +72,14 @@ def montar(entrada, categorias, copy, capas, pai):
     erros = validate_anuncio(anuncio)
     if erros:
         raise ValueError("; ".join(erros))
-    return build_payload(
-        anuncio, title=_titulo(doc), category_id=cat["category_id"],
+    # Modelo novo do ML (User Products, 08/10/2026): um pacote por cor, o titulo escolhido
+    # vira o nome da familia (o ML monta o titulo e junta as cores na mesma pagina).
+    return build_payloads_familia(
+        anuncio, family_name=_titulo(doc), category_id=cat["category_id"],
         description_plain=descricao,
         picture_ids_por_variacao=capas_doc["picture_ids_por_variacao"],
         cor_value_map=cat.get("cor_value_map"),
-        item_attributes=item_attributes_do_copy(doc.get("attributes"), anuncio["modo"]))
+        item_attributes=item_attributes_do_copy(doc.get("attributes"), "variacoes"))
 
 
 def main():
@@ -83,10 +87,13 @@ def main():
     for a in ("--entrada", "--categorias", "--copy", "--capas", "--pai", "--saida"):
         ap.add_argument(a, required=True)
     x = ap.parse_args()
-    payload = montar(x.entrada, x.categorias, x.copy, x.capas, x.pai)
-    with open(x.saida, "w", encoding="utf-8") as fh:
-        json.dump(payload, fh, ensure_ascii=False, indent=2)
-    print(f"PAYLOAD OK - {x.pai} -> {x.saida}")
+    pacotes = montar(x.entrada, x.categorias, x.copy, x.capas, x.pai)
+    os.makedirs(x.saida, exist_ok=True)
+    for p in pacotes:
+        destino = os.path.join(x.saida, f"payload-{p['sku']}.json")
+        with open(destino, "w", encoding="utf-8") as fh:
+            json.dump(p, fh, ensure_ascii=False, indent=2)
+        print(f"PAYLOAD OK - {p['sku']} -> {destino}")
 
 
 if __name__ == "__main__":

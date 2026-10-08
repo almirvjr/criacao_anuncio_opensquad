@@ -29,13 +29,16 @@ def test_montar_ponta_a_ponta(tmp_path):
         f = tmp_path / nome
         f.write_text(json.dumps(doc) if nome.endswith(".json") else yaml.safe_dump(doc), encoding="utf-8")
         p[nome] = str(f)
-    payload = montar(p["e.json"], p["c.yaml"], p["y.yaml"], p["k.yaml"], "VIE-1066-PAI")
-    assert payload["title"] == "Lixeira Inox 5L Pedal"
+    [payload] = montar(p["e.json"], p["c.yaml"], p["y.yaml"], p["k.yaml"], "VIE-1066-PAI")
+    # modelo novo do ML (08/10): um pacote por cor, titulo escolhido vira o nome da familia
+    assert payload["family_name"] == "Lixeira Inox 5L Pedal" and "title" not in payload
+    assert payload["sku"] == "VIE-1066-3402-BR"
     assert payload["description_plain"] == "Um.\n\nDois."
     assert payload["category_id"] == "MLB33375"
-    assert payload["variacoes"][0]["picture_ids"] == ["https://x/capa.jpg"]
-    assert payload["variacoes"][0]["price"] == 100.0
-    assert "COLOR" not in [a["id"] for a in payload["attributes"]]
+    assert payload["pictures"] == ["https://x/capa.jpg"]
+    assert payload["price"] == 100.0
+    cores = [a for a in payload["attributes"] if a["id"] == "COLOR"]
+    assert cores == [{"id": "COLOR", "value_id": "52049", "value_name": "Branco"}]  # da variacao, nao da ficha
 
 
 import pytest
@@ -99,3 +102,16 @@ def test_sem_medida_da_caixa_recusa(tmp_path):
     e, c, y, k = _arquivos(tmp_path, entrada_over={"peso_bruto_kg": None})
     with pytest.raises(ValueError, match="caixa"):
         montar(e, c, y, k, "VIE-1066-PAI")
+
+
+def test_cli_grava_um_arquivo_por_cor(tmp_path):
+    import os
+    import subprocess
+    import sys
+    e, c, y, k = _arquivos(tmp_path)
+    saida = tmp_path / "pub"
+    r = subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "..", "..", "montar_payload.py"),
+                        "--entrada", e, "--categorias", c, "--copy", y, "--capas", k,
+                        "--pai", "VIE-1066-PAI", "--saida", str(saida)], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    assert json.loads((saida / "payload-VIE-1066-3402-BR.json").read_text(encoding="utf-8"))["sku"] == "VIE-1066-3402-BR"
