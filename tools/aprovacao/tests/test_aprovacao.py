@@ -1,0 +1,100 @@
+# tools/aprovacao/tests/test_aprovacao.py
+import json
+import os
+import sys
+from pathlib import Path
+
+import pytest
+import yaml
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import aprovacao as ap  # noqa: E402
+
+PAI = "VIE-1-PAI"
+TIT_OK = "Lixeira Inox 5 Litros Pedal Banheiro Cozinha Sofisticada"
+
+
+def _doc(**extra):
+    d = {
+        "pai_sku": PAI, "nome_base": "LIXEIRA 5L", "modo": "variacoes", "status_copy": "warning",
+        "warnings": ["Garantia ausente."],
+        "titles": [
+            {"texto": "Lixeira Inox 5 Litros Pedal Banheiro Lavabo", "recomendado": False, "justificativa": "a"},
+            {"texto": TIT_OK, "recomendado": True, "justificativa": "b"},
+        ],
+        "description": {
+            "bloco_1_abertura": "Lixeira bonita. Este modelo nao tem balde interno removivel.\n",
+            "bloco_2_specs": "- Capacidade: 5 litros\n",
+            "bloco_3_features_beneficios": "- Pedal: abre sem as maos\n",
+            "word_count": 20,
+        },
+        "titulo_final": None,
+        "attributes": {"BRAND": "Viel", "MODEL": "Cesto Lixo Redondo", "VOLUME_CAPACITY": "5 L"},
+    }
+    d.update(extra)
+    return d
+
+
+@pytest.fixture
+def saida(tmp_path):
+    (tmp_path / "copywriting").mkdir()
+    (tmp_path / "inteligencia").mkdir()
+    (tmp_path / "copywriting" / f"anuncio-{PAI}.yaml").write_text(
+        yaml.safe_dump(_doc(), allow_unicode=True, sort_keys=False), encoding="utf-8")
+    (tmp_path / "inteligencia" / f"brief-{PAI}.yaml").write_text(yaml.safe_dump({
+        "pai_sku": PAI, "limitacoes": [{"texto": "Nao tem balde interno removivel"}],
+        "dados_produto": {"caracteristicas": {}}}), encoding="utf-8")
+    (tmp_path / "anuncios-entrada.json").write_text(json.dumps({"anuncios": [{
+        "pai_sku": PAI, "preco_provisorio": True, "peso_bruto_kg": 0.7,
+        "dim_embalagem_cm": {"largura": 28, "altura": 21, "comprimento": 21},
+        "variacoes": [{"sku": "VIE-1-BR", "cor": "Branco", "preco_venda": 100.0},
+                      {"sku": "VIE-1-PT", "cor": "Preto", "preco_venda": 100.0}]}]}), encoding="utf-8")
+    return tmp_path
+
+
+def _gravar(saida, doc):
+    (saida / "copywriting" / f"anuncio-{PAI}.yaml").write_text(
+        yaml.safe_dump(doc, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+
+class TestListar:
+    def test_monta_o_cartao(self, saida):
+        [c] = ap.listar_pendentes(saida)
+        assert c["pai_sku"] == PAI
+        assert c["titulo_inicial"] == TIT_OK
+        assert c["marca"] == "Viel" and c["modelo"] == "Cesto Lixo Redondo"
+        assert set(c["descricao"]) == {"bloco_1_abertura", "bloco_2_specs", "bloco_3_features_beneficios"}
+        assert c["ficha"] == {"VOLUME_CAPACITY": "5 L"}
+        assert c["precos"] == [{"cor": "Branco", "sku": "VIE-1-BR", "preco": 100.0},
+                               {"cor": "Preto", "sku": "VIE-1-PT", "preco": 100.0}]
+        assert c["preco_provisorio"] is True
+        assert c["peso_kg"] == 0.7 and c["caixa_cm"]["largura"] == 28
+        assert c["observacoes"] == ["Garantia ausente."]
+        assert c["capas"] is None
+
+    def test_titulo_final_ja_gravado_vem_primeiro(self, saida):
+        _gravar(saida, _doc(titulo_final="Outro Titulo"))
+        assert ap.listar_pendentes(saida)[0]["titulo_inicial"] == "Outro Titulo"
+
+    def test_aprovado_e_devolvido_nao_aparecem(self, saida):
+        _gravar(saida, _doc(status_copy="aprovado"))
+        assert ap.listar_pendentes(saida) == []
+        _gravar(saida, _doc(status_copy="devolvido"))
+        assert ap.listar_pendentes(saida) == []
+
+    def test_le_as_capas_quando_existem(self, saida):
+        (saida / "capas").mkdir()
+        (saida / "capas" / f"capas-{PAI}.yaml").write_text(yaml.safe_dump({
+            "pai_sku": PAI, "picture_ids_por_variacao": [
+                {"sku_variacao": "VIE-1-BR", "cor": "Branco", "picture_ids": ["https://x/a.jpg"]}]}),
+            encoding="utf-8")
+        assert ap.listar_pendentes(saida)[0]["capas"] == [{"cor": "Branco", "urls": ["https://x/a.jpg"]}]
+
+    def test_arquivo_com_defeito_vira_cartao_de_erro(self, saida):
+        (saida / "copywriting" / "anuncio-VIE-2-PAI.yaml").write_text("a: [", encoding="utf-8")
+        cartoes = ap.listar_pendentes(saida)
+        assert any(c.get("erro") and c["arquivo"] == "anuncio-VIE-2-PAI.yaml" for c in cartoes)
+        assert any(c.get("pai_sku") == PAI for c in cartoes)
+
+    def test_pasta_vazia(self, tmp_path):
+        assert ap.listar_pendentes(tmp_path) == []
