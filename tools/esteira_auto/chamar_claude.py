@@ -1,6 +1,6 @@
 """Chama o Claude sem conversa (claude -p) para uma etapa da esteira.
 
-Permissoes fechadas: pode ler/escrever arquivos, rodar python (validadores, tiny_to_esteira),
+Permissoes fechadas: pode ler/escrever arquivos de dados, rodar SO os validadores e o tiny_to_esteira,
 buscar no Cloudinary e usar o navegador escondido da Helena. NAO pode publicar: o disparo
 e o 2o envio sao negados, assim como ler o .env, python -c, curl e o MCP do n8n.
 Nunca devolve texto cru de erro (pode carregar segredo)."""
@@ -10,12 +10,18 @@ from pathlib import Path
 
 PERMITIDAS = [
     "Read", "Write", "Edit", "Glob", "Grep", "Agent", "Task", "WebSearch", "WebFetch",
-    "Bash(python *)", "Bash(ls *)", "Bash(mkdir *)",
+    # so os programas que ja existem e foram revisados; nunca "python *" (o Claude poderia
+    # escrever um .py proprio que le o .env e chama o webhook)
+    "Bash(python squads/ml-anuncios/pipeline/validators/*)", "Bash(python tools/tiny_to_esteira.py*)",
+    "Bash(ls *)", "Bash(mkdir *)",
     "mcp__cloudinary__search-assets", "mcp__playwright", "mcp__mercadolibre",
 ]
 NEGADAS = [
-    "Bash(*disparar_publicacao*)", "Bash(*completar_anuncio*)", "Bash(*.env*)",
+    "Bash(*disparar_publicacao*)", "Bash(*completar_anuncio*)", "Bash(*.env*)", "Bash(*..*)",
     "Bash(python -c*)", "Bash(curl*)", "Read(./.env)", "Read(**/.env)", "mcp__n8n",
+    # nao cria nem altera programa: o que roda e so o que ja foi revisado
+    "Write(**/*.py)", "Edit(**/*.py)", "Write(tools/**)", "Edit(tools/**)",
+    "Write(squads/ml-anuncios/pipeline/**)", "Edit(squads/ml-anuncios/pipeline/**)",
 ]
 
 
