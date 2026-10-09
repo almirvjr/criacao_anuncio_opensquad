@@ -46,22 +46,24 @@ def _chamar(metodo, caminho, tk, corpo=None):
 
 
 def completar(payload, mlb, tk):
-    ok = True
+    res = {"descricao": False, "flex": False}
     st, d = _chamar("GET", f"/items/{mlb}/description", tk)
     if st == 200 and (d.get("plain_text") or "").strip():
+        res["descricao"] = True
         print(f"{mlb} descricao: ja existe")
     else:
         st, d = _chamar("POST", f"/items/{mlb}/description", tk, {"plain_text": texto_descricao(payload)})
-        ok &= st in (200, 201)
-        print(f"{mlb} descricao: {'gravada' if st in (200, 201) else 'FALHOU HTTP %s %s' % (st, d.get('message'))}")
+        res["descricao"] = st in (200, 201)
+        print(f"{mlb} descricao: {'gravada' if res['descricao'] else 'FALHOU HTTP %s %s' % (st, d.get('message'))}")
     st, d = _chamar("GET", f"/flex/sites/MLB/items/{mlb}/v2", tk)
     if st == 200 and d.get("has_flex"):
+        res["flex"] = True
         print(f"{mlb} flex: ja ligado")
     else:
         st, d = _chamar("POST", f"/flex/sites/MLB/items/{mlb}/v2", tk)
-        ok &= st in (200, 201, 204)
-        print(f"{mlb} flex: {'ligado' if st in (200, 201, 204) else 'FALHOU HTTP %s %s' % (st, d.get('message'))}")
-    return ok
+        res["flex"] = st in (200, 201, 204)
+        print(f"{mlb} flex: {'ligado' if res['flex'] else 'FALHOU HTTP %s %s' % (st, d.get('message'))}")
+    return res
 
 
 if __name__ == "__main__":
@@ -71,4 +73,5 @@ if __name__ == "__main__":
     if not tk:
         print("nao consegui o acesso ao ML"); sys.exit(2)
     payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-    sys.exit(0 if completar(payload, sys.argv[2], tk) else 1)
+    r = completar(payload, sys.argv[2], tk)
+    sys.exit(0 if all(r.values()) else 1)

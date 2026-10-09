@@ -51,9 +51,12 @@ def _descricao(doc):
                        if str(k).startswith("bloco") and isinstance(v, str))
 
 
-def montar(entrada, categorias, copy, capas, pai):
+def montar(entrada, categorias, copy, capas, pai, preco=None):
     with open(entrada, encoding="utf-8") as fh:
         anuncio = next(a for a in json.load(fh)["anuncios"] if a["pai_sku"] == pai)
+    if preco is not None:
+        for v in anuncio["variacoes"]:
+            v["preco_venda"] = round(float(preco), 2)
     cat = next(c for c in _yaml(categorias)["categorias"] if c["pai_sku"] == pai)
     doc = _yaml(copy)
     capas_doc = _yaml(capas)
