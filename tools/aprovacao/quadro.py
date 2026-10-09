@@ -18,6 +18,12 @@ def _folhas(d, prefixo=""):
             yield from _folhas(v, prefixo + k + ".")
 
 
+def _link(u):
+    """So http(s): o brief vem de pagina de concorrente; 'javascript:' rodaria na tela de publicar."""
+    u = str(u or "").strip()
+    return u if u.lower().startswith(("https://", "http://")) else None
+
+
 def _txt(v):
     return ", ".join(map(str, v)) if isinstance(v, list) else str(v)
 
@@ -29,9 +35,9 @@ def montar(brief, ficha):
             continue
         fontes = []
         if v.get("valor") not in (None, "", []):
-            fontes.append({"origem": v.get("fonte") or "planilha", "valor": _txt(v["valor"]), "link": v.get("permalink")})
+            fontes.append({"origem": v.get("fonte") or "planilha", "valor": _txt(v["valor"]), "link": _link(v.get("permalink"))})
         for d in v.get("valores_divergentes") or []:
-            fontes.append({"origem": d.get("fonte") or "concorrente", "valor": _txt(d.get("valor")), "link": d.get("permalink")})
+            fontes.append({"origem": d.get("fonte") or "concorrente", "valor": _txt(d.get("valor")), "link": _link(d.get("permalink"))})
         campo = next((c for c in SUGESTAO_DE_CAMPO.get(nome, []) if c in (ficha or {})), None)
         itens.append({"chave": chave, "rotulo": ROTULOS.get(nome, nome), "status": v["status"], "fontes": fontes,
                       "campo_ficha": campo,

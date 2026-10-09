@@ -430,3 +430,9 @@ def test_pagina_tem_as_secoes_novas():
     for marca in ("Faltou ou divergiu", "Preço", "Código de barras", "Reler do Olist",
                   "Aprovar e publicar", "Tirar do lote", "Tentar de novo", "/api/tentar", "/api/tirar", "/api/reler-ean"):
         assert marca in html
+
+
+def test_pagina_so_poe_link_http():
+    html = (Path(ap.__file__).parent / "pagina.html").read_text(encoding="utf-8")
+    assert "function linkSeguro" in html
+    assert "href: f.link" not in html and "href: i.link" not in html

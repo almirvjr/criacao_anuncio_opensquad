@@ -39,3 +39,12 @@ def test_brief_vazio():
 def test_material_cai_no_material_do_corpo_quando_nao_ha_material():
     mat = quadro.montar(BRIEF, {"STRUCTURE_MATERIALS": "Aço inox"})[0]
     assert mat["campo_ficha"] == "STRUCTURE_MATERIALS"
+
+
+def test_link_que_nao_e_http_e_descartado():
+    # o brief vem da pesquisa nos concorrentes (texto de fora): "javascript:" rodaria na tela
+    b = {"dados_produto": {"material": {"valor": None, "status": "divergente", "valores_divergentes": [
+        {"valor": "x", "fonte": "c1", "permalink": "javascript:fetch('/api/aprovar')"},
+        {"valor": "y", "fonte": "c2", "permalink": "https://www.mercadolivre.com.br/p/1"}]}}}
+    fontes = quadro.montar(b, {})[0]["fontes"]
+    assert [f["link"] for f in fontes] == [None, "https://www.mercadolivre.com.br/p/1"]

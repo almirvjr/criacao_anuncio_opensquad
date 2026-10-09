@@ -82,6 +82,11 @@ async function api(caminho, corpo) {
   if (!r.ok) throw new Error(d.erro || ("Erro " + r.status));
   return d;
 }
+// so link http(s): o link de concorrente vem de fora, e "javascript:" rodaria dentro desta tela
+function linkSeguro(u) {
+  try { const x = new URL(u); return x.protocol === "https:" || x.protocol === "http:" ? x.href : null; } catch { return null; }
+}
+const ancora = (u, texto) => { const l = linkSeguro(u); return l ? el("a", {href: l, target: "_blank", rel: "noopener noreferrer"}, texto) : null; };
 const hora = () => new Date().toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"});
 
 function contador(input, teto) {
@@ -104,7 +109,7 @@ function resumoPublicacao(c, itens) {
   return el("div", {class: "secao"}, el("b", {}, "Publicação"), el("ul", {class: "conf"}, itens.map(i => linhaPublicacao(c, i))));
 }
 function linhaPublicacao(c, i) {
-  if (i.ok) return el("li", {class: "tudook"}, `✅ ${i.cor || i.sku}: `, el("a", {href: i.link || "#", target: "_blank"}, i.mlb),
+  if (i.ok) return el("li", {class: "tudook"}, `✅ ${i.cor || i.sku}: `, (ancora(i.link, i.mlb) || i.mlb),
     ` · descrição ${i.descricao ? "✅" : "❌"} · Flex ${i.flex ? "✅" : "❌"} · fica pausado até o ML baixar a foto (5 a 15 min), é normal`,
     i.erro ? el("div", {}, i.erro) : null);
   const bt = el("button", {}, "Tentar de novo");
@@ -159,7 +164,7 @@ function quadroFaltou(c) {
     const nome = "q_" + c.pai_sku + "_" + q.chave;
     const proprio = el("input", {type: "text", placeholder: "escrever outro valor"});
     const opcoes = q.fontes.map(f => el("label", {class: "opcao"}, el("input", {type: "radio", name: nome, value: f.valor}),
-      el("span", {}, `${f.valor} `, el("span", {class: "just"}, `(${f.origem})`), f.link ? el("a", {href: f.link, target: "_blank"}, " ver") : null)));
+      el("span", {}, `${f.valor} `, el("span", {class: "just"}, `(${f.origem})`), ancora(f.link, " ver"))));
     const rProprio = el("input", {type: "radio", name: nome, value: "__proprio__"});
     const rVazio = el("input", {type: "radio", name: nome, value: ""});
     rVazio.checked = true;
