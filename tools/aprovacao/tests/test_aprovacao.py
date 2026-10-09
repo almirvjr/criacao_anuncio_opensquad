@@ -533,3 +533,13 @@ def test_tipo_gold_special_e_classico():
 def test_pagina_trava_botao_publicando_e_tem_saida_no_parado():
     html = (Path(ap.__file__).parent / "pagina.html").read_text(encoding="utf-8")
     assert "if (publicando)" in html and "c.parado" in html and "publicacao_por_cor" in html and "Vai publicar por" in html
+
+
+def test_parecer_mostra_o_motivo_com_os_nomes_que_o_vinicius_usa(saida):
+    (saida / "revisao").mkdir()
+    (saida / "revisao" / f"parecer-{PAI}.yaml").write_text(yaml.safe_dump({
+        "status": "reprovado", "score_total": 84, "decisao_final": "Devolver so a frase do pe.",
+        "correcoes_necessarias": ["trocar a frase X"], "pendencias_para_tela": ["olhar as fotos"]},
+        allow_unicode=True), encoding="utf-8")
+    p = ap.listar_pendentes(saida)[0]["parecer"]
+    assert "Devolver so a frase do pe." in p["resumo"] and "trocar a frase X" in p["resumo"] and "olhar as fotos" in p["resumo"]

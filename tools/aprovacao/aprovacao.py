@@ -102,9 +102,12 @@ def _parecer(saida, pai):
     if not p.is_file():
         return None
     d = _ler_yaml(p) or {}
-    resumo = d.get("resumo") or d.get("correcoes_pendentes") or ""
-    if isinstance(resumo, list):
-        resumo = "; ".join(map(str, resumo))
+    partes = []
+    for k in ("decisao_final", "resumo", "correcoes_necessarias", "correcoes_pendentes", "pendencias_para_tela"):
+        v = d.get(k)
+        if v:
+            partes += [str(x) for x in v] if isinstance(v, list) else [str(v)]
+    resumo = " | ".join(partes)
     return {"status": d.get("status"), "score": d.get("score_total"), "resumo": resumo}
 
 
