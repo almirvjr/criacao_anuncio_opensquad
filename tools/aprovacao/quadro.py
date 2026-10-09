@@ -1,8 +1,10 @@
 """Quadro 'Faltou ou divergiu': cada dado do brief (step-04) com status pendente ou divergente,
 com o que cada fonte disse, para o Almir decidir na tela."""
 
-SUGESTAO_DE_CAMPO = {"material": "MATERIAL", "altura_cm": "HEIGHT", "largura_cm": "WIDTH",
-                     "profundidade_cm": "LENGTH", "diametro_cm": "DIAMETER", "capacidade": "VOLUME_CAPACITY"}
+# campo da ficha por dado do brief, em ordem de preferencia (o nome muda conforme a categoria)
+SUGESTAO_DE_CAMPO = {"material": ["MATERIAL", "STRUCTURE_MATERIALS", "MAIN_MATERIAL"], "altura_cm": ["HEIGHT"],
+                     "largura_cm": ["WIDTH"], "profundidade_cm": ["LENGTH", "DEPTH"], "diametro_cm": ["DIAMETER"],
+                     "capacidade": ["VOLUME_CAPACITY", "CAPACITY"]}
 ROTULOS = {"material": "Material", "altura_cm": "Altura (cm)", "largura_cm": "Largura (cm)",
            "profundidade_cm": "Profundidade (cm)", "diametro_cm": "Diâmetro (cm)",
            "capacidade": "Capacidade", "caracteristicas": "Características"}
@@ -30,8 +32,8 @@ def montar(brief, ficha):
             fontes.append({"origem": v.get("fonte") or "planilha", "valor": _txt(v["valor"]), "link": v.get("permalink")})
         for d in v.get("valores_divergentes") or []:
             fontes.append({"origem": d.get("fonte") or "concorrente", "valor": _txt(d.get("valor")), "link": d.get("permalink")})
-        campo = SUGESTAO_DE_CAMPO.get(nome)
+        campo = next((c for c in SUGESTAO_DE_CAMPO.get(nome, []) if c in (ficha or {})), None)
         itens.append({"chave": chave, "rotulo": ROTULOS.get(nome, nome), "status": v["status"], "fontes": fontes,
-                      "campo_ficha": campo if campo in (ficha or {}) else None,
+                      "campo_ficha": campo,
                       "unidade": "cm" if nome.endswith("_cm") else None})
     return itens

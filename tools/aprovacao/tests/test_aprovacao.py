@@ -423,3 +423,10 @@ def test_cartao_tem_tudo(saida):
 
 def test_sku_com_sublinhado(saida):
     assert ap.caminho_anuncio(saida, "BRI-coza34-40652_3009").name == "anuncio-BRI-coza34-40652_3009.yaml"
+
+
+def test_pagina_tem_as_secoes_novas():
+    html = (Path(ap.__file__).parent / "pagina.html").read_text(encoding="utf-8")
+    for marca in ("Faltou ou divergiu", "Preço", "Código de barras", "Reler do Olist",
+                  "Aprovar e publicar", "Tirar do lote", "Tentar de novo", "/api/tentar", "/api/tirar", "/api/reler-ean"):
+        assert marca in html

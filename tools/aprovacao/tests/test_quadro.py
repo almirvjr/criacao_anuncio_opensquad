@@ -34,3 +34,8 @@ def test_campo_inexistente_na_ficha_fica_sem_campo():
 
 def test_brief_vazio():
     assert quadro.montar({}, {}) == []
+
+
+def test_material_cai_no_material_do_corpo_quando_nao_ha_material():
+    mat = quadro.montar(BRIEF, {"STRUCTURE_MATERIALS": "Aço inox"})[0]
+    assert mat["campo_ficha"] == "STRUCTURE_MATERIALS"

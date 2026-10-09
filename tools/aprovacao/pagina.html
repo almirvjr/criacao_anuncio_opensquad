@@ -9,7 +9,7 @@
 @media (prefers-color-scheme:dark){:root{--fundo:#14171c;--cartao:#1d2128;--texto:#e7e9ee;--suave:#9aa3b2;--borda:#343a45;--ok:#5ccf8a;--erro:#ff8a80;--aviso:#f0c75e;--acento:#7aa2ff;--fundoerro:#3a1d1b;--fundoaviso:#3a3017;--fundook:#18321f}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--fundo);color:var(--texto);font:15px/1.45 system-ui,Segoe UI,sans-serif}
-main{max-width:980px;margin:0 auto;padding:16px}
+main{max-width:1040px;margin:0 auto;padding:16px}
 h1{font-size:20px;margin:8px 0 16px}
 .cartao{background:var(--cartao);border:1px solid var(--borda);border-radius:10px;padding:16px;margin-bottom:20px}
 .topo{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline}
@@ -18,31 +18,38 @@ h1{font-size:20px;margin:8px 0 16px}
 .selo{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;background:var(--fundoaviso);color:var(--aviso)}
 .secao{margin-top:14px}
 .secao>b{display:block;margin-bottom:6px}
-.capas{display:flex;gap:10px;flex-wrap:wrap}
-.capas figure{margin:0;text-align:center;font-size:12px;color:var(--suave)}
-.capas img{width:110px;height:110px;object-fit:contain;background:#fff;border:1px solid var(--borda);border-radius:6px}
+.capas{display:flex;gap:6px;flex-wrap:wrap}
+.capas img{width:64px;height:64px;object-fit:contain;background:#fff;border:1px solid var(--borda);border-radius:6px}
+.capas img:first-child{width:96px;height:96px;border-color:var(--acento)}
 label.opcao{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;border-radius:6px;cursor:pointer}
 label.opcao:hover{background:var(--fundo)}
 .just{color:var(--suave);font-size:13px}
 input[type=text],textarea{width:100%;font:inherit;color:inherit;background:var(--cartao);border:1px solid var(--borda);border-radius:6px;padding:7px 9px}
+input.preco{max-width:180px;font-size:17px;font-weight:600}
 textarea{min-height:110px;resize:vertical}
 .conta{font-size:12px;color:var(--suave);text-align:right}
 .conta.passou{color:var(--erro);font-weight:600}
 .linha2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:640px){.linha2{grid-template-columns:1fr}}
+.rolar{overflow-x:auto}
 table{border-collapse:collapse;font-size:14px}
-td{padding:2px 12px 2px 0;vertical-align:top}
-td:first-child{color:var(--suave)}
+td{padding:4px 12px 4px 0;vertical-align:top}
+table.ficha td:first-child{color:var(--suave)}
+table.cores td{border-bottom:1px solid var(--borda)}
+.vermelho{color:var(--erro);font-weight:600}
 ul.conf{list-style:none;padding:0;margin:0}
 ul.conf li{padding:6px 8px;border-radius:6px;margin-bottom:4px}
 li.bloqueio,li.erro{background:var(--fundoerro);color:var(--erro)}
 li.aviso{background:var(--fundoaviso);color:var(--aviso)}
 li.tudook{background:var(--fundook);color:var(--ok)}
+.quadro{border:1px solid var(--aviso);background:var(--fundoaviso);border-radius:8px;padding:8px 12px}
+.quadro .item{margin-bottom:10px}
 .botoes{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
 button{font:inherit;padding:8px 16px;border-radius:6px;border:1px solid var(--borda);background:var(--cartao);color:var(--texto);cursor:pointer}
 button.principal{background:var(--acento);border-color:var(--acento);color:#fff}
 button.principal.mesmo{background:var(--erro);border-color:var(--erro)}
 button:disabled{opacity:.45;cursor:not-allowed}
+a{color:var(--acento)}
 .feito{background:var(--fundook);color:var(--ok);border-radius:8px;padding:8px 12px;margin-bottom:8px}
 .falha{background:var(--fundoerro);color:var(--erro);border-radius:8px;padding:8px 12px}
 .vazio{color:var(--suave);padding:40px 0;text-align:center}
@@ -50,7 +57,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 </head>
 <body>
 <main>
-<h1>Anúncios esperando sua aprovação</h1>
+<h1>Anúncios esperando você</h1>
 <div id="feitos"></div>
 <div id="lista"><p class="vazio">Carregando…</p></div>
 </main>
@@ -58,7 +65,8 @@ button:disabled{opacity:.45;cursor:not-allowed}
 const TETO_TITULO = 60, TETO_MODELO = 30;
 const BLOCOS = {bloco_1_abertura: "Abertura", bloco_2_specs: "Medidas e materiais", bloco_3_features_beneficios: "Benefícios"};
 const CAMPOS = {VOLUME_CAPACITY: "Capacidade", UNITS_PER_PACK: "Unidades", MATERIAL: "Material", COLOR: "Cor",
-  STRUCTURE_MATERIALS: "Material do corpo", LID_MATERIAL: "Material da tampa", WASTE_BASKET_OPENING_TYPES: "Tipo de abertura"};
+  STRUCTURE_MATERIALS: "Material do corpo", LID_MATERIAL: "Material da tampa", WASTE_BASKET_OPENING_TYPES: "Tipo de abertura",
+  HEIGHT: "Altura", WIDTH: "Largura", LENGTH: "Comprimento", DIAMETER: "Diâmetro", GTIN: "Código de barras"};
 
 function el(tag, attrs = {}, ...filhos) {
   const e = document.createElement(tag);
@@ -74,7 +82,7 @@ async function api(caminho, corpo) {
   if (!r.ok) throw new Error(d.erro || ("Erro " + r.status));
   return d;
 }
-const reais = v => v == null ? "—" : v.toLocaleString("pt-BR", {style: "currency", currency: "BRL"});
+const hora = () => new Date().toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"});
 
 function contador(input, teto) {
   const c = el("div", {class: "conta"});
@@ -83,8 +91,104 @@ function contador(input, teto) {
   return c;
 }
 
+function topo(c) {
+  const parecer = c.parecer ? el("div", {class: "just"},
+    `Revisão: ${c.parecer.status || "—"}${c.parecer.score != null ? " (" + c.parecer.score + "/100)" : ""}${c.parecer.resumo ? " — " + c.parecer.resumo : ""}`) : null;
+  return el("div", {class: "topo"},
+    el("div", {}, el("h2", {}, c.nome_base), el("div", {class: "sku"}, c.pai_sku), parecer),
+    el("div", {class: "just"}, c.categoria || "categoria não escolhida", " · anúncio ", c.tipo_anuncio || "Premium"));
+}
+
+// Resumo depois de publicar: link de cada cor, descrição e Flex, e "Tentar de novo" na cor que falhou.
+function resumoPublicacao(c, itens) {
+  return el("div", {class: "secao"}, el("b", {}, "Publicação"), el("ul", {class: "conf"}, itens.map(i => linhaPublicacao(c, i))));
+}
+function linhaPublicacao(c, i) {
+  if (i.ok) return el("li", {class: "tudook"}, `✅ ${i.cor || i.sku}: `, el("a", {href: i.link || "#", target: "_blank"}, i.mlb),
+    ` · descrição ${i.descricao ? "✅" : "❌"} · Flex ${i.flex ? "✅" : "❌"} · fica pausado até o ML baixar a foto (5 a 15 min), é normal`,
+    i.erro ? el("div", {}, i.erro) : null);
+  const bt = el("button", {}, "Tentar de novo");
+  const li = el("li", {class: "erro"}, `❌ ${i.cor || i.sku}: ${i.erro || "não publicado"} `, bt);
+  bt.addEventListener("click", async () => {
+    bt.disabled = true;
+    try {
+      const r = await api("/api/tentar", {pai: c.pai_sku, sku: i.sku});
+      li.replaceWith(linhaPublicacao(c, r.item));
+    } catch (e) { li.append(el("div", {}, "Falhou de novo: " + e.message)); bt.disabled = false; }
+  });
+  return li;
+}
+
+function tabelaCores(c, tituloAtual, aoReler) {
+  const linhas = c.cores.map(v => {
+    const ean = el("td", {});
+    const mostrarEan = () => {
+      if (v.ean) { ean.replaceChildren(v.ean); return; }
+      const bt = el("button", {}, "Reler do Olist");
+      bt.addEventListener("click", async () => {
+        bt.disabled = true;
+        try {
+          const r = await api("/api/reler-ean", {pai: c.pai_sku, sku: v.sku});
+          if (r.ok) { v.ean = r.ean; mostrarEan(); aoReler(); }
+          else { ean.replaceChildren(el("div", {class: "vermelho"}, r.motivo), bt); bt.disabled = false; }
+        } catch (e) { ean.append(el("div", {class: "vermelho"}, e.message)); bt.disabled = false; }
+      });
+      ean.replaceChildren(el("div", {class: "vermelho"}, "sem código"), bt);
+    };
+    mostrarEan();
+    const tit = el("td", {});
+    v._atualiza = () => {
+      const t = (tituloAtual() + (v.cor ? " " + v.cor : "")).trim();
+      // o teto de 60 vale para o nome escolhido; nome + cor pode passar (o ML aceitou 66 em 08/10)
+      tit.replaceChildren(t, el("div", {class: "just"}, `${t.length} letras`));
+    };
+    v._atualiza();
+    return el("tr", {}, el("td", {}, v.cor || "—"), el("td", {class: "sku"}, v.sku), ean,
+      el("td", {}, v.capas.length ? el("div", {class: "capas"}, v.capas.map((u, i) =>
+        el("img", {src: u, alt: i === 0 ? "capa principal" : `foto ${i + 1}`, title: i === 0 ? "capa principal" : `foto ${i + 1}`})))
+        : el("span", {class: "vermelho"}, "sem foto")),
+      el("td", {}, v.estoque ?? "vem do Olist"), tit);
+  });
+  return el("div", {class: "rolar"}, el("table", {class: "cores"},
+    el("tr", {}, ["Cor", "SKU", "Código de barras", "Fotos (a 1ª é a capa)", "Estoque", "Título que o ML vai montar"].map(h => el("td", {}, el("b", {}, h)))),
+    linhas));
+}
+
+function quadroFaltou(c) {
+  const decisoes = c.quadro.map(q => {
+    const nome = "q_" + c.pai_sku + "_" + q.chave;
+    const proprio = el("input", {type: "text", placeholder: "escrever outro valor"});
+    const opcoes = q.fontes.map(f => el("label", {class: "opcao"}, el("input", {type: "radio", name: nome, value: f.valor}),
+      el("span", {}, `${f.valor} `, el("span", {class: "just"}, `(${f.origem})`), f.link ? el("a", {href: f.link, target: "_blank"}, " ver") : null)));
+    const rProprio = el("input", {type: "radio", name: nome, value: "__proprio__"});
+    const rVazio = el("input", {type: "radio", name: nome, value: ""});
+    rVazio.checked = true;
+    proprio.addEventListener("focus", () => { rProprio.checked = true; });
+    const bloco = el("div", {class: "item"},
+      el("b", {}, `${q.rotulo} — ${q.status === "pendente" ? "ninguém achou" : "as fontes discordam"}`),
+      opcoes, el("label", {class: "opcao"}, rProprio, el("span", {style: "flex:1"}, proprio)),
+      el("label", {class: "opcao"}, rVazio, el("span", {}, "deixar vazio")),
+      el("div", {class: "just"}, q.campo_ficha ? `vai para a ficha técnica (${CAMPOS[q.campo_ficha] || q.campo_ficha})`
+        : "não tem campo na ficha deste anúncio; se quiser no texto, edite a descrição"));
+    return {bloco, ler: () => {
+      const sel = bloco.querySelector(`input[name="${CSS.escape(nome)}"]:checked`);
+      let valor = !sel ? "" : sel.value === "__proprio__" ? proprio.value.trim() : sel.value;
+      if (valor && q.unidade && !/[a-z]/i.test(valor)) valor = `${valor} ${q.unidade}`;
+      return {chave: q.chave, valor, campo_ficha: q.campo_ficha};
+    }};
+  });
+  const caixa = decisoes.length ? el("div", {class: "secao quadro"},
+    el("b", {}, "Faltou ou divergiu — você decide"), decisoes.map(d => d.bloco)) : null;
+  return {caixa, ler: () => decisoes.map(d => d.ler())};
+}
+
 function cartao(c) {
   if (c.erro) return el("div", {class: "cartao"}, el("b", {}, c.arquivo), el("p", {class: "falha"}, c.erro + " Chame o Claude."));
+  if (c.situacao === "em_parte") {
+    return el("div", {class: "cartao publicado"}, topo(c),
+      el("p", {class: "just"}, "Este anúncio já foi aprovado e publicado em parte. Tente de novo a cor que falhou."),
+      resumoPublicacao(c, c.publicacao));
+  }
 
   const nomeRadio = "t_" + c.pai_sku;
   const proprio = el("input", {type: "text", placeholder: "Escreva o seu título"});
@@ -101,32 +205,41 @@ function cartao(c) {
 
   const marca = el("input", {type: "text", value: c.marca});
   const modelo = el("input", {type: "text", value: c.modelo});
+  const preco = el("input", {type: "text", class: "preco", inputmode: "decimal", placeholder: "ex.: 129,90",
+    value: c.preco != null ? String(c.preco).replace(".", ",") : ""});
   const caixas = {};
   const crescer = t => { t.style.height = "auto"; t.style.height = (t.scrollHeight + 4) + "px"; };
   for (const [k, v] of Object.entries(c.descricao)) { const t = el("textarea", {}); t.value = v; t.addEventListener("input", () => crescer(t)); caixas[k] = t; }
+  const quadro = quadroFaltou(c);
 
   const conf = el("ul", {class: "conf"}, el("li", {}, "Conferindo…"));
-  const btAprovar = el("button", {class: "principal"}, "Aprovar");
+  const btAprovar = el("button", {class: "principal"}, "Aprovar e publicar");
   const nota = el("input", {type: "text", placeholder: "O que a Renata deve refazer?"});
   const btDevolver = el("button", {}, "Devolver pra refazer");
+  const btTirar = el("button", {}, "Tirar do lote");
   const msg = el("div");
 
   const titulo = () => {
     const sel = caixa.querySelector(`input[name="${CSS.escape(nomeRadio)}"]:checked`);
     return !sel ? "" : sel.value === "__proprio__" ? proprio.value : sel.value;
   };
-  const edicao = () => ({titulo: titulo(), marca: marca.value, modelo: modelo.value,
-    descricao: Object.fromEntries(Object.entries(caixas).map(([k, t]) => [k, t.value]))});
+  const edicao = () => ({titulo: titulo(), marca: marca.value, modelo: modelo.value, preco: preco.value,
+    decisoes: quadro.ler(), descricao: Object.fromEntries(Object.entries(caixas).map(([k, t]) => [k, t.value]))});
 
   let espera, ultimo = [], seq = 0;
+  function botao() {
+    const bloq = ultimo.some(i => i.nivel === "bloqueio"), errado = ultimo.some(i => i.nivel === "erro");
+    const semPreco = !preco.value.trim();
+    btAprovar.disabled = bloq || semPreco;
+    btAprovar.textContent = bloq ? "Aprovar e publicar (corrija o bloqueio)" : semPreco ? "Aprovar e publicar (falta o preço)"
+      : errado ? "Aprovar e publicar mesmo assim" : "Aprovar e publicar";
+    btAprovar.classList.toggle("mesmo", errado && !bloq && !semPreco);
+  }
   function mostrar(itens) {
-      ultimo = itens;
-      conf.replaceChildren(...(itens.length ? itens.map(i => el("li", {class: i.nivel},
-        (i.nivel === "aviso" ? "⚠ " : "❌ ") + i.texto)) : [el("li", {class: "tudook"}, "✅ Tudo certo nas conferências")]));
-      const bloq = itens.some(i => i.nivel === "bloqueio"), errado = itens.some(i => i.nivel === "erro");
-      btAprovar.disabled = bloq;
-      btAprovar.textContent = bloq ? "Aprovar (corrija o bloqueio)" : errado ? "Aprovar mesmo assim" : "Aprovar";
-      btAprovar.classList.toggle("mesmo", errado && !bloq);
+    ultimo = itens;
+    conf.replaceChildren(...(itens.length ? itens.map(i => el("li", {class: i.nivel},
+      (i.nivel === "aviso" ? "⚠ " : "❌ ") + i.texto)) : [el("li", {class: "tudook"}, "✅ Tudo certo nas conferências")]));
+    botao();
   }
   async function conferirAgora() {
     const meu = ++seq;
@@ -135,8 +248,12 @@ function cartao(c) {
       if (meu === seq) mostrar(itens);
     } catch (e) { conf.replaceChildren(el("li", {class: "erro"}, "A conferência falhou: " + e.message)); btAprovar.disabled = true; }
   }
-  function mudou() { clearTimeout(espera); espera = setTimeout(conferirAgora, 400); }
+  function mudou() {
+    c.cores.forEach(v => v._atualiza && v._atualiza());
+    clearTimeout(espera); espera = setTimeout(conferirAgora, 400);
+  }
   [proprio, marca, modelo, ...Object.values(caixas)].forEach(i => i.addEventListener("input", mudou));
+  preco.addEventListener("input", botao);
   // trocou a Marca: a linha "Marca: ..." da descricao acompanha (08/10)
   marca.addEventListener("input", () => {
     for (const t of Object.values(caixas)) {
@@ -147,67 +264,85 @@ function cartao(c) {
 
   const caixa = el("div", {class: "cartao"});
   btAprovar.addEventListener("click", async () => {
-    btAprovar.disabled = true;
+    btAprovar.disabled = true; btTirar.disabled = true; btDevolver.disabled = true;
+    btAprovar.textContent = "Publicando… (não feche a página)";
     try {
       clearTimeout(espera); seq++;
       const vistos = ultimo.map(i => i.codigo);
       const r = await api("/api/aprovar", {pai: c.pai_sku, edicao: edicao(), vistos});
       if (!r.ok) {
-        if (r.conferencia && r.conferencia.length) mostrar(r.conferencia); else btAprovar.disabled = false;
+        if (r.conferencia && r.conferencia.length) mostrar(r.conferencia); else botao();
+        btTirar.disabled = false; btDevolver.disabled = false;
         msg.replaceChildren(el("p", {class: "falha"}, r.motivo)); return;
       }
-      const depois = r.conferencia || [];
-      feito(`✅ ${c.nome_base} aprovado às ${new Date().toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"})}` +
-        (depois.length ? ` — conferência do arquivo gravado: ${depois.map(i => i.texto).join(" | ")}` : " — conferência do arquivo gravado: tudo certo"));
-      caixa.remove(); vazio();
-    } catch (e) { msg.replaceChildren(el("p", {class: "falha"}, "Não gravou: " + e.message)); btAprovar.disabled = false; }
+      const itens = r.publicacao || [];
+      const tudo = itens.length && itens.every(i => i.ok);
+      feito(`${tudo ? "✅" : "⚠"} ${c.nome_base} ${tudo ? "publicado" : "publicado em parte"} às ${hora()}`);
+      caixa.classList.add("publicado");
+      caixa.replaceChildren(topo(c), resumoPublicacao(c, itens));
+      vazio();
+    } catch (e) {
+      msg.replaceChildren(el("p", {class: "falha"}, "Não terminou: " + e.message + ". Recarregue a página: o que já foi publicado não é publicado de novo."));
+      botao(); btTirar.disabled = false; btDevolver.disabled = false;
+    }
   });
   btDevolver.addEventListener("click", async () => {
     btDevolver.disabled = true;
     try {
       const r = await api("/api/devolver", {pai: c.pai_sku, nota: nota.value});
       if (!r.ok) { msg.replaceChildren(el("p", {class: "falha"}, r.motivo)); btDevolver.disabled = false; return; }
-      feito(`↩ ${c.nome_base} devolvido para a Renata`); caixa.remove(); vazio();
+      feito(`↩ ${c.nome_base} devolvido para refazer o texto — o cartão volta quando estiver pronto`); caixa.remove(); vazio();
     } catch (e) { msg.replaceChildren(el("p", {class: "falha"}, "Não gravou: " + e.message)); btDevolver.disabled = false; }
   });
-  caixa.addEventListener("change", e => { if (e.target.type === "radio") mudou(); });
+  btTirar.addEventListener("click", async () => {
+    btTirar.disabled = true;
+    try {
+      await api("/api/tirar", {pai: c.pai_sku});
+      feito(`✖ ${c.nome_base} tirado do lote (não será publicado agora)`); caixa.remove(); vazio();
+    } catch (e) { msg.replaceChildren(el("p", {class: "falha"}, "Não gravou: " + e.message)); btTirar.disabled = false; }
+  });
+  caixa.addEventListener("change", e => { if (e.target.type === "radio" && e.target.name === nomeRadio) mudou(); });
 
-  const capas = c.capas ? el("div", {class: "capas"}, c.capas.map(k => el("figure", {},
-      k.urls[0] ? el("img", {src: k.urls[0], alt: "capa " + k.cor}) : el("div", {}, "sem foto"), el("figcaption", {}, `${k.cor} (${k.urls.length})`))))
-    : el("p", {class: "just"}, "Capas ainda não buscadas.");
-  const ficha = el("table", {}, Object.entries(c.ficha).map(([k, v]) => el("tr", {}, el("td", {}, CAMPOS[k] || k), el("td", {}, String(v)))));
+  const ficha = el("table", {class: "ficha"}, Object.entries(c.ficha).map(([k, v]) => el("tr", {}, el("td", {}, CAMPOS[k] || k), el("td", {}, String(v)))));
   const cx = c.caixa_cm || {};
 
   caixa.append(
-    el("div", {class: "topo"}, el("div", {}, el("h2", {}, c.nome_base), el("div", {class: "sku"}, c.pai_sku)),
-      el("div", {}, c.precos.map(p => `${p.cor} ${reais(p.preco)}`).join(" · "), " ",
-        c.preco_provisorio ? el("span", {class: "selo"}, "preço provisório") : null)),
-    el("div", {class: "secao"}, el("b", {}, "Capas"), capas),
-    el("div", {class: "secao"}, el("b", {}, "Título"), opcoes,
+    topo(c),
+    el("div", {class: "secao"}, el("b", {}, "Cores"), tabelaCores(c, titulo, conferirAgora)),
+    el("div", {class: "secao"}, el("b", {}, "Preço"), preco, el("div", {class: "just"}, "Vale para todas as cores. Sem preço o anúncio não sai.")),
+    el("div", {class: "secao"}, el("b", {}, "Título (vira o nome do anúncio; o ML acrescenta a cor)"), opcoes,
       el("label", {class: "opcao"}, rProprio, el("span", {style: "flex:1"}, proprio, contaProprio))),
     el("div", {class: "secao linha2"},
       el("div", {}, el("b", {}, "Marca"), marca, contador(marca, TETO_MODELO),
         el("div", {class: "just"}, "Só o fornecedor, ou só Terra Casa Decor. A linha \"Marca:\" da descrição muda junto.")),
       el("div", {}, el("b", {}, "Modelo"), modelo, contador(modelo, TETO_MODELO),
         el("div", {class: "just"}, "Palavras de busca que não estão no título."))),
+    quadro.caixa,
     el("div", {class: "secao"}, el("b", {}, "Descrição"),
       Object.entries(caixas).map(([k, t]) => el("div", {style: "margin-bottom:8px"}, el("div", {class: "just"}, BLOCOS[k] || k), t))),
     el("div", {class: "secao linha2"},
-      el("div", {}, el("b", {}, "Ficha técnica"), ficha),
-      el("div", {}, el("b", {}, "Caixa de envio"),
-        el("div", {}, `Peso: ${c.peso_kg ?? "—"} kg`), el("div", {}, `Medidas: ${cx.largura ?? "—"} × ${cx.altura ?? "—"} × ${cx.comprimento ?? "—"} cm`))),
+      el("div", {}, el("b", {}, "Ficha técnica"), el("div", {class: "rolar"}, ficha)),
+      el("div", {}, el("b", {}, "Envio"),
+        el("div", {}, `Peso: ${c.peso_kg ?? "—"} kg`), el("div", {}, `Caixa: ${cx.largura ?? "—"} × ${cx.altura ?? "—"} × ${cx.comprimento ?? "—"} cm`),
+        el("div", {}, "Frete grátis: o ML liga sozinho nessa faixa de preço"), el("div", {}, "Flex: ligado logo depois de publicar"))),
     c.observacoes.length ? el("div", {class: "secao"}, el("b", {}, "Observações da Renata"), el("ul", {}, c.observacoes.map(o => el("li", {}, o)))) : null,
     el("div", {class: "secao"}, el("b", {}, "Conferência"), conf),
-    el("div", {class: "botoes"}, btAprovar, el("span", {style: "flex:1"}), nota, btDevolver),
+    el("div", {class: "botoes"}, btAprovar, btTirar, el("span", {style: "flex:1"}), nota, btDevolver),
     msg);
   requestAnimationFrame(() => Object.values(caixas).forEach(crescer));
+  c.cores.forEach(v => v._atualiza());  // a tabela nasce antes das opcoes de titulo: recalcula agora
   conferirAgora();
   return caixa;
 }
 
 const lista = document.getElementById("lista");
 function feito(t) { document.getElementById("feitos").append(el("div", {class: "feito"}, t)); }
-function vazio() { if (!lista.querySelector(".cartao")) lista.replaceChildren(el("p", {class: "vazio"}, "Nada esperando aprovação. Pode fechar esta página.")); }
+function vazio() {
+  if (!lista.querySelector(".cartao:not(.publicado)")) {
+    lista.querySelectorAll(".vazio").forEach(v => v.remove());
+    lista.append(el("p", {class: "vazio"}, "Nada esperando você. Pode fechar esta página."));
+  }
+}
 
 api("/api/pendentes").then(({cartoes}) => {
   lista.replaceChildren(...cartoes.map(cartao)); vazio();
