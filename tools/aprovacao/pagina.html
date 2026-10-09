@@ -122,7 +122,7 @@ function resumoPublicacao(c, itens) {
 }
 function linhaPublicacao(c, i) {
   if (i.ok) return el("li", {class: "tudook"}, `✅ ${i.cor || i.sku}: `, (ancora(i.link, i.mlb) || i.mlb),
-    ` · descrição ${i.descricao ? "✅" : "❌"} · Flex ${i.flex ? "✅" : "❌"} · fica pausado até o ML baixar a foto (5 a 15 min), é normal`,
+    ` · descrição ${i.descricao ? "✅" : "❌"} · Flex ${i.flex ? "✅" : "❌"} · garantia 30 dias ${i.garantia ? "✅" : "❌"} · loja oficial ${i.loja_oficial ? "✅" : "❌"} · fica pausado até o ML baixar a foto (5 a 15 min), é normal`,
     i.erro ? el("div", {}, i.erro) : null);
   const bt = el("button", {}, "Tentar de novo");
   const li = el("li", {class: "erro"}, `❌ ${i.cor || i.sku}: ${i.erro || "não publicado"} `, bt);
@@ -368,7 +368,8 @@ function cartao(c) {
       el("div", {}, el("b", {}, "Ficha técnica"), el("div", {class: "rolar"}, ficha)),
       el("div", {}, el("b", {}, "Envio"),
         el("div", {}, `Peso: ${c.peso_kg ?? "—"} kg`), el("div", {}, `Caixa: ${cx.largura ?? "—"} × ${cx.altura ?? "—"} × ${cx.comprimento ?? "—"} cm`),
-        el("div", {}, "Frete grátis: o ML liga sozinho nessa faixa de preço"), el("div", {}, "Flex: ligado logo depois de publicar"))),
+        el("div", {}, "Frete grátis: o ML liga sozinho nessa faixa de preço"), el("div", {}, "Flex: ligado logo depois de publicar"),
+        el("div", {}, "Anúncio clássico, na loja oficial da Terra, garantia do vendedor de 30 dias"))),
     c.observacoes.length ? el("div", {class: "secao"}, el("b", {}, "Observações da Renata"), el("ul", {}, c.observacoes.map(o => el("li", {}, o)))) : null,
     el("div", {class: "secao"}, el("b", {}, "Conferência"), conf),
     el("div", {class: "botoes"}, btAprovar, btTirar, el("span", {style: "flex:1"}), nota, btDevolver),

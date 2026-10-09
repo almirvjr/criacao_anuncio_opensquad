@@ -13,6 +13,7 @@
 - **Checkpoints 04b e 06 não param mais**; o que faltou vai para o quadro da tela. Revisão (step-08) roda antes da tela.
 - **Fotos:** capa `capa-anuncio` primeiro, depois as outras com a etiqueta do SKU, até 10 (pedido do Almir, boleira Brinox).
 - Planilha só vai para `A CRIAR\FEITOS` com tudo publicado ou tirado.
+- **Regras de todo anúncio (Almir, 09/10):** loja oficial da Terra (458566), garantia do vendedor de 30 dias, Clássico (`gold_special`). Formato da garantia conferido no ML com `/items/validate` (só avisos). A tela dizia "Premium" para `gold_special` — errado no ML Brasil, corrigido; a esteira sempre publicou clássico.
 **Motivo:** tirar a esteira da mão do Claude sem abrir mão do "sim" do Almir. Spec e plano em `docs/superpowers/`.
 
 ## 2026-10-08 — Publicacao no modelo novo do ML (User Products) + tela de aprovacao

@@ -211,3 +211,12 @@ def test_familia_sem_preto_mantem_ordem():
     a["variacoes"][1]["cor"] = "Cinza"
     ps = build_payloads_familia(a, **_ctx_familia() | {"cor_value_map": []})
     assert [p["sku"] for p in ps] == ["VIE_1066_3402_BR", "VIE_1066_3405_PT"]
+
+
+def test_regras_do_almir_em_todo_anuncio():
+    # 09/10/2026: sempre na loja oficial da Terra, garantia do vendedor de 30 dias, classico
+    for p in build_payloads_familia(_anuncio_var(), **_ctx_familia()):
+        assert p["official_store_id"] == 458566
+        assert p["listing_type_id"] == "gold_special"  # Classico no ML Brasil
+        termos = {t["id"]: t["value_name"] for t in p["sale_terms"]}
+        assert termos == {"WARRANTY_TYPE": "Garantia do vendedor", "WARRANTY_TIME": "30 dias"}

@@ -60,7 +60,7 @@ def _enviar(pacote, enviar):
     para um erro depois nao perder o numero do anuncio (e o clique seguinte nao publicar de novo)."""
     cor = next((a.get("value_name") for a in pacote["attributes"] if a["id"] == "COLOR"), None)
     item = {"sku": pacote["sku"], "cor": cor, "ok": False, "mlb": None, "link": None, "incerto": False,
-            "descricao": False, "flex": False, "erro": None, "em": datetime.now().strftime("%Y-%m-%d %H:%M")}
+            "descricao": False, "flex": False, "garantia": False, "loja_oficial": False, "erro": None, "em": datetime.now().strftime("%Y-%m-%d %H:%M")}
     try:
         r = enviar(pacote)
     except Exception:  # noqa: BLE001
@@ -86,7 +86,10 @@ def _completar(item, pacote, completar, token):
             item["erro"] = "publicado, mas nao consegui o acesso ao ML para gravar descricao e Flex"
             return item
         c = completar(pacote, item["mlb"], tk)
-        item.update(descricao=bool(c.get("descricao")), flex=bool(c.get("flex")))
+        item.update(descricao=bool(c.get("descricao")), flex=bool(c.get("flex")),
+                    garantia=bool(c.get("garantia")), loja_oficial=bool(c.get("loja_oficial")))
+        if not item["loja_oficial"]:
+            item["erro"] = "publicado FORA da loja oficial da Terra: confira no ML"
     except Exception:  # noqa: BLE001
         item["erro"] = "publicado, mas a descricao e o Flex nao foram gravados (falha de rede); chame o Claude"
     return item

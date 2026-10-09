@@ -113,6 +113,12 @@ def build_payload(anuncio, *, title, category_id, description_plain,
     return base
 
 
+# Regras do Almir para TODO anuncio novo (09/10/2026): dentro da loja oficial da Terra, garantia do
+# vendedor de 30 dias e anuncio Classico (gold_special no ML Brasil; gold_pro = Premium).
+LOJA_OFICIAL = 458566
+GARANTIA = [{"id": "WARRANTY_TYPE", "value_name": "Garantia do vendedor"},
+            {"id": "WARRANTY_TIME", "value_name": "30 dias"}]
+
 TETO_FAMILIA = 60  # family_name <= max_title_length do dominio (MLB33375 = 60)
 
 
@@ -150,6 +156,7 @@ def build_payloads_familia(anuncio, *, family_name, category_id, description_pla
             "modo": "simples", "pai_sku": anuncio["pai_sku"], "sku": v["sku"],
             "family_name": family_name, "category_id": category_id,
             "listing_type_id": listing_type_id, "condition": "new", "currency_id": "BRL",
+            "official_store_id": LOJA_OFICIAL, "sale_terms": [dict(g) for g in GARANTIA],
             "description_plain": description_plain, "attributes": attrs,
             "price": v["preco_venda"], "available_quantity": 1,
             "pictures": _fotos_da_variacao(fotos, v["sku"]),

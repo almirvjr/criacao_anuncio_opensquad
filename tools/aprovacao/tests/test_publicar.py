@@ -136,3 +136,10 @@ def test_sem_resposta_nao_diz_que_nada_foi_publicado(saida):
                              completar=None, token=lambda: "tk")
     assert all("confira no ML" in i["erro"] and i["incerto"] for i in r)
     assert all("nada foi publicado" not in i["erro"] for i in r)
+
+
+def test_garantia_e_loja_oficial_ficam_registradas(saida):
+    r = pub.publicar_anuncio(saida, PAI, enviar=_ok_webhook, token=lambda: "tk",
+                             completar=lambda p, m, t: {"descricao": True, "flex": True, "garantia": True, "loja_oficial": False})
+    assert all(i["garantia"] is True and i["loja_oficial"] is False for i in r)
+    assert all("loja oficial" in (i["erro"] or "") for i in r)

@@ -13,6 +13,9 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from esteira.payload_builder import GARANTIA, LOJA_OFICIAL  # noqa: E402
+
 EMOJI = re.compile("[\U0001F300-\U0001FAFF☀-➿\U0001F000-\U0001F2FF︀-️]")
 
 
@@ -45,8 +48,27 @@ def _chamar(metodo, caminho, tk, corpo=None):
             return e.code, {"texto": txt[:300]}
 
 
+def _garantia_e_loja(mlb, tk, res):
+    """Garantia do vendedor de 30 dias (regravada aqui porque o ML Publicar do n8n pode nao repassar
+    sale_terms) e conferencia de que o anuncio caiu na loja oficial da Terra (Almir 09/10/2026)."""
+    st, d = _chamar("GET", f"/items/{mlb}", tk)
+    if st != 200:
+        print(f"{mlb} garantia/loja: FALHOU HTTP {st}")
+        return
+    res["loja_oficial"] = d.get("official_store_id") == LOJA_OFICIAL
+    print(f"{mlb} loja oficial: {'sim' if res['loja_oficial'] else 'NAO - confira no ML'}")
+    termos = {t.get("id"): t.get("value_name") for t in d.get("sale_terms") or []}
+    if all(termos.get(g["id"]) == g["value_name"] for g in GARANTIA):
+        res["garantia"] = True
+        print(f"{mlb} garantia: ja estava")
+        return
+    st, d = _chamar("PUT", f"/items/{mlb}", tk, {"sale_terms": GARANTIA})
+    res["garantia"] = st in (200, 201)
+    print(f"{mlb} garantia: {'gravada' if res['garantia'] else 'FALHOU HTTP %s %s' % (st, d.get('message'))}")
+
+
 def completar(payload, mlb, tk):
-    res = {"descricao": False, "flex": False}
+    res = {"descricao": False, "flex": False, "garantia": False, "loja_oficial": False}
     st, d = _chamar("GET", f"/items/{mlb}/description", tk)
     if st == 200 and (d.get("plain_text") or "").strip():
         res["descricao"] = True
@@ -63,6 +85,7 @@ def completar(payload, mlb, tk):
         st, d = _chamar("POST", f"/flex/sites/MLB/items/{mlb}/v2", tk)
         res["flex"] = st in (200, 201, 204)
         print(f"{mlb} flex: {'ligado' if res['flex'] else 'FALHOU HTTP %s %s' % (st, d.get('message'))}")
+    _garantia_e_loja(mlb, tk, res)
     return res
 
 
