@@ -65,5 +65,33 @@ class TestMontar(unittest.TestCase):
         self.assertTrue(capas["P"]["picture_ids_por_variacao"][0]["picture_ids"][0].endswith("/f00.jpg"))
 
 
+class TestFotosExtras(unittest.TestCase):
+    """Almir 09/10/2026: alem da capa, as outras fotos com a etiqueta do SKU tambem vao (capa primeiro)."""
+
+    def test_capa_primeiro_depois_as_outras_do_sku(self):
+        rs = [res("site_01", ["S-1"], criado="2026-10-09T19:56:08+00:00"),
+              res("site_02", ["S-1"], criado="2026-10-09T19:56:09+00:00"),
+              res("capa_01", ["S-1", "capa-anuncio"], criado="2026-10-09T20:20:41+00:00"),
+              res("outro", ["S-2"])]
+        capas, erros = montar(rs, [anuncio("P", ["S-1"])])
+        self.assertEqual(erros, [])
+        ids = capas["P"]["picture_ids_por_variacao"][0]["picture_ids"]
+        self.assertEqual([u.rsplit("/", 1)[1] for u in ids], ["capa_01.jpg", "site_01.jpg", "site_02.jpg"])
+
+    def test_sem_capa_continua_faltando_mesmo_com_outras_fotos(self):
+        rs = [res("site_01", ["S-1"])]
+        _, erros = montar(rs, [anuncio("P", ["S-1"])])
+        self.assertTrue(any("falta capa" in e for e in erros))
+
+    def test_extras_cortadas_em_10_sem_erro(self):
+        rs = [res("capa", ["S-1", "capa-anuncio"])] + [
+            res(f"x{i:02d}", ["S-1"], criado=f"2026-10-07T10:{i:02d}:00+00:00") for i in range(12)]
+        capas, erros = montar(rs, [anuncio("P", ["S-1"])])
+        self.assertEqual(erros, [])
+        ids = capas["P"]["picture_ids_por_variacao"][0]["picture_ids"]
+        self.assertEqual(len(ids), 10)
+        self.assertTrue(ids[0].endswith("/capa.jpg"))
+
+
 if __name__ == "__main__":
     unittest.main()

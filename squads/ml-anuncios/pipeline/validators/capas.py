@@ -4,8 +4,9 @@ capas.py — monta as fotos de cada cor a partir das capas que o Almir sobe no
 Cloudinary (esteira sem fotos, 07/10/2026).
 
 O Almir sobe a capa na pasta do fornecedor e etiqueta com o SKU DA COR + 'capa-anuncio'.
-O orquestrador busca no Cloudinary (MCP search-assets, expression 'tags=capa-anuncio')
-e salva o JSON da resposta; este script casa por SKU e trava se faltar cor.
+As outras fotos com a etiqueta do SKU vao depois da capa (Almir 09/10/2026), ate 10.
+O orquestrador busca no Cloudinary (MCP search-assets: as fotos com as etiquetas dos SKUs
+do lote, com e sem 'capa-anuncio') e salva o JSON da resposta; este script casa por SKU e trava se faltar cor.
 
 Uso:  python capas.py <busca.json> <anuncios-entrada.json> <pasta_saida>
 Saida: 0 = toda cor tem capa (grava capas-{pai_sku}.yaml) | 1 = falta capa (lista quais).
@@ -34,29 +35,31 @@ def url_ml(secure_url):
 
 
 def montar(resources, anuncios):
-    capas_por_sku = {}
+    """Fotos de cada cor: as com 'capa-anuncio' + SKU da cor primeiro (a 1a e a capa), depois as
+    OUTRAS fotos com a etiqueta do SKU (Almir 09/10/2026), ate 10. Sem capa = falta."""
+    capas_por_sku, extras_por_sku = {}, {}
     for r in resources:
         tags = r.get("tags") or []
-        if TAG_CAPA not in tags:
-            continue
+        destino = capas_por_sku if TAG_CAPA in tags else extras_por_sku
         for t in tags:
             if t != TAG_CAPA:
-                capas_por_sku.setdefault(t, []).append(r)
+                destino.setdefault(t, []).append(r)
 
+    ordem = lambda r: (r.get("created_at", ""), r.get("public_id", ""))  # noqa: E731
     saida, erros = {}, []
     for a in anuncios:
         pv = []
         for v in a.get("variacoes", []):
-            achadas = sorted(capas_por_sku.get(v["sku"], []), key=lambda r: r.get("created_at", ""))
+            achadas = sorted(capas_por_sku.get(v["sku"], []), key=ordem)
             if not achadas:
                 erros.append(f"{a['pai_sku']}: falta capa da cor '{v.get('cor')}' — nenhuma foto "
                              f"com as etiquetas '{TAG_CAPA}' + '{v['sku']}' (conferir se o SKU da "
-                             f"etiqueta esta igual ao Tiny, com '-' e nao '_').")
+                             f"etiqueta esta igual ao Tiny).")
                 continue
             if len(achadas) > MAX_FOTOS:
                 erros.append(f"{a['pai_sku']}: cor '{v.get('cor')}' tem {len(achadas)} fotos, "
                              f"mais de {MAX_FOTOS}. Usando as {MAX_FOTOS} mais antigas.")
-                achadas = achadas[:MAX_FOTOS]
+            achadas = (achadas + sorted(extras_por_sku.get(v["sku"], []), key=ordem))[:MAX_FOTOS]
             pv.append({"sku_variacao": v["sku"], "cor": v.get("cor"),
                        "picture_ids": [url_ml(r["secure_url"]) for r in achadas],
                        "origem": [{k: r.get(k) for k in ("asset_id", "public_id", "width", "height")}
