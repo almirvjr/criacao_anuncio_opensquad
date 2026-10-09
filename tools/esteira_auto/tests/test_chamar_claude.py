@@ -36,15 +36,31 @@ def test_chamar_saida_nao_json(tmp_path):
     assert not ok and "segredo123" not in txt
 
 
-def test_python_so_dos_programas_que_ja_existem():
-    # Bash(python *) deixaria o Claude escrever um .py proprio que le o .env e publica
-    assert "Bash(python *)" not in cc.PERMITIDAS
+def test_python_so_pelo_nome_exato_dos_programas():
+    # "python <pasta>/*" deixaria rodar um .py novo gravado com outra caixa de letra (Windows)
     bash = [p for p in cc.PERMITIDAS if p.startswith("Bash(python")]
-    assert bash and all(p.startswith(("Bash(python squads/ml-anuncios/pipeline/validators/",
-                                      "Bash(python tools/tiny_to_esteira.py")) for p in bash)
+    assert sorted(bash) == sorted(f"Bash(python {s} *)" for s in cc.PROGRAMAS)
+    assert all(s.endswith(".py") and "*" not in s for s in cc.PROGRAMAS)
 
 
-def test_nao_cria_nem_mexe_em_programa():
-    for regra in ("Write(**/*.py)", "Edit(**/*.py)", "Write(tools/**)", "Edit(tools/**)",
-                  "Write(squads/ml-anuncios/pipeline/**)", "Edit(squads/ml-anuncios/pipeline/**)", "Bash(*..*)"):
-        assert regra in cc.NEGADAS
+def test_grava_so_na_pasta_dos_lotes():
+    assert "Write" not in cc.PERMITIDAS and "Edit" not in cc.PERMITIDAS
+    escrita = [p for p in cc.PERMITIDAS if p.startswith(("Write(", "Edit("))]
+    assert escrita == ["Edit(squads/ml-anuncios/output/lotes/**)", "Write(squads/ml-anuncios/output/lotes/**)"]
+
+
+def test_env_bloqueado_em_qualquer_caixa():
+    for v in (".env", ".ENV", ".Env", ".eNv"):
+        assert f"Read(**/{v})" in cc.NEGADAS
+
+
+def test_navegador_sem_rodar_codigo():
+    assert "mcp__playwright__browser_evaluate" in cc.NEGADAS
+    assert "mcp__playwright__browser_run_code" in cc.NEGADAS
+
+
+def test_modo_nega_o_que_nao_esta_liberado():
+    # o settings.json do hub usa defaultMode "auto" (classificador aprova sozinho) e o
+    # claude -p herdava isso, ignorando a lista de liberados (sondado 09/10/2026)
+    cmd = cc.montar_comando("x")
+    assert cmd[cmd.index("--permission-mode") + 1] == "dontAsk"

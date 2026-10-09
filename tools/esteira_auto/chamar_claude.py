@@ -1,6 +1,6 @@
 """Chama o Claude sem conversa (claude -p) para uma etapa da esteira.
 
-Permissoes fechadas: pode ler/escrever arquivos de dados, rodar SO os validadores e o tiny_to_esteira,
+Permissoes fechadas: grava so na pasta dos lotes, roda SO os validadores e o tiny_to_esteira,
 buscar no Cloudinary e usar o navegador escondido da Helena. NAO pode publicar: o disparo
 e o 2o envio sao negados, assim como ler o .env, python -c, curl e o MCP do n8n.
 Nunca devolve texto cru de erro (pode carregar segredo)."""
@@ -8,25 +8,37 @@ import json
 import subprocess
 from pathlib import Path
 
+# Liberar o minimo, em vez de listar o proibido: no Windows maiuscula/minuscula dao no mesmo
+# arquivo, entao uma lista de proibidos sempre deixa furo (ex.: gravar VALIDADOR.PY por cima
+# de um programa liberado). Programa: so estes, pelo nome exato. Gravar: so na pasta dos lotes.
+PROGRAMAS = [
+    "squads/ml-anuncios/pipeline/validators/validar_brief.py",
+    "squads/ml-anuncios/pipeline/validators/validar_claims.py",
+    "squads/ml-anuncios/pipeline/validators/validar_ficha_seo.py",
+    "squads/ml-anuncios/pipeline/validators/capas.py",
+    "tools/tiny_to_esteira.py",
+]
 PERMITIDAS = [
-    "Read", "Write", "Edit", "Glob", "Grep", "Agent", "Task", "WebSearch", "WebFetch",
-    # so os programas que ja existem e foram revisados; nunca "python *" (o Claude poderia
-    # escrever um .py proprio que le o .env e chama o webhook)
-    "Bash(python squads/ml-anuncios/pipeline/validators/*)", "Bash(python tools/tiny_to_esteira.py*)",
+    "Read", "Glob", "Grep", "Agent", "Task", "WebSearch", "WebFetch",
+    "Edit(squads/ml-anuncios/output/lotes/**)", "Write(squads/ml-anuncios/output/lotes/**)",
+    *[f"Bash(python {s} *)" for s in PROGRAMAS],
     "Bash(ls *)", "Bash(mkdir *)",
     "mcp__cloudinary__search-assets", "mcp__playwright", "mcp__mercadolibre",
 ]
 NEGADAS = [
     "Bash(*disparar_publicacao*)", "Bash(*completar_anuncio*)", "Bash(*.env*)", "Bash(*..*)",
-    "Bash(python -c*)", "Bash(curl*)", "Read(./.env)", "Read(**/.env)", "mcp__n8n",
-    # nao cria nem altera programa: o que roda e so o que ja foi revisado
-    "Write(**/*.py)", "Edit(**/*.py)", "Write(tools/**)", "Edit(tools/**)",
-    "Write(squads/ml-anuncios/pipeline/**)", "Edit(squads/ml-anuncios/pipeline/**)",
+    "Bash(python -c*)", "Bash(curl*)", "mcp__n8n",
+    # o .env tem o endereco de publicar e a chave do ML: bloqueado em toda combinacao de caixa
+    *[f"Read(**/.{a}{b}{c})" for a in "eE" for b in "nN" for c in "vV"],
+    # navegador sem rodar codigo (daria para mandar dados para fora pela pagina)
+    "mcp__playwright__browser_evaluate", "mcp__playwright__browser_run_code",
 ]
 
 
 def montar_comando(instrucao):
-    return ["claude", "-p", instrucao, "--output-format", "json",
+    # dontAsk: o que nao esta liberado e negado. Sem isso o claude -p herda o modo "auto" do
+    # settings.json do hub, e o classificador aprova escrita fora da lista (sondado 09/10/2026).
+    return ["claude", "-p", instrucao, "--output-format", "json", "--permission-mode", "dontAsk",
             "--allowedTools", ",".join(PERMITIDAS), "--disallowedTools", ",".join(NEGADAS)]
 
 
