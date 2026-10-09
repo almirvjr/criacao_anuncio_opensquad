@@ -4,6 +4,8 @@ type: checkpoint
 
 # Step 06: Checkpoint A — Aprovação do Conteúdo Textual (Múltiplos Títulos)
 
+> **Na esteira sem conversa (desde 09/10/2026, `tools/esteira_auto/`):** este checkpoint NÃO para o maestro; a tela abre no fim (depois da revisão, step-08) e faz aprovação + preço + publicação. Ver `docs/superpowers/specs/2026-10-09-botao-criar-anuncios-design.md`.
+>
 > **Aprovação pela tela (desde 08/10/2026):** o Almir aprova em `tools/aprovacao/Aprovar anuncios.bat` (clique duplo). A tela grava em `anuncio-{pai}.yaml`: `titulo_final`, `attributes.BRAND/MODEL`, `description.bloco_*`, `status_copy: aprovado`, `aprovado_em`, `avisos_aceitos`; ou `status_copy: devolvido` + `nota_almir`. A esteira só segue para o step-07 quando **todos** os anúncios do lote estão `aprovado`; `devolvido` volta para a Renata (step-05) com a `nota_almir`. Aprovar por esta conversa continua valendo, gravando os mesmos campos. Obs.: o consolidado `anuncios.yaml` não é atualizado pela tela — a fonte é o `anuncio-{pai}.yaml`.
 
 ## Apresentar ao usuário

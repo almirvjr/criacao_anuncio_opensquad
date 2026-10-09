@@ -2,6 +2,19 @@
 
 <!-- Decisoes tecnicas importantes. Formato: data - contexto - decisao - motivo. -->
 
+## 2026-10-09 — Esteira sem conversa (botão "1 - Criar anuncios")
+
+**Contexto:** o Almir quer criar anúncio sozinho, sem sessão com o Claude. Regra nova do hub no mesmo dia: automação nova = Supabase, nunca n8n.
+**Decisão:**
+- **Maestro local** (`tools/esteira_auto/maestro.py`) conduz o lote; etapas com cabeça = `claude -p` com instrução fixa (`instrucoes/*.md`); etapas fixas = código que já existia. Uma planilha = um lote com pasta própria e caderno; clicar de novo retoma.
+- **Permissão mínima no `claude -p`** (`chamar_claude.py`): `--permission-mode dontAsk`, grava só em `output/lotes/**`, roda só os 5 programas pelo nome exato, `.env` negado em toda caixa de letra, navegador sem rodar código. Motivo: duas revisões de segurança automáticas acharam furos na lista de proibidos, e a sonda mostrou que o `claude -p` herdava o `defaultMode: auto` do hub (gravou fora do lote).
+- **Só o Almir publica:** pela tela, botão "Aprovar e publicar". Publicação pelo `ML Publicar` do n8n **sem mudança** (regra do hub); descrição + Flex pelo `completar_anuncio.py`, chamado sozinho depois de cada cor. Cor já publicada é pulada (clicar duas vezes não duplica).
+- **Tela mostra tudo o que vai pro anúncio:** cores com código de barras (vazio trava; botão "Reler do Olist"), fotos na ordem, título por cor, preço (digitado até existir a planilha de preços), quadro "Faltou ou divergiu" (decisão vai para a ficha), parecer da revisão.
+- **Checkpoints 04b e 06 não param mais**; o que faltou vai para o quadro da tela. Revisão (step-08) roda antes da tela.
+- **Fotos:** capa `capa-anuncio` primeiro, depois as outras com a etiqueta do SKU, até 10 (pedido do Almir, boleira Brinox).
+- Planilha só vai para `A CRIAR\FEITOS` com tudo publicado ou tirado.
+**Motivo:** tirar a esteira da mão do Claude sem abrir mão do "sim" do Almir. Spec e plano em `docs/superpowers/`.
+
 ## 2026-10-08 — Publicacao no modelo novo do ML (User Products) + tela de aprovacao
 
 **Contexto:** 1a publicacao real (Viel 5L e 8L) foi recusada pelo ML: "variations is invalid with family name" / falta `family_name`. A conta tem a tag `user_product_seller`; o `ML Publicar` (maio/2026) montava 1 anuncio com `variations`, modelo que a conta nao aceita mais. Conferido na documentacao e com `POST /items/validate` (confere sem criar).

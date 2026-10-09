@@ -5,7 +5,8 @@
 ## 0. Esteira sem fotos — 1º teste CONCLUÍDO em 08/10/2026 (Viel 5L e 8L, 3 cores cada)
 **No ar, ativos, estoque vindo do Tiny (10 por cor), Flex ligado, descrição gravada:** 5L (R$ 92,71) Branco MLB7771661140 · Cinza MLB5354173009 · Preto MLB7771661510; 8L (R$ 112,71) Branco MLB7771685954 · Cinza MLB7771661556 · Preto MLB7771706672. Marca Terra Casa Decor, códigos de barras novos da GS1, caixa da cubagem.
 **Como ficou a esteira:** aprovação do texto na tela (`tools/aprovacao/`, botão `2 - Aprovar anuncios` em `G:\Meu Drive\TERRA CASA DECOR\ANUNCIOS`); publicação no **modelo novo do ML** (um anúncio por cor, `family_name`, preta primeiro, descrição e Flex em 2º envio) — ver `DECISOES.md` 2026-10-08 e step-10.
-**PRÓXIMO PASSO:** (1) pasta `A CRIAR` + botão `1 - Criar anuncios` (esteira rodando sem esta conversa; desenho próprio, encaixe já previsto no spec da tela); (2) planilha de preços definitivos por canal (o preço do Tiny é simbólico, R$ 10); (3) minors adiados da tela (ver spec/plano 2026-10-08); (4) o `ML Publicar` ainda manda a descrição junto (ignorada) — poderia gravar ele mesmo no 2º envio.
+**Botão `1 - Criar anuncios` construído em 09/10/2026** (`tools/esteira_auto/`, ver DECISOES 2026-10-09): falta o ensaio real com a boleira Brinox `BRI-coza34-40652_3009` até a tela e a 1ª publicação com o Almir.
+**PRÓXIMO PASSO:** (1) ensaio + 1ª publicação da boleira; (1b) levar a publicação (`ML Publicar`) do n8n para o Supabase (regra do hub de 09/10; virada com volta-atrás); (2) planilha de preços definitivos por canal (o preço do Tiny é simbólico, R$ 10); (3) minors adiados da tela (ver spec/plano 2026-10-08); (4) o `ML Publicar` ainda manda a descrição junto (ignorada) — poderia gravar ele mesmo no 2º envio.
 
 ## 4. Pendências
 - Código da squad commitado em 07/10 (branch `esteira-sem-fotos`, sem push). ⚠️ Repo PÚBLICO — conferir segredo antes de qualquer push.
