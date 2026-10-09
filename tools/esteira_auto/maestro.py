@@ -39,14 +39,35 @@ def _pais(lote):
     return [a["pai_sku"] for a in entrada.get("anuncios", []) if a["pai_sku"] not in parados]
 
 
+TETO_DEVOLVER = 3  # devolveu mais que isso = o texto precisa do Claude com o Almir, nao de mais rodada paga
+
+
 def _devolvidos(lote):
     import yaml
+    parados = L.ler(lote)["parados"]
     out = []
     for f in sorted((Path(lote) / "copywriting").glob("anuncio-*.yaml")):
         d = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
-        if d.get("status_copy") == "devolvido":
+        if d.get("status_copy") == "devolvido" and d.get("pai_sku") not in parados:
             out.append(d.get("pai_sku"))
     return out
+
+
+def _preparar_devolvidos(lote, agora):
+    """Conta a devolucao, para quem passou do teto e volta o resto para 'pendente' (nao depende
+    do Claude lembrar de mudar o status, senao a tela fecharia na hora e o ciclo pago se repetiria)."""
+    import yaml
+    refazer = []
+    for pai in _devolvidos(lote):
+        if L.contar_devolucao(lote, pai) > TETO_DEVOLVER:
+            L.parar_pai(lote, pai, f"devolvido mais de {TETO_DEVOLVER} vezes: chame o Claude para acertar o texto junto", agora)
+            continue
+        f = Path(lote) / "copywriting" / f"anuncio-{pai}.yaml"
+        d = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        d["status_copy"] = "pendente"
+        f.write_text(yaml.safe_dump(d, allow_unicode=True, sort_keys=False, width=100000), encoding="utf-8")
+        refazer.append(pai)
+    return refazer
 
 
 def _etapa(etapa, lote, pais, chamar, conferir, agora, avisar):
@@ -90,7 +111,10 @@ def rodar_lote(lote, chamar=chamar_claude.chamar, conferir=travas.conferir,
                 avisar(f"{agora():%H:%M} abrindo a tela de aprovacao…")
                 cod = abrir_tela(lote)
                 if cod == 3:
-                    dev = _devolvidos(lote)
+                    dev = _preparar_devolvidos(lote, agora())
+                    if not dev:
+                        L.anotar(lote, "devolvido sem mais rodada possivel: veja o motivo acima", agora())
+                        return 1
                     for e in ("texto", "revisao"):
                         if not _etapa(e, lote, dev, chamar, conferir, agora, avisar):
                             return 1

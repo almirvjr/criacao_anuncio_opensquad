@@ -35,7 +35,7 @@ from olist_ean import reler_ean  # noqa: E402
 
 TETO_TITULO = 60
 FINAIS = ("aprovado", "devolvido", "tirado")
-TIPOS = {"gold_special": "Premium", "gold_pro": "Premium", "gold": "Clássico"}
+TIPOS = {"gold_special": "Clássico", "gold_pro": "Premium", "free": "Grátis"}  # ML Brasil
 
 
 def _ler_yaml(p):
@@ -71,9 +71,16 @@ def _capas(saida, pai):
 
 
 def ler_preco(texto):
+    """'129,90', '1.299', '1.299,90', '1,299.90', 'R$ 92,71' -> numero. O ultimo separador com 1-2
+    casas depois e o decimal; ponto seguido de 3 algarismos e milhar (o jeito brasileiro)."""
     t = re.sub(r"[^\d,.\-]", "", str(texto or ""))
-    if "," in t:
-        t = t.replace(".", "").replace(",", ".")
+    if "," in t and "." in t:
+        dec = "," if t.rfind(",") > t.rfind(".") else "."
+        t = t.replace("." if dec == "," else ",", "").replace(dec, ".")
+    elif "," in t:
+        t = t.replace(",", ".")
+    elif re.fullmatch(r"\d{1,3}(\.\d{3})+", t):
+        t = t.replace(".", "")
     try:
         v = round(float(t), 2)
     except ValueError:
@@ -143,22 +150,46 @@ def _cartao(saida, doc, entrada):
         "caixa_cm": a.get("dim_embalagem_cm"),
         "capas": _capas(saida, pai),
         "categoria": " > ".join(cat.get("breadcrumb") or []) or cat.get("category_name"),
-        "tipo_anuncio": TIPOS.get(cat.get("listing_type_id") or "gold_special", "Premium"),
+        "tipo_anuncio": TIPOS.get(cat.get("listing_type_id") or "gold_special", "Clássico"),
         "parecer": _parecer(saida, pai),
         "cores": _cores(saida, pai, a, _titulo_inicial(doc)),
         "preco": doc.get("preco"),
         "quadro": quadro_mod.montar(_brief(saida, pai), attrs),
         "publicacao": list((doc.get("publicacao") or {}).values()),
+        "publicacao_por_cor": [(doc.get("publicacao") or {}).get(v["sku"])
+                               or {"sku": v["sku"], "cor": v.get("cor"), "ok": False, "mlb": None,
+                                   "erro": "ainda nao publicada"}
+                               for v in _cores(saida, pai, a, _titulo_inicial(doc))],
         "situacao": pub.situacao(doc),
     }
+
+
+def _parados(saida):
+    """Produtos que o maestro parou (andamento.json do lote) e que o Almir ainda nao tirou."""
+    p = Path(saida) / "andamento.json"
+    try:
+        parados = (json.loads(p.read_text(encoding="utf-8")) or {}).get("parados") or {} if p.is_file() else {}
+    except Exception:  # noqa: BLE001
+        return {}
+    out = {}
+    for pai, motivo in parados.items():
+        f = Path(saida) / "copywriting" / f"anuncio-{pai}.yaml"
+        try:
+            if f.is_file() and (_ler_yaml(f) or {}).get("status_copy") == "tirado":
+                continue
+        except Exception:  # noqa: BLE001
+            pass
+        out[pai] = motivo
+    return out
 
 
 def listar_pendentes(saida):
     saida = Path(saida)
     pasta = saida / "copywriting"
+    parados = _parados(saida)
+    cartoes = [{"pai_sku": pai, "parado": motivo} for pai, motivo in parados.items()]
     if not pasta.is_dir():
-        return []
-    cartoes = []
+        return cartoes
     try:
         entrada = _entrada_por_pai(saida)
     except Exception as e:  # noqa: BLE001
@@ -171,7 +202,8 @@ def listar_pendentes(saida):
             if not isinstance(doc, dict) or not doc.get("pai_sku"):
                 raise ValueError("arquivo sem pai_sku")
             st = doc.get("status_copy")
-            if st in ("devolvido", "tirado") or (st == "aprovado" and pub.situacao(doc) == "publicado"):
+            if doc["pai_sku"] in parados or st in ("devolvido", "tirado") or (
+                    st == "aprovado" and pub.situacao(doc) == "publicado"):
                 continue
             cartoes.append(_cartao(saida, doc, entrada))
         except Exception as e:  # noqa: BLE001
@@ -180,8 +212,15 @@ def listar_pendentes(saida):
     return cartoes
 
 
+def tem_o_que_mostrar(saida):
+    """A tela abre se houver QUALQUER cartao, inclusive de defeito ou de produto parado."""
+    return bool(listar_pendentes(saida))
+
+
 def situacao_lote(saida):
-    """0 = tudo publicado ou tirado; 3 = algum devolvido; 2 = pendente, em parte, defeito ou vazio."""
+    """0 = tudo publicado ou tirado; 3 = algum devolvido; 2 = pendente, em parte, parado, defeito ou vazio."""
+    if _parados(saida):
+        return 2
     devolvido = False
     arquivos = sorted((Path(saida) / "copywriting").glob("anuncio-*.yaml"))
     if not arquivos:
@@ -267,22 +306,34 @@ def conferir(saida, pai, edicao):
     return itens
 
 
+_TRAVAS = {}
+_TRAVA_DAS_TRAVAS = threading.Lock()
+
+
+def trava(pai):
+    """Uma acao por anuncio de cada vez: dois cliques (ou recarregar no meio) nao publicam a mesma cor 2x."""
+    with _TRAVA_DAS_TRAVAS:
+        return _TRAVAS.setdefault(pai, threading.Lock())
+
+
 def _gravar_seguro(caminho, doc, agora):
     caminho = Path(caminho)
     antes = caminho.parent / "_antes"
     antes.mkdir(exist_ok=True)
-    shutil.copy2(caminho, antes / f"{caminho.stem}-{agora:%Y%m%d-%H%M%S}.yaml")
-    tmp = caminho.with_name(caminho.name + ".novo")
+    if caminho.is_file():
+        shutil.copy2(caminho, antes / f"{caminho.stem}-{agora:%Y%m%d-%H%M%S}.yaml")
+    tmp = caminho.with_name(f"{caminho.name}.{threading.get_ident()}.novo")
     with open(tmp, "w", encoding="utf-8") as fh:
         yaml.safe_dump(doc, fh, allow_unicode=True, sort_keys=False, width=100000)
     os.replace(tmp, caminho)
 
 
-def aprovar(saida, pai, edicao, vistos=None, agora=None):
+def aprovar(saida, pai, edicao, vistos=None, agora=None, reaprovar=False):
     agora = agora or datetime.now()
     caminho = caminho_anuncio(saida, pai)
     doc = _ler_yaml(caminho)
-    if doc.get("status_copy") in FINAIS:
+    ja_aprovado_sem_publicar = doc.get("status_copy") == "aprovado" and pub.situacao(doc) != "publicado"
+    if doc.get("status_copy") in FINAIS and not (reaprovar and ja_aprovado_sem_publicar):
         return {"ok": False, "motivo": f"Este anuncio ja esta '{doc['status_copy']}'.", "conferencia": []}
     itens = conferir(saida, pai, edicao)
     if any(i["nivel"] == "bloqueio" for i in itens):
@@ -320,18 +371,25 @@ def devolver(saida, pai, nota, agora=None):
 
 
 def aprovar_e_publicar(saida, pai, edicao, vistos=None, publicar=pub.publicar_anuncio, agora=None):
+    with trava(pai):
+        return _aprovar_e_publicar(saida, pai, edicao, vistos, publicar, agora)
+
+
+def _aprovar_e_publicar(saida, pai, edicao, vistos, publicar, agora):
     agora = agora or datetime.now()
     try:
         preco = ler_preco(edicao.get("preco"))
     except ValueError as e:
         return {"ok": False, "motivo": str(e), "conferencia": []}
+    if pai in _parados(saida):
+        return {"ok": False, "motivo": "Este anuncio parou na esteira: nao da para publicar. Tire do lote.",
+                "conferencia": []}
     caminho = caminho_anuncio(saida, pai)
+    # sempre passa pela conferencia e grava a edicao da tela, mesmo se ja aprovado antes
+    r = aprovar(saida, pai, edicao, vistos=vistos, agora=agora, reaprovar=True)
+    if not r["ok"]:
+        return r
     doc = _ler_yaml(caminho)
-    if doc.get("status_copy") != "aprovado":
-        r = aprovar(saida, pai, edicao, vistos=vistos, agora=agora)
-        if not r["ok"]:
-            return r
-        doc = _ler_yaml(caminho)
     doc["preco"] = preco
     decisoes = [d for d in edicao.get("decisoes") or [] if str(d.get("valor") or "").strip()]
     for d in decisoes:
@@ -346,13 +404,21 @@ def aprovar_e_publicar(saida, pai, edicao, vistos=None, publicar=pub.publicar_an
     return {"ok": True, "publicacao": resultado}
 
 
+def tentar_cor(saida, pai, sku, publicar_cor=pub.publicar_cor):
+    caminho_anuncio(saida, pai)  # valida o pai
+    with trava(pai):
+        return {"ok": True, "item": publicar_cor(saida, pai, sku)}
+
+
 def tirar(saida, pai, agora=None):
     agora = agora or datetime.now()
     caminho = caminho_anuncio(saida, pai)
-    doc = _ler_yaml(caminho)
-    doc["status_copy"] = "tirado"
-    doc["tirado_em"] = f"{agora:%Y-%m-%d %H:%M}"
-    _gravar_seguro(caminho, doc, agora)
+    with trava(pai):
+        doc = _ler_yaml(caminho) if caminho.is_file() else {"pai_sku": pai}  # parado antes do texto
+        doc["status_copy"] = "tirado"
+        doc["tirado_em"] = f"{agora:%Y-%m-%d %H:%M}"
+        caminho.parent.mkdir(exist_ok=True)
+        _gravar_seguro(caminho, doc, agora)
     return {"ok": True}
 
 
@@ -398,14 +464,15 @@ def criar_servidor(saida, esperar=False, publicar=None, publicar_cor=None):
                     r = aprovar_e_publicar(saida, pai, corpo.get("edicao") or {}, vistos=corpo.get("vistos") or [],
                                            publicar=publicar)
                 elif self.path == "/api/tentar":
-                    r = {"ok": True, "item": publicar_cor(saida, pai, corpo.get("sku"))}
+                    r = tentar_cor(saida, pai, corpo.get("sku"), publicar_cor=publicar_cor)
                 elif self.path == "/api/tirar":
                     r = tirar(saida, pai)
                 elif self.path == "/api/reler-ean":
                     caminho_anuncio(saida, pai)  # valida o pai
                     r = reler_ean(saida, corpo.get("sku"))
                 elif self.path == "/api/devolver":
-                    r = devolver(saida, pai, corpo.get("nota"))
+                    with trava(pai):
+                        r = devolver(saida, pai, corpo.get("nota"))
                     if r["ok"]:
                         srv.estado["devolvidos"] += 1
                 else:
@@ -433,7 +500,7 @@ def main():
                    help="encerra quando nao sobrar pendente; sai 0 = todos aprovados, 3 = algum devolvido, 2 = pendente/defeito")
     p.add_argument("--sem-navegador", action="store_true")
     a = p.parse_args()
-    if a.esperar and not _pendentes_validos(a.saida):
+    if a.esperar and not tem_o_que_mostrar(a.saida):
         print("Nada esperando aprovacao.")
         sys.exit(situacao_lote(a.saida))
     srv = criar_servidor(a.saida, esperar=a.esperar)

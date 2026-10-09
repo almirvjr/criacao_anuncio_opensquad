@@ -102,3 +102,37 @@ def test_produto_sem_cor(saida):
                          completar=lambda p, m, t: {"descricao": True, "flex": True}, token=lambda: "tk")
     assert len(enviados) == 1 and enviados[0]["sku"] == "BRI-coza34-40652_3009"
     assert not any(a["id"] == "COLOR" for a in enviados[0]["attributes"])
+
+
+# --- revisao final (I5, I6) ---
+def _ok_webhook(c):
+    return {"http": 200, "resposta": {"status": "success", "mlb_id": "MLB" + c["sku"][-2:], "permalink": "https://l"}}
+
+
+def test_erro_depois_do_webhook_nao_perde_o_mlb(saida):
+    def completar_quebra(p, m, t):
+        raise TimeoutError("rede caiu")
+    r = pub.publicar_anuncio(saida, PAI, enviar=_ok_webhook, completar=completar_quebra, token=lambda: "tk")
+    assert all(i["mlb"] and i["ok"] for i in r)
+    assert all("descricao" in i["erro"] for i in r)
+    gravado = _doc(saida)["publicacao"]
+    assert gravado["VIE-1-PT"]["mlb"] == "MLBPT" and gravado["VIE-1-BR"]["mlb"] == "MLBBR"
+    # clicar de novo nao manda de novo
+    enviados = []
+    pub.publicar_anuncio(saida, PAI, enviar=lambda c: enviados.append(c) or _ok_webhook(c),
+                         completar=lambda p, m, t: {"descricao": True, "flex": True}, token=lambda: "tk")
+    assert enviados == []
+
+
+def test_token_que_estoura_nao_perde_o_mlb(saida):
+    def token_quebra():
+        raise OSError("sem rede")
+    r = pub.publicar_anuncio(saida, PAI, enviar=_ok_webhook, completar=None, token=token_quebra)
+    assert all(i["mlb"] for i in r)
+
+
+def test_sem_resposta_nao_diz_que_nada_foi_publicado(saida):
+    r = pub.publicar_anuncio(saida, PAI, enviar=lambda c: {"http": None, "resposta": {"texto_cru": "x"}},
+                             completar=None, token=lambda: "tk")
+    assert all("confira no ML" in i["erro"] and i["incerto"] for i in r)
+    assert all("nada foi publicado" not in i["erro"] for i in r)

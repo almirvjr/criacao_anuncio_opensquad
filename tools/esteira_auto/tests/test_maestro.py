@@ -135,3 +135,47 @@ def test_main_termina_bem_e_guarda_a_planilha(tmp_path):
         return 0
     assert M.main(a_criar=a_criar, lotes=tmp_path / "lotes", rodar=ok) == 0
     assert (a_criar / "FEITOS" / "p.xls").exists()
+
+
+# ---------- revisao final (I4) ----------
+def _devolvido(lt, pai, n=None):
+    (lt / "copywriting").mkdir(exist_ok=True)
+    (lt / "copywriting" / f"anuncio-{pai}.yaml").write_text(
+        yaml.safe_dump({"pai_sku": pai, "status_copy": "devolvido", "nota_almir": "refaz"}), encoding="utf-8")
+
+
+def test_maestro_volta_o_devolvido_para_pendente_antes_de_reescrever(tmp_path):
+    lt, lp = _lote(tmp_path)
+    _devolvido(lt, "A")
+    vistos = []
+    def chamar(i, raiz, **kw):
+        if "step-05" in i:  # o Claude "esquece" de mudar o status: o maestro ja mudou
+            vistos.append(yaml.safe_load((lt / "copywriting" / "anuncio-A.yaml").read_text(encoding="utf-8"))["status_copy"])
+        return True, "pronto"
+    telas = iter([3, 0])
+    M.rodar_lote(lt, chamar=chamar, conferir=lambda e, l, p: {}, ler_planilha=lp,
+                 abrir_tela=lambda l: next(telas), agora=T, avisar=lambda *a: None)
+    assert vistos[-1] == "pendente"
+
+
+def test_devolver_tem_teto(tmp_path):
+    lt, lp = _lote(tmp_path)
+    rodadas = []
+    def tela(l):
+        _devolvido(lt, "A")  # o Almir devolve toda vez
+        return 3
+    def chamar(i, raiz, **kw):
+        if "step-05" in i:
+            rodadas.append(1)
+        return True, "pronto"
+    r = M.rodar_lote(lt, chamar=chamar, conferir=lambda e, l, p: {}, ler_planilha=lp,
+                     abrir_tela=tela, agora=T, avisar=lambda *a: None)
+    assert len(rodadas) <= 1 + M.TETO_DEVOLVER  # 1a escrita + ate 3 refeitas
+    assert "A" in L.ler(lt)["parados"] and r == 1
+
+
+def test_devolvido_parado_nao_e_refeito(tmp_path):
+    lt, lp = _lote(tmp_path, pais=("A", "B"))
+    _devolvido(lt, "B")
+    L.parar_pai(lt, "B", "texto inventou balde", T())
+    assert M._devolvidos(lt) == []

@@ -87,6 +87,18 @@ function linkSeguro(u) {
   try { const x = new URL(u); return x.protocol === "https:" || x.protocol === "http:" ? x.href : null; } catch { return null; }
 }
 const ancora = (u, texto) => { const l = linkSeguro(u); return l ? el("a", {href: l, target: "_blank", rel: "noopener noreferrer"}, texto) : null; };
+// mesma regra do servidor (aprovacao.ler_preco): ultimo separador com 1-2 casas = decimal; "1.299" = milhar
+function lerPreco(s) {
+  let t = String(s || "").replace(/[^\d,.\-]/g, "");
+  if (t.includes(",") && t.includes(".")) {
+    const dec = t.lastIndexOf(",") > t.lastIndexOf(".") ? "," : ".";
+    t = t.split(dec === "," ? "." : ",").join("").replace(dec, ".");
+  } else if (t.includes(",")) t = t.replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.split(".").join("");
+  const v = Math.round(parseFloat(t) * 100) / 100;
+  return isFinite(v) && v > 0 ? v : null;
+}
+const reais = v => v.toLocaleString("pt-BR", {style: "currency", currency: "BRL"});
 const hora = () => new Date().toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"});
 
 function contador(input, teto) {
@@ -101,7 +113,7 @@ function topo(c) {
     `Revisão: ${c.parecer.status || "—"}${c.parecer.score != null ? " (" + c.parecer.score + "/100)" : ""}${c.parecer.resumo ? " — " + c.parecer.resumo : ""}`) : null;
   return el("div", {class: "topo"},
     el("div", {}, el("h2", {}, c.nome_base), el("div", {class: "sku"}, c.pai_sku), parecer),
-    el("div", {class: "just"}, c.categoria || "categoria não escolhida", " · anúncio ", c.tipo_anuncio || "Premium"));
+    el("div", {class: "just"}, c.categoria || "categoria não escolhida", " · anúncio ", c.tipo_anuncio || "Clássico"));
 }
 
 // Resumo depois de publicar: link de cada cor, descrição e Flex, e "Tentar de novo" na cor que falhou.
@@ -189,10 +201,31 @@ function quadroFaltou(c) {
 
 function cartao(c) {
   if (c.erro) return el("div", {class: "cartao"}, el("b", {}, c.arquivo), el("p", {class: "falha"}, c.erro + " Chame o Claude."));
+  if (c.parado) {
+    const cx = el("div", {class: "cartao"});
+    const bt = el("button", {}, "Tirar do lote");
+    bt.addEventListener("click", async () => {
+      bt.disabled = true;
+      try { await api("/api/tirar", {pai: c.pai_sku}); feito(`✖ ${c.pai_sku} tirado do lote`); cx.remove(); vazio(); }
+      catch (e) { cx.append(el("p", {class: "falha"}, "Não gravou: " + e.message)); bt.disabled = false; }
+    });
+    cx.append(el("h2", {}, c.pai_sku), el("p", {class: "falha"}, "Parou na esteira: " + c.parado),
+      el("p", {class: "just"}, "Este produto não pode ser publicado assim. Corrija o motivo e coloque a planilha de novo, ou tire do lote para o resto seguir."),
+      el("div", {class: "botoes"}, bt));
+    return cx;
+  }
   if (c.situacao === "em_parte") {
-    return el("div", {class: "cartao publicado"}, topo(c),
-      el("p", {class: "just"}, "Este anúncio já foi aprovado e publicado em parte. Tente de novo a cor que falhou."),
-      resumoPublicacao(c, c.publicacao));
+    const cx = el("div", {class: "cartao"});
+    const bt = el("button", {}, "Tirar do lote");
+    bt.addEventListener("click", async () => {
+      bt.disabled = true;
+      try { await api("/api/tirar", {pai: c.pai_sku}); feito(`✖ ${c.nome_base}: o que faltava foi tirado do lote (as cores no ar continuam no ar)`); cx.remove(); vazio(); }
+      catch (e) { cx.append(el("p", {class: "falha"}, "Não gravou: " + e.message)); bt.disabled = false; }
+    });
+    cx.append(topo(c),
+      el("p", {class: "just"}, "Este anúncio já foi aprovado e publicado em parte. Tente de novo a cor que falta, ou tire do lote."),
+      resumoPublicacao(c, c.publicacao_por_cor || c.publicacao), el("div", {class: "botoes"}, bt));
+    return cx;
   }
 
   const nomeRadio = "t_" + c.pai_sku;
@@ -212,6 +245,7 @@ function cartao(c) {
   const modelo = el("input", {type: "text", value: c.modelo});
   const preco = el("input", {type: "text", class: "preco", inputmode: "decimal", placeholder: "ex.: 129,90",
     value: c.preco != null ? String(c.preco).replace(".", ",") : ""});
+  const vaiPor = el("div", {class: "just"});
   const caixas = {};
   const crescer = t => { t.style.height = "auto"; t.style.height = (t.scrollHeight + 4) + "px"; };
   for (const [k, v] of Object.entries(c.descricao)) { const t = el("textarea", {}); t.value = v; t.addEventListener("input", () => crescer(t)); caixas[k] = t; }
@@ -231,10 +265,13 @@ function cartao(c) {
   const edicao = () => ({titulo: titulo(), marca: marca.value, modelo: modelo.value, preco: preco.value,
     decisoes: quadro.ler(), descricao: Object.fromEntries(Object.entries(caixas).map(([k, t]) => [k, t.value]))});
 
-  let espera, ultimo = [], seq = 0;
+  let espera, ultimo = [], seq = 0, publicando = false;
   function botao() {
+    const v = lerPreco(preco.value);
+    vaiPor.textContent = preco.value.trim() ? (v ? `Vai publicar por ${reais(v)}` : "Esse preço não foi entendido") : "";
+    if (publicando) { btAprovar.disabled = true; return; }
     const bloq = ultimo.some(i => i.nivel === "bloqueio"), errado = ultimo.some(i => i.nivel === "erro");
-    const semPreco = !preco.value.trim();
+    const semPreco = !lerPreco(preco.value);
     btAprovar.disabled = bloq || semPreco;
     btAprovar.textContent = bloq ? "Aprovar e publicar (corrija o bloqueio)" : semPreco ? "Aprovar e publicar (falta o preço)"
       : errado ? "Aprovar e publicar mesmo assim" : "Aprovar e publicar";
@@ -269,6 +306,7 @@ function cartao(c) {
 
   const caixa = el("div", {class: "cartao"});
   btAprovar.addEventListener("click", async () => {
+    publicando = true;
     btAprovar.disabled = true; btTirar.disabled = true; btDevolver.disabled = true;
     btAprovar.textContent = "Publicando… (não feche a página)";
     try {
@@ -276,6 +314,7 @@ function cartao(c) {
       const vistos = ultimo.map(i => i.codigo);
       const r = await api("/api/aprovar", {pai: c.pai_sku, edicao: edicao(), vistos});
       if (!r.ok) {
+        publicando = false;
         if (r.conferencia && r.conferencia.length) mostrar(r.conferencia); else botao();
         btTirar.disabled = false; btDevolver.disabled = false;
         msg.replaceChildren(el("p", {class: "falha"}, r.motivo)); return;
@@ -288,7 +327,7 @@ function cartao(c) {
       vazio();
     } catch (e) {
       msg.replaceChildren(el("p", {class: "falha"}, "Não terminou: " + e.message + ". Recarregue a página: o que já foi publicado não é publicado de novo."));
-      botao(); btTirar.disabled = false; btDevolver.disabled = false;
+      publicando = false; botao(); btTirar.disabled = false; btDevolver.disabled = false;
     }
   });
   btDevolver.addEventListener("click", async () => {
@@ -314,7 +353,7 @@ function cartao(c) {
   caixa.append(
     topo(c),
     el("div", {class: "secao"}, el("b", {}, "Cores"), tabelaCores(c, titulo, conferirAgora)),
-    el("div", {class: "secao"}, el("b", {}, "Preço"), preco, el("div", {class: "just"}, "Vale para todas as cores. Sem preço o anúncio não sai.")),
+    el("div", {class: "secao"}, el("b", {}, "Preço"), preco, vaiPor, el("div", {class: "just"}, "Vale para todas as cores. Sem preço o anúncio não sai.")),
     el("div", {class: "secao"}, el("b", {}, "Título (vira o nome do anúncio; o ML acrescenta a cor)"), opcoes,
       el("label", {class: "opcao"}, rProprio, el("span", {style: "flex:1"}, proprio, contaProprio))),
     el("div", {class: "secao linha2"},

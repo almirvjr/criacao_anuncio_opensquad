@@ -418,7 +418,7 @@ def test_cartao_tem_tudo(saida):
     c = ap.listar_pendentes(saida)[0]
     assert [x["cor"] for x in c["cores"]] == ["Preto", "Branco"]
     assert c["cores"][0]["titulo_ml"].endswith(" Preto")
-    assert "quadro" in c and "categoria" in c and c["tipo_anuncio"] == "Premium"
+    assert "quadro" in c and "categoria" in c and c["tipo_anuncio"] == "Clássico"
 
 
 def test_sku_com_sublinhado(saida):
@@ -436,3 +436,100 @@ def test_pagina_so_poe_link_http():
     html = (Path(ap.__file__).parent / "pagina.html").read_text(encoding="utf-8")
     assert "function linkSeguro" in html
     assert "href: f.link" not in html and "href: i.link" not in html
+
+
+# ---------------- revisao final ----------------
+def test_preco_com_ponto_de_milhar():
+    assert ap.ler_preco("1.299") == 1299.0
+    assert ap.ler_preco("1.299,90") == 1299.9
+    assert ap.ler_preco("1,299.90") == 1299.9
+    assert ap.ler_preco("129.9") == 129.9
+
+
+def _vistos(saida):
+    return [i["codigo"] for i in ap.conferir(saida, PAI, _edicao_pub())]
+
+
+def test_dois_cliques_ao_mesmo_tempo_publicam_uma_vez(saida):
+    import time
+    enviados = []
+    def enviar(c):
+        enviados.append(c["sku"]); time.sleep(0.3)
+        return {"http": 200, "resposta": {"status": "success", "mlb_id": "MLB" + c["sku"][-2:], "permalink": "https://l"}}
+    (saida / "capas").mkdir()
+    (saida / "capas" / f"capas-{PAI}.yaml").write_text(yaml.safe_dump({"pai_sku": PAI, "picture_ids_por_variacao": [
+        {"sku_variacao": "VIE-1-BR", "cor": "Branco", "picture_ids": ["https://x/br.jpg"]},
+        {"sku_variacao": "VIE-1-PT", "cor": "Preto", "picture_ids": ["https://x/pt.jpg"]}]}), encoding="utf-8")
+    e = json.loads((saida / "anuncios-entrada.json").read_text(encoding="utf-8"))
+    e["anuncios"][0]["modo"] = "variacoes"
+    (saida / "anuncios-entrada.json").write_text(json.dumps(e), encoding="utf-8")
+    import publicar as pubmod
+    pubf =lambda s, p: pubmod.publicar_anuncio(s, p, enviar=enviar, completar=lambda *a: {"descricao": True, "flex": True}, token=lambda: "tk")
+    v = _vistos(saida)
+    ts = [threading.Thread(target=ap.aprovar_e_publicar, args=(saida, PAI, _edicao_pub(), v), kwargs={"publicar": pubf}) for _ in range(2)]
+    ts[0].start(); time.sleep(0.1); ts[1].start()  # 2o clique chega com o 1o ainda esperando o ML
+    [t.join() for t in ts]
+    assert sorted(enviados) == ["VIE-1-BR", "VIE-1-PT"]
+
+
+def test_edicao_depois_de_aprovado_vale(saida):
+    ap.aprovar_e_publicar(saida, PAI, _edicao_pub(), vistos=_vistos(saida), publicar=lambda s, p: [])
+    novo = "Lixeira Inox 5 Litros Pedal Cozinha Banheiro Escritorio"
+    r = ap.aprovar_e_publicar(saida, PAI, _edicao_pub(titulo=novo), vistos=_vistos(saida), publicar=lambda s, p: [])
+    assert r["ok"]
+    doc = yaml.safe_load((saida / "copywriting" / f"anuncio-{PAI}.yaml").read_text(encoding="utf-8"))
+    assert doc["titulo_final"] == novo
+
+
+def test_edicao_depois_de_aprovado_ainda_passa_pela_trava(saida):
+    ap.aprovar_e_publicar(saida, PAI, _edicao_pub(), vistos=_vistos(saida), publicar=lambda s, p: [])
+    r = ap.aprovar_e_publicar(saida, PAI, _edicao_pub(titulo="x" * 70), vistos=[], publicar=lambda s, p: 1 / 0)
+    assert not r["ok"]
+
+
+def test_em_parte_lista_todas_as_cores(saida):
+    d = _doc(status_copy="aprovado", titulo_final=TIT_OK, preco=92.71, _total_cores=2,
+             publicacao={"VIE-1-PT": {"sku": "VIE-1-PT", "cor": "Preto", "ok": True, "mlb": "MLB1"}})
+    _gravar(saida, d)
+    c = ap.listar_pendentes(saida)[0]
+    assert c["situacao"] == "em_parte"
+    por = {i["sku"]: i for i in c["publicacao_por_cor"]}
+    assert por["VIE-1-PT"]["mlb"] == "MLB1" and por["VIE-1-BR"]["ok"] is False
+
+
+def test_arquivo_quebrado_abre_a_tela(saida):
+    _gravar(saida, _doc(status_copy="tirado"))
+    (saida / "copywriting" / "anuncio-VIE-2-PAI.yaml").write_text("a: [", encoding="utf-8")
+    assert ap.tem_o_que_mostrar(saida)
+
+
+def _andamento(saida, parados):
+    (saida / "andamento.json").write_text(json.dumps({"parados": parados}), encoding="utf-8")
+
+
+def test_parado_sem_texto_aparece_e_segura_o_lote(saida):
+    _gravar(saida, _doc(status_copy="tirado"))
+    _andamento(saida, {"VIE-9-PAI": "faltou capa da cor Preto"})
+    cart = ap.listar_pendentes(saida)
+    assert [c for c in cart if c.get("parado")] == [{"pai_sku": "VIE-9-PAI", "parado": "faltou capa da cor Preto"}]
+    assert ap.situacao_lote(saida) == 2 and ap.tem_o_que_mostrar(saida)
+    assert ap.tirar(saida, "VIE-9-PAI")["ok"]
+    assert ap.situacao_lote(saida) == 0
+
+
+def test_parado_com_texto_nao_vira_cartao_de_publicar(saida):
+    _andamento(saida, {PAI: "texto inventou balde"})
+    [c] = ap.listar_pendentes(saida)
+    assert c == {"pai_sku": PAI, "parado": "texto inventou balde"}
+    r = ap.aprovar_e_publicar(saida, PAI, _edicao_pub(), vistos=_vistos(saida), publicar=lambda s, p: 1 / 0)
+    assert not r["ok"] and "parou" in r["motivo"]
+
+
+def test_tipo_gold_special_e_classico():
+    # no ML Brasil: gold_special = Classico, gold_pro = Premium (Almir 09/10: todo anuncio e classico)
+    assert ap.TIPOS["gold_special"] == "Clássico" and ap.TIPOS["gold_pro"] == "Premium"
+
+
+def test_pagina_trava_botao_publicando_e_tem_saida_no_parado():
+    html = (Path(ap.__file__).parent / "pagina.html").read_text(encoding="utf-8")
+    assert "if (publicando)" in html and "c.parado" in html and "publicacao_por_cor" in html and "Vai publicar por" in html

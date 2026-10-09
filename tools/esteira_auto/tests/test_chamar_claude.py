@@ -36,17 +36,33 @@ def test_chamar_saida_nao_json(tmp_path):
     assert not ok and "segredo123" not in txt
 
 
-def test_python_so_pelo_nome_exato_dos_programas():
-    # "python <pasta>/*" deixaria rodar um .py novo gravado com outra caixa de letra (Windows)
-    bash = [p for p in cc.PERMITIDAS if p.startswith("Bash(python")]
+def test_python_so_pelo_nome_exato_dos_validadores():
+    # tiny_to_esteira e capas.py gravam onde o argumento mandar: quem roda e o maestro, nao o Claude
+    bash = [p for p in cc.PERMITIDAS if p.startswith("Bash(")]
     assert sorted(bash) == sorted(f"Bash(python {s} *)" for s in cc.PROGRAMAS)
-    assert all(s.endswith(".py") and "*" not in s for s in cc.PROGRAMAS)
+    assert all(s.startswith("squads/ml-anuncios/pipeline/validators/validar_") for s in cc.PROGRAMAS)
 
 
 def test_grava_so_na_pasta_dos_lotes():
     assert "Write" not in cc.PERMITIDAS and "Edit" not in cc.PERMITIDAS
     escrita = [p for p in cc.PERMITIDAS if p.startswith(("Write(", "Edit("))]
     assert escrita == ["Edit(squads/ml-anuncios/output/lotes/**)", "Write(squads/ml-anuncios/output/lotes/**)"]
+
+
+def test_leitura_sem_liberacao_geral_e_sem_arquivo_de_chave():
+    # sem "Read" geral o dontAsk so deixa ler dentro do projeto (sondado 09/10)
+    assert not {"Read", "Glob", "Grep"} & set(cc.PERMITIDAS)
+    for r in ("Read(**/.mcp.json)", "Read(**/.env*)", "Read(_opensquad/_browser_profile/**)",
+              "Read(.playwright-mcp/**)", "Read(.git/**)", "Read(.claude/**)"):
+        assert r in cc.NEGADAS
+
+
+def test_internet_so_do_ml_e_sem_mcp_do_ml():
+    web = [p for p in cc.PERMITIDAS if p.startswith("WebFetch")]
+    assert web and all("mercadoli" in p for p in web)
+    assert "mcp__mercadolibre" not in cc.PERMITIDAS and "mcp__mercadolibre" in cc.NEGADAS
+    for f in ("browser_type", "browser_fill_form", "browser_file_upload"):
+        assert f"mcp__playwright__{f}" in cc.NEGADAS
 
 
 def test_env_bloqueado_em_qualquer_caixa():

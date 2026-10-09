@@ -1,6 +1,6 @@
 """Chama o Claude sem conversa (claude -p) para uma etapa da esteira.
 
-Permissoes fechadas: grava so na pasta dos lotes, roda SO os validadores e o tiny_to_esteira,
+Permissoes fechadas: le so dentro do projeto (sem os arquivos de chave), grava so na pasta dos lotes, roda SO os validadores,
 buscar no Cloudinary e usar o navegador escondido da Helena. NAO pode publicar: o disparo
 e o 2o envio sao negados, assim como ler o .env, python -c, curl e o MCP do n8n.
 Nunca devolve texto cru de erro (pode carregar segredo)."""
@@ -8,30 +8,35 @@ import json
 import subprocess
 from pathlib import Path
 
-# Liberar o minimo, em vez de listar o proibido: no Windows maiuscula/minuscula dao no mesmo
-# arquivo, entao uma lista de proibidos sempre deixa furo (ex.: gravar VALIDADOR.PY por cima
-# de um programa liberado). Programa: so estes, pelo nome exato. Gravar: so na pasta dos lotes.
+# Liberar o minimo, em vez de listar o proibido (revisoes de 09/10/2026):
+# - sem "Read/Glob/Grep" gerais: no modo dontAsk o Claude so le DENTRO do projeto; fora (outros
+#   projetos, ~/.claude.json) e negado. Dentro, os arquivos com chave sao negados abaixo (a regra
+#   ignora maiuscula/minuscula, sondado).
+# - gravar: so na pasta dos lotes. Programa: so os validadores, pelo nome exato (eles so leem);
+#   tiny_to_esteira e capas.py gravam onde o argumento mandar, entao quem roda e o maestro.
+# - internet: so paginas do ML. Sem o MCP do ML (pode ter ferramenta que mexe em anuncio).
+#   Navegador sem digitar/preencher/rodar codigo (o perfil pode estar logado).
 PROGRAMAS = [
     "squads/ml-anuncios/pipeline/validators/validar_brief.py",
     "squads/ml-anuncios/pipeline/validators/validar_claims.py",
     "squads/ml-anuncios/pipeline/validators/validar_ficha_seo.py",
-    "squads/ml-anuncios/pipeline/validators/capas.py",
-    "tools/tiny_to_esteira.py",
 ]
 PERMITIDAS = [
-    "Read", "Glob", "Grep", "Agent", "Task", "WebSearch", "WebFetch",
+    "Agent", "Task", "WebSearch",
+    "WebFetch(domain:mercadolivre.com.br)", "WebFetch(domain:www.mercadolivre.com.br)",
+    "WebFetch(domain:produto.mercadolivre.com.br)", "WebFetch(domain:api.mercadolibre.com)",
     "Edit(squads/ml-anuncios/output/lotes/**)", "Write(squads/ml-anuncios/output/lotes/**)",
     *[f"Bash(python {s} *)" for s in PROGRAMAS],
-    "Bash(ls *)", "Bash(mkdir *)",
-    "mcp__cloudinary__search-assets", "mcp__playwright", "mcp__mercadolibre",
+    "mcp__cloudinary__search-assets", "mcp__playwright",
 ]
 NEGADAS = [
     "Bash(*disparar_publicacao*)", "Bash(*completar_anuncio*)", "Bash(*.env*)", "Bash(*..*)",
-    "Bash(python -c*)", "Bash(curl*)", "mcp__n8n",
-    # o .env tem o endereco de publicar e a chave do ML: bloqueado em toda combinacao de caixa
+    "Bash(python -c*)", "Bash(curl*)", "mcp__n8n", "mcp__mercadolibre",
+    "Read(**/.mcp.json)", "Read(**/.env*)", "Read(_opensquad/_browser_profile/**)",
+    "Read(.playwright-mcp/**)", "Read(.git/**)", "Read(.claude/**)",
     *[f"Read(**/.{a}{b}{c})" for a in "eE" for b in "nN" for c in "vV"],
-    # navegador sem rodar codigo (daria para mandar dados para fora pela pagina)
     "mcp__playwright__browser_evaluate", "mcp__playwright__browser_run_code",
+    "mcp__playwright__browser_type", "mcp__playwright__browser_fill_form", "mcp__playwright__browser_file_upload",
 ]
 
 

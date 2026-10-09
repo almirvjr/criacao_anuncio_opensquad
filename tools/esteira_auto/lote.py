@@ -50,6 +50,15 @@ def parar_pai(lote, pai, motivo, agora):
     anotar(lote, f"PAROU {pai}: {motivo}", agora)
 
 
+def contar_devolucao(lote, pai):
+    """Quantas vezes o Almir ja devolveu este produto neste lote (conta e devolve o total)."""
+    d = ler(lote)
+    n = d.setdefault("devolucoes", {}).get(pai, 0) + 1
+    d["devolucoes"][pai] = n
+    _salvar(lote, d)
+    return n
+
+
 def concluir(lote, agora):
     d = ler(lote)
     d["concluido"] = True
