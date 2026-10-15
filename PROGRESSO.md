@@ -9,7 +9,8 @@
 **PRÓXIMO PASSO:** (1) ensaio + 1ª publicação da boleira; (1b) levar a publicação (`ML Publicar`) do n8n para o Supabase (regra do hub de 09/10; virada com volta-atrás); (2) planilha de preços definitivos por canal (o preço do Tiny é simbólico, R$ 10); (3) minors adiados da tela (ver spec/plano 2026-10-08); (4) o `ML Publicar` ainda manda a descrição junto (ignorada) — poderia gravar ele mesmo no 2º envio.
 
 ## 4. Pendências
-- Código da squad commitado em 07/10 (branch `esteira-sem-fotos`, sem push). ⚠️ Repo PÚBLICO — conferir segredo antes de qualquer push.
+- Branch `esteira-sem-fotos` **no GitHub desde 15/10** (varrida sem segredo; repo PÚBLICO — conferir de novo a cada push). Fica fora do `main` enquanto o Almir testa.
+- **Revisão de segurança 15/10 — falta o item 3:** `tools/esteira_auto/maestro.py` apontado como "dá pra pular a trava de aprovação" (decide pelo código de saída da tela). Confirmar se é real antes de mexer. Itens 1 (tela) e 2 (capas) corrigidos.
 - **`ML Publicar`** (`0rzNJ7RLqLzMbKnf`) INATIVO de propósito até o 1º teste. O nó `Montar Payload` aceita `pictures_compartilhadas` vazio (não precisa mexer). O webhook no `.env` **já está preenchido**.
 
 ## 5. Ficha técnica dos anúncios NO AR — `tools/auditoria_ficha/`

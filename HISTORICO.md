@@ -2,6 +2,11 @@
 
 <!-- Tarefas concluidas (arquivo morto). Formato: data - resumo. -->
 
+## 2026-10-15 - Branch esteira-sem-fotos no GitHub + 2 consertos de seguranca
+- Branch enviada (50 commits so locais), sem segredo na varredura; aviso falso de "conflito" do hook de inicio de sessao corrigido (era branch sem par no GitHub).
+- Tela de aprovacao: so aceita a propria pagina (Host fixo + senha de uso unico). Capas: SKU com `/` ou `..` nao grava fora da pasta. 3 testes novos; 277 passando.
+- Faxina: CLAUDE.md sem "workflow novo no n8n"; `MEMORIA-OPERACIONAL.md` (12 memorias de anuncio) fora do git.
+
 ## 2026-10-08 - 1o teste da esteira sem fotos: Viel 5L e 8L publicadas (6 anuncios)
 - Regra da Marca revista (so fornecedor ou so Terra Casa Decor; cauda longa fica no Modelo); trava `FORNECEDOR_NA_DESCRICAO`.
 - Tela de aprovacao local (`tools/aprovacao/`, spec+plano 2026-10-08, revisao final com 6 correcoes), botao `2 - Aprovar anuncios` na pasta `ANUNCIOS` do Drive. Almir aprovou 5L e 8L nela; marca trocada para Terra Casa Decor.
