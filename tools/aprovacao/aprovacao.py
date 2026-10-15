@@ -19,6 +19,8 @@ import threading
 import webbrowser
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import hmac
+import secrets
 from pathlib import Path
 
 import yaml
@@ -447,14 +449,33 @@ def criar_servidor(saida, esperar=False, publicar=None, publicar_cor=None):
             self.end_headers()
             self.wfile.write(dados)
 
+        def _barrar(self):
+            """Recusa pedido que nao veio desta tela. O Host fixo barra o truque de outro site
+            apontar o proprio endereco pra 127.0.0.1 (DNS rebinding); a senha de uso unico,
+            embutida na pagina, barra qualquer outro programa que ache a porta."""
+            porta = srv.server_address[1]
+            if (self.headers.get("Host") or "") not in (f"127.0.0.1:{porta}", f"localhost:{porta}"):
+                self._responder(403, {"erro": "endereco nao permitido"})
+                return True
+            if self.path.startswith("/api/") and not hmac.compare_digest(
+                    self.headers.get("X-Tela-Token") or "", srv.selo):
+                self._responder(403, {"erro": "pedido sem a senha da tela"})
+                return True
+            return False
+
         def do_GET(self):
+            if self._barrar():
+                return
             if self.path == "/":
-                return self._responder(200, PAGINA.read_bytes(), "text/html; charset=utf-8")
+                html = PAGINA.read_bytes().replace(b"__TELA_TOKEN__", srv.selo.encode())
+                return self._responder(200, html, "text/html; charset=utf-8")
             if self.path == "/api/pendentes":
                 return self._responder(200, {"cartoes": listar_pendentes(saida)})
             self._responder(404, {"erro": "nao existe"})
 
         def do_POST(self):
+            if self._barrar():
+                return
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self._responder(415, {"erro": "so JSON"})
             try:
@@ -491,6 +512,7 @@ def criar_servidor(saida, esperar=False, publicar=None, publicar_cor=None):
             self._responder(200, r)
 
     srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
+    srv.selo = secrets.token_urlsafe(32)
     srv.estado = {"devolvidos": 0, "acoes": 0}
     srv.encerrado = threading.Event()
     return srv

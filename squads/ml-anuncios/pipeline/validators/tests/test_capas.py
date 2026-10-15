@@ -93,5 +93,25 @@ class TestFotosExtras(unittest.TestCase):
         self.assertTrue(ids[0].endswith("/capa.jpg"))
 
 
+class TestNomeDeArquivo(unittest.TestCase):
+    def test_sku_com_barra_nao_grava_fora_da_pasta(self):
+        import json
+        import tempfile
+        from unittest import mock
+        import capas
+        with tempfile.TemporaryDirectory() as d:
+            busca, entrada, pasta = (os.path.join(d, n) for n in ("b.json", "e.json", "saida"))
+            for f, conteudo in ((busca, {"resources": []}), (entrada, {"anuncios": []})):
+                with open(f, "w", encoding="utf-8") as fh:
+                    json.dump(conteudo, fh)
+            falso = {"../fora": {"picture_ids_por_variacao": []}, "MDA-0001": {"picture_ids_por_variacao": []}}
+            with mock.patch.object(capas, "montar", return_value=(falso, [])),                     mock.patch.object(sys, "argv", ["capas.py", busca, entrada, pasta]):
+                with self.assertRaises(SystemExit) as fim:
+                    capas.main()
+            self.assertEqual(fim.exception.code, 1)
+            self.assertFalse(os.path.exists(os.path.join(d, "capas-..", "fora.yaml")))
+            self.assertEqual(os.listdir(pasta), ["capas-MDA-0001.yaml"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -76,8 +76,11 @@ function el(tag, attrs = {}, ...filhos) {
   for (const f of filhos.flat()) if (f != null) e.append(f instanceof Node ? f : document.createTextNode(String(f)));
   return e;
 }
+// senha de uso unico que o servidor embute ao entregar esta pagina; sem ela a API recusa
+const TELA_TOKEN = "__TELA_TOKEN__";
 async function api(caminho, corpo) {
-  const r = await fetch(caminho, corpo ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(corpo)} : {});
+  const cab = {"X-Tela-Token": TELA_TOKEN};
+  const r = await fetch(caminho, corpo ? {method: "POST", headers: {...cab, "Content-Type": "application/json"}, body: JSON.stringify(corpo)} : {headers: cab});
   const d = await r.json();
   if (!r.ok) throw new Error(d.erro || ("Erro " + r.status));
   return d;

@@ -18,6 +18,7 @@ import sys
 
 NUVEM = "wa5lvi98"
 TAG_CAPA = "capa-anuncio"
+SKU_SEGURO = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 TRANSF = "c_pad,w_1200,h_1200,b_white,q_auto"
 PREFIXO = f"https://res.cloudinary.com/{NUVEM}/image/upload/"
 MAX_FOTOS = 10
@@ -81,6 +82,10 @@ def main():
     capas, erros = montar(resources, anuncios)
     os.makedirs(pasta, exist_ok=True)
     for pai, doc in capas.items():
+        if not SKU_SEGURO.fullmatch(pai) or ".." in pai:
+            # o SKU vira nome de arquivo: barra ou ".." gravaria fora da pasta do lote
+            erros.append(f"{pai!r}: SKU com caractere que nao pode ir em nome de arquivo")
+            continue
         with open(os.path.join(pasta, f"capas-{pai}.yaml"), "w", encoding="utf-8") as fh:
             yaml.safe_dump(doc, fh, allow_unicode=True, sort_keys=False)
         print(f"{pai}: " + ", ".join(f"{p['cor']}={len(p['picture_ids'])}"

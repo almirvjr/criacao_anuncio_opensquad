@@ -236,23 +236,55 @@ def _nao_publica(*a, **k):
 def _subir(saida, esperar=False, publicar=_publicado):
     srv = ap.criar_servidor(saida, esperar=esperar, publicar=publicar, publicar_cor=_nao_publica)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
+    _TOKEN["v"] = srv.selo
     return srv, f"http://127.0.0.1:{srv.server_address[1]}"
 
 
-def _post(url, corpo, tipo="application/json"):
+_TOKEN = {}
+
+
+def _post(url, corpo, tipo="application/json", token=None):
     req = urllib.request.Request(url, data=json.dumps(corpo).encode(), method="POST",
-                                 headers={"Content-Type": tipo})
+                                 headers={"Content-Type": tipo, "X-Tela-Token": token or _TOKEN.get("v", "")})
     with urllib.request.urlopen(req) as r:
         return json.loads(r.read())
 
 
+def _get(url, headers=None):
+    req = urllib.request.Request(url, headers={"X-Tela-Token": _TOKEN.get("v", ""), **(headers or {})})
+    return urllib.request.urlopen(req).read()
+
+
 class TestServidor:
+    def test_recusa_outro_endereco_e_sem_senha(self, saida):
+        srv, base = _subir(saida)
+        try:
+            for url, cab in ((base + "/", {"Host": "site-malicioso.com"}),
+                             (base + "/api/pendentes", {"Host": "site-malicioso.com"}),
+                             (base + "/api/pendentes", {"X-Tela-Token": "errada"})):
+                with pytest.raises(urllib.error.HTTPError) as e:
+                    _get(url, cab)
+                assert e.value.code == 403
+            with pytest.raises(urllib.error.HTTPError) as e:
+                _post(base + "/api/aprovar", {"pai": PAI}, token="errada")
+            assert e.value.code == 403
+        finally:
+            srv.shutdown()
+
+    def test_pagina_recebe_a_senha(self, saida):
+        srv, base = _subir(saida)
+        try:
+            html = _get(base + "/").decode("utf-8")
+            assert srv.selo in html and "__TELA_TOKEN__" not in html
+        finally:
+            srv.shutdown()
+
     def test_pagina_e_pendentes(self, saida):
         srv, base = _subir(saida)
         try:
-            html = urllib.request.urlopen(base + "/").read().decode("utf-8")
+            html = _get(base + "/").decode("utf-8")
             assert "<title>Aprovar anúncios</title>" in html
-            dados = json.loads(urllib.request.urlopen(base + "/api/pendentes").read())
+            dados = json.loads(_get(base + "/api/pendentes"))
             assert dados["cartoes"][0]["pai_sku"] == PAI
         finally:
             srv.shutdown()
