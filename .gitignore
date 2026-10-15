@@ -53,3 +53,6 @@ _opensquad/logs/
 # Perfil do navegador do Opensquad — CONTEM COOKIES DE SESSAO (nunca versionar)
 _opensquad/_browser_profile/
 .playwright-mcp/
+
+# memoria do Claude (anotacoes do Almir, nao vai pro repo)
+MEMORIA-OPERACIONAL.md

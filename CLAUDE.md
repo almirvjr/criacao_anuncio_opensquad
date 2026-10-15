@@ -105,7 +105,7 @@ com backup antes e releitura de conferencia depois. `auditar_ficha_tecnica.ps1` 
 |---------|----------|-----------|
 | **Pequena** | Corrigir campo, atualizar expressao, toggle de config | Execucao direta |
 | **Media** | Adicionar 1-3 nos, modificar Code node, corrigir bug | Declarar plano em 3 linhas antes de executar |
-| **Grande** | Novo workflow, reestruturar cadeia de nos, nova integracao | Usar plan mode antes de executar |
+| **Grande** | Reestruturar cadeia de nos, nova integracao | Plan mode. **Fluxo novo nao nasce no n8n**: vai pro Supabase (regra dura do hub, 09/10/2026) |
 
 ### Regras
 
