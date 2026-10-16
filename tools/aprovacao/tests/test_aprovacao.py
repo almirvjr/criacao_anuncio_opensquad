@@ -614,3 +614,27 @@ def test_pagina_tem_o_topo_novo():
     html = (Path(ap.__file__).parent / "pagina.html").read_text(encoding="utf-8")
     for marca in ("O que falta", "ver revisão completa", "Pronto pra publicar", "Tem bloqueio", "faltas_revisao"):
         assert marca in html
+
+
+# ---------- "não se aplica" (Almir 16/10) ----------
+def test_conferencia_acusa_valor_inventado(saida):
+    d = _doc(); d["attributes"]["PATTERN_NAME"] = "N/A"; _gravar(saida, d)
+    assert "VALOR_INVENTADO" in _codigos(ap.conferir(saida, PAI, _edicao()), "erro")
+
+
+def test_conferencia_avisa_campo_da_categoria_sem_destino(saida):
+    (saida / "categorizacao" / f"campos-{PAI}.json").write_text(json.dumps([{"id": "BRAND"}, {"id": "WITH_PEDESTAL"}]), encoding="utf-8")
+    itens = ap.conferir(saida, PAI, _edicao())
+    assert any(i["codigo"] == "CAMPO_SEM_DESTINO" and "WITH_PEDESTAL" in i["texto"] for i in itens)
+
+
+def test_decisao_nao_se_aplica_vai_pra_ficha(saida):
+    dec = [{"chave": "material", "valor": "não se aplica", "campo_ficha": "PATTERN_NAME"}]
+    ap.aprovar_e_publicar(saida, PAI, _edicao_pub(decisoes=dec), vistos=_vistos(saida), publicar=lambda s, p: [])
+    doc = yaml.safe_load((saida / "copywriting" / f"anuncio-{PAI}.yaml").read_text(encoding="utf-8"))
+    assert doc["attributes"]["PATTERN_NAME"] == "não se aplica"
+
+
+def test_pagina_oferece_nao_se_aplica():
+    html = (Path(ap.__file__).parent / "pagina.html").read_text(encoding="utf-8")
+    assert '"não se aplica"' in html and "deixar vazio" in html

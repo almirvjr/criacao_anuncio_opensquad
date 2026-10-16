@@ -20,6 +20,7 @@ PROGRAMAS = [
     "squads/ml-anuncios/pipeline/validators/validar_brief.py",
     "squads/ml-anuncios/pipeline/validators/validar_claims.py",
     "squads/ml-anuncios/pipeline/validators/validar_ficha_seo.py",
+    "squads/ml-anuncios/pipeline/validators/validar_ficha_nsa.py",
 ]
 PERMITIDAS = [
     "Agent", "Task", "WebSearch",

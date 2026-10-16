@@ -30,6 +30,7 @@ SAIDA_PADRAO = RAIZ / "squads" / "ml-anuncios" / "output"
 sys.path.insert(0, str(RAIZ / "squads" / "ml-anuncios" / "pipeline" / "validators"))
 from validar_ficha_seo import validar_ficha, descricao_do_copy  # noqa: E402
 from validar_claims import validar_claims  # noqa: E402
+from validar_ficha_nsa import campos_sem_destino, valores_inventados  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import publicar as pub  # noqa: E402
 import quadro as quadro_mod  # noqa: E402
@@ -140,6 +141,15 @@ def _cores(saida, pai, a, titulo):
              "titulo_ml": f"{titulo} {v['cor']}".strip() if v.get("cor") else titulo} for v in vs]
 
 
+def _campos(saida, pai):
+    """Campos da ficha que o comprador ve (gravados pelo maestro). Sem a lista: vazio."""
+    p = Path(saida) / "categorizacao" / f"campos-{pai}.json"
+    try:
+        return json.loads(p.read_text(encoding="utf-8")) if p.is_file() else []
+    except Exception:  # noqa: BLE001
+        return []
+
+
 def _brief(saida, pai):
     p = Path(saida) / "inteligencia" / f"brief-{pai}.yaml"
     return (_ler_yaml(p) or {}) if p.is_file() else {}
@@ -176,7 +186,8 @@ def _cartao(saida, doc, entrada):
         "categoria_curta": (cat.get("breadcrumb") or [None])[-1] or cat.get("category_name"),
         "cores": _cores(saida, pai, a, _titulo_inicial(doc)),
         "preco": doc.get("preco"),
-        "quadro": quadro_mod.montar(_brief(saida, pai), attrs),
+        "quadro": quadro_mod.montar(_brief(saida, pai), attrs, campos=_campos(saida, pai),
+                                    pendentes=doc.get("campos_pendentes")),
         "publicacao": list((doc.get("publicacao") or {}).values()),
         "publicacao_por_cor": [(doc.get("publicacao") or {}).get(v["sku"])
                                or {"sku": v["sku"], "cor": v.get("cor"), "ok": False, "mlb": None,
@@ -317,6 +328,13 @@ def conferir(saida, pai, edicao):
     attrs = novo["attributes"]
     for cod, msg in validar_ficha(pai, titulo, attrs["BRAND"], attrs["MODEL"], descricao_do_copy(novo)):
         itens.append({"codigo": cod, "nivel": "aviso" if cod.startswith("WARN") else "erro", "texto": msg})
+    for campo, valor in valores_inventados(attrs):
+        itens.append({"codigo": "VALOR_INVENTADO", "nivel": "erro",
+                      "texto": f"O campo {campo} está com \"{valor}\": use \"não se aplica\" ou o valor real."})
+    sem = campos_sem_destino(attrs, _campos(saida, pai), novo.get("campos_pendentes"))
+    if sem:
+        itens.append({"codigo": "CAMPO_SEM_DESTINO", "nivel": "aviso",
+                      "texto": f"Campos da ficha sem valor e sem \"não se aplica\": {', '.join(sem)}."})
     brief_p = Path(saida) / "inteligencia" / f"brief-{pai}.yaml"
     if not brief_p.is_file():
         itens.append({"codigo": "BRIEF_AUSENTE", "nivel": "erro",

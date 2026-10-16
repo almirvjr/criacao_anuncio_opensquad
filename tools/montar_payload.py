@@ -25,15 +25,28 @@ def _yaml(p):
         return yaml.safe_load(fh)
 
 
+NAO_SE_APLICA = "não se aplica"
+
+
+def e_nao_se_aplica(v):
+    """'não se aplica' em qualquer caixa, com ou sem acento."""
+    s = str(v or "").strip().lower().replace("ã", "a")
+    return s == "nao se aplica"
+
+
 def item_attributes_do_copy(attrs, modo):
-    """Ficha da Renata -> lista do ML. Em anuncio com cores, COLOR vai na variacao, nao no item."""
+    """Ficha da Renata -> lista do ML. Em anuncio com cores, COLOR vai na variacao, nao no item.
+    'não se aplica' (Almir 16/10/2026) vai com value_id -1, que e como o ML marca o campo."""
     out = []
     for k, v in (attrs or {}).items():
         if v in (None, ""):
             continue
         if modo == "variacoes" and k == "COLOR":
             continue
-        out.append({"id": k, "value_name": str(v)})
+        if e_nao_se_aplica(v):
+            out.append({"id": k, "value_id": "-1", "value_name": None})
+        else:
+            out.append({"id": k, "value_name": str(v)})
     return out
 
 
@@ -82,7 +95,7 @@ def montar(entrada, categorias, copy, capas, pai, preco=None):
         description_plain=descricao,
         picture_ids_por_variacao=capas_doc["picture_ids_por_variacao"],
         cor_value_map=cat.get("cor_value_map"),
-        item_attributes=item_attributes_do_copy(doc.get("attributes"), "variacoes"))
+        item_attributes=item_attributes_do_copy(doc.get("attributes"), anuncio.get("modo") or "variacoes"))
 
 
 def main():

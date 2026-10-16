@@ -226,12 +226,14 @@ function quadroFaltou(c) {
     const opcoes = q.fontes.map(f => el("label", {class: "opcao"}, el("input", {type: "radio", name: nome, value: f.valor}),
       el("span", {}, `${f.valor} `, el("span", {class: "just"}, `(${f.origem})`), ancora(f.link, " ver"))));
     const rProprio = el("input", {type: "radio", name: nome, value: "__proprio__"});
+    const rNsa = el("input", {type: "radio", name: nome, value: "não se aplica"});
     const rVazio = el("input", {type: "radio", name: nome, value: ""});
     rVazio.checked = true;
     proprio.addEventListener("focus", () => { rProprio.checked = true; });
     const bloco = el("div", {class: "item"},
       el("b", {}, `${q.rotulo} — ${q.status === "pendente" ? "ninguém achou" : "as fontes discordam"}`),
       opcoes, el("label", {class: "opcao"}, rProprio, el("span", {style: "flex:1"}, proprio)),
+      el("label", {class: "opcao"}, rNsa, el("span", {}, "não se aplica ", el("span", {class: "just"}, "(o campo não faz sentido pra este produto)"))),
       el("label", {class: "opcao"}, rVazio, el("span", {}, "deixar vazio")),
       el("div", {class: "just"}, q.campo_ficha ? `vai para a ficha técnica (${CAMPOS[q.campo_ficha] || q.campo_ficha})`
         : "não tem campo na ficha deste anúncio; se quiser no texto, edite a descrição"));

@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from esteira_auto import chamar_claude, lote as L, precheck, travas  # noqa: E402
+from esteira_auto import campos as campos_mod, chamar_claude, lote as L, precheck, travas  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parents[2]
 LOTES = RAIZ / "squads" / "ml-anuncios" / "output" / "lotes"
@@ -90,8 +90,10 @@ def _etapa(etapa, lote, pais, chamar, conferir, agora, avisar):
 
 
 def rodar_lote(lote, chamar=chamar_claude.chamar, conferir=travas.conferir,
-               ler_planilha=precheck.ler_planilha, abrir_tela=None, agora=datetime.now, avisar=print):
+               ler_planilha=precheck.ler_planilha, abrir_tela=None, agora=datetime.now, avisar=print,
+               buscar_campos=None):
     abrir_tela = abrir_tela or _abrir_tela
+    buscar_campos = buscar_campos or campos_mod.buscar_campos
     while True:
         etapa = L.proxima(lote)
         if etapa is None:
@@ -133,6 +135,12 @@ def rodar_lote(lote, chamar=chamar_claude.chamar, conferir=travas.conferir,
         if not _etapa(etapa, lote, pais, chamar, conferir, agora, avisar):
             return 1
         L.marcar_feita(lote, etapa, agora())
+        if etapa == "categoria":
+            # campos da ficha que o comprador ve (regra do "não se aplica"); falhar so anota
+            falhou = buscar_campos(lote)
+            if falhou:
+                L.anotar(lote, f"nao consegui ler os campos da categoria de {', '.join(falhou)}; "
+                               "a ficha sai sem a conferencia de campo esquecido", agora())
 
 
 def _abrir_tela(lote):

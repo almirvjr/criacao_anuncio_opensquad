@@ -50,8 +50,10 @@ def conferir(etapa, lote, pais, rodar=subprocess.run):
             if cod != 0:
                 ruins[p] = s or "a pesquisa foi reprovada"
         elif etapa == "texto":
+            campos = lote / "categorizacao" / f"campos-{p}.json"
             for script, args in (("validar_claims.py", (brief, "--copy", anuncio, "--sem-fotos")),
-                                 ("validar_ficha_seo.py", (anuncio,))):
+                                 ("validar_ficha_seo.py", (anuncio,)),
+                                 ("validar_ficha_nsa.py", (anuncio, campos) if campos.is_file() else (anuncio,))):
                 cod, s = _py(script, *args, rodar=rodar)
                 if cod != 0:
                     ruins[p] = s or f"{script} reprovou"

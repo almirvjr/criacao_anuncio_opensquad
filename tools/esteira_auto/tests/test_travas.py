@@ -26,13 +26,13 @@ def test_pesquisa_reprovada_traz_saida_do_validador(tmp_path):
     assert r == {"B": "BLOQUEIO: limitacoes vazias"}
 
 
-def test_texto_roda_duas_travas(tmp_path):
+def test_texto_roda_as_tres_travas(tmp_path):
     vistos = []
     def falso(cmd, **kw):
         vistos.append(os.path.basename(cmd[1]))
         return subprocess.CompletedProcess(cmd, 0, "", "")
     assert travas.conferir("texto", tmp_path, ["A"], rodar=falso) == {}
-    assert vistos == ["validar_claims.py", "validar_ficha_seo.py"]
+    assert vistos == ["validar_claims.py", "validar_ficha_seo.py", "validar_ficha_nsa.py"]
 
 
 def test_capas_lista_quem_falta(tmp_path):
@@ -40,3 +40,15 @@ def test_capas_lista_quem_falta(tmp_path):
     (tmp_path / "capas").mkdir(); (tmp_path / "capas" / "_busca.json").write_text("{}")
     r = travas.conferir("capas", tmp_path, ["A", "B"], rodar=falso)
     assert list(r) == ["B"] and "Preto" in r["B"]
+
+
+def test_ficha_nsa_recebe_a_lista_de_campos_quando_existe(tmp_path):
+    (tmp_path / "categorizacao").mkdir()
+    (tmp_path / "categorizacao" / "campos-A.json").write_text("[]", encoding="utf-8")
+    vistos = []
+    def falso(cmd, **kw):
+        vistos.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+    travas.conferir("texto", tmp_path, ["A"], rodar=falso)
+    nsa = [c for c in vistos if c[1].endswith("validar_ficha_nsa.py")][0]
+    assert nsa[-1].endswith("campos-A.json")

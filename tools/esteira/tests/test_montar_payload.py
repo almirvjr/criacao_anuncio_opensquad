@@ -115,3 +115,31 @@ def test_cli_grava_um_arquivo_por_cor(tmp_path):
                         "--pai", "VIE-1066-PAI", "--saida", str(saida)], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     assert json.loads((saida / "payload-VIE-1066-3402-BR.json").read_text(encoding="utf-8"))["sku"] == "VIE-1066-3402-BR"
+
+
+def test_nao_se_aplica_vai_com_o_codigo_menos_1():
+    # regra do Almir 16/10: campo que nao faz sentido = "nao se aplica" (value_id -1), nunca vazio nem inventado
+    out = {a["id"]: a for a in item_attributes_do_copy({"PATTERN_NAME": "não se aplica", "LENGTH": "Não se aplica",
+                                                         "WIDTH": "nao se aplica", "BRAND": "Brinox"}, "simples")}
+    for k in ("PATTERN_NAME", "LENGTH", "WIDTH"):
+        assert out[k] == {"id": k, "value_id": "-1", "value_name": None}
+    assert out["BRAND"] == {"id": "BRAND", "value_name": "Brinox"}
+
+
+def test_produto_sem_cor_mantem_a_cor_da_ficha(tmp_path):
+    import montar_payload as mp
+    capt = {}
+    real = mp.build_payloads_familia
+    mp.build_payloads_familia = lambda anuncio, **kw: capt.update(kw) or []
+    try:
+        entrada = tmp_path / "e.json"; entrada.write_text(json.dumps({"anuncios": [{
+            "modo": "simples", "pai_sku": "P", "peso_bruto_kg": 1, "dim_embalagem_cm": {"largura": 1, "altura": 1, "comprimento": 1},
+            "variacoes": [{"sku": "P", "cor": None, "ean": "1", "preco_venda": 10}]}]}), encoding="utf-8")
+        cat = tmp_path / "c.yaml"; cat.write_text(yaml.safe_dump({"categorias": [{"pai_sku": "P", "category_id": "MLB1"}]}), encoding="utf-8")
+        cp = tmp_path / "a.yaml"; cp.write_text(yaml.safe_dump({"pai_sku": "P", "titulo_final": "T", "attributes": {"COLOR": "Bege"},
+                                                                "description": {"bloco_1": "x"}}), encoding="utf-8")
+        ca = tmp_path / "k.yaml"; ca.write_text(yaml.safe_dump({"pai_sku": "P", "picture_ids_por_variacao": []}), encoding="utf-8")
+        mp.montar(entrada, cat, cp, ca, "P")
+    finally:
+        mp.build_payloads_familia = real
+    assert {"id": "COLOR", "value_name": "Bege"} in capt["item_attributes"]

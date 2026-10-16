@@ -179,3 +179,19 @@ def test_devolvido_parado_nao_e_refeito(tmp_path):
     _devolvido(lt, "B")
     L.parar_pai(lt, "B", "texto inventou balde", T())
     assert M._devolvidos(lt) == []
+
+
+def test_busca_os_campos_da_categoria_logo_depois_dela(tmp_path):
+    lt, lp = _lote(tmp_path)
+    ordem = []
+    chamar = lambda i, raiz, **kw: (ordem.append(re.search(r"step-\d+[a-z]?-[\w-]+\.md", i).group(0)) or (True, "pronto"))
+    M.rodar_lote(lt, chamar=chamar, conferir=lambda e, l, p: {}, ler_planilha=lp, abrir_tela=lambda l: 0,
+                 agora=T, avisar=lambda *a: None, buscar_campos=lambda l: ordem.append("CAMPOS") or [])
+    assert ordem.index("CAMPOS") == ordem.index("step-03-categorizacao.md") + 1
+
+
+def test_falha_ao_buscar_campos_so_anota(tmp_path):
+    lt, lp = _lote(tmp_path)
+    r = M.rodar_lote(lt, chamar=lambda i, raiz, **kw: (True, "pronto"), conferir=lambda e, l, p: {}, ler_planilha=lp,
+                     abrir_tela=lambda l: 0, agora=T, avisar=lambda *a: None, buscar_campos=lambda l: ["A"])
+    assert r == 0 and "campos da categoria" in (lt / "andamento.txt").read_text(encoding="utf-8")
