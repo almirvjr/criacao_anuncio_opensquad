@@ -575,3 +575,42 @@ def test_parecer_mostra_o_motivo_com_os_nomes_que_o_vinicius_usa(saida):
         allow_unicode=True), encoding="utf-8")
     p = ap.listar_pendentes(saida)[0]["parecer"]
     assert "Devolver so a frase do pe." in p["resumo"] and "trocar a frase X" in p["resumo"] and "olhar as fotos" in p["resumo"]
+
+
+# ---------- topo simples (Almir 16/10) ----------
+def _parecer_teste(saida, **campos):
+    (saida / "revisao").mkdir(exist_ok=True)
+    base = {"status": "reprovado", "score_total": 84, "decisao_final": "Devolver so a frase do pe; o resto esta pronto.",
+            "correcoes_necessarias": ["texto longo " * 20]}
+    base.update(campos)
+    (saida / "revisao" / f"parecer-{PAI}.yaml").write_text(yaml.safe_dump(base, allow_unicode=True), encoding="utf-8")
+
+
+def test_topo_usa_as_frases_curtas_da_revisao(saida):
+    _parecer_teste(saida, para_o_almir=["Trocar a frase do pe na descricao", "Escolher a marca: Brinox ou Coza"])
+    c = ap.listar_pendentes(saida)[0]
+    assert c["faltas_revisao"] == ["Trocar a frase do pe na descricao", "Escolher a marca: Brinox ou Coza"]
+
+
+def test_topo_sem_frases_curtas_usa_a_decisao_encurtada(saida):
+    _parecer_teste(saida)
+    assert ap.listar_pendentes(saida)[0]["faltas_revisao"] == ["Devolver so a frase do pe; o resto esta pronto."]
+    _parecer_teste(saida, decisao_final="x" * 300)
+    [f] = ap.listar_pendentes(saida)[0]["faltas_revisao"]
+    assert len(f) <= 90 and f.endswith("…")
+
+
+def test_revisao_aprovada_sem_nada_a_fazer(saida):
+    _parecer_teste(saida, status="aprovado", decisao_final="Pronto para publicar.", para_o_almir=[])
+    assert ap.listar_pendentes(saida)[0]["faltas_revisao"] == []
+
+
+def test_categoria_curta_e_completa(saida):
+    c = ap.listar_pendentes(saida)[0]
+    assert c["categoria_curta"] == "Lixeiras" and c["categoria"] == "Casa > Lixeiras"
+
+
+def test_pagina_tem_o_topo_novo():
+    html = (Path(ap.__file__).parent / "pagina.html").read_text(encoding="utf-8")
+    for marca in ("O que falta", "ver revisão completa", "Pronto pra publicar", "Tem bloqueio", "faltas_revisao"):
+        assert marca in html

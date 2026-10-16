@@ -16,6 +16,16 @@ h1{font-size:20px;margin:8px 0 16px}
 .topo h2{font-size:17px;margin:0}
 .sku{color:var(--suave);font-size:13px}
 .selo{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;background:var(--fundoaviso);color:var(--aviso)}
+.selo.verde{background:var(--fundook);color:var(--ok)}
+.selo.vermelho{background:var(--fundoerro);color:var(--erro)}
+.topo .selo{font-size:14px;padding:4px 12px}
+.faltas{border:1px solid var(--borda);border-radius:8px;padding:10px 14px;margin-top:12px}
+.faltas b{display:block;margin-bottom:4px}
+.faltas ul{list-style:none;padding:0;margin:0}
+.faltas li{padding:3px 0}
+.faltas li.feito{text-decoration:line-through;color:var(--suave)}
+.faltas details{margin-top:6px;font-size:13px;color:var(--suave)}
+.faltas summary{cursor:pointer;text-align:right}
 .secao{margin-top:14px}
 .secao>b{display:block;margin-bottom:6px}
 .capas{display:flex;gap:6px;flex-wrap:wrap}
@@ -111,12 +121,47 @@ function contador(input, teto) {
   return c;
 }
 
-function topo(c) {
-  const parecer = c.parecer ? el("div", {class: "just"},
-    `Revisão: ${c.parecer.status || "—"}${c.parecer.score != null ? " (" + c.parecer.score + "/100)" : ""}${c.parecer.resumo ? " — " + c.parecer.resumo : ""}`) : null;
+function topo(c, selo) {
   return el("div", {class: "topo"},
-    el("div", {}, el("h2", {}, c.nome_base), el("div", {class: "sku"}, c.pai_sku), parecer),
-    el("div", {class: "just"}, c.categoria || "categoria não escolhida", " · anúncio ", c.tipo_anuncio || "Clássico"));
+    el("div", {}, el("h2", {}, c.nome_base),
+      el("div", {class: "sku"}, c.pai_sku, " · ",
+        el("span", {title: c.categoria || ""}, c.categoria_curta || c.categoria || "categoria não escolhida"),
+        " · ", c.tipo_anuncio || "Clássico")),
+    selo || null);
+}
+
+// "O que falta": preço, título e conferência se marcam sozinhos; o que veio da revisão, à mão.
+function oQueFalta(c) {
+  const selo = el("span", {class: "selo"});
+  const autos = el("ul");
+  const manuais = (c.faltas_revisao || []).map(f => {
+    const cb = el("input", {type: "checkbox"});
+    const li = el("li", {}, el("label", {}, cb, " ", f, el("span", {class: "just"}, " (revisão)")));
+    return {cb, li};
+  });
+  const p = c.parecer;
+  const detalhes = p ? el("details", {}, el("summary", {}, "ver revisão completa"),
+    el("div", {}, `Revisão: ${p.status || "—"}${p.score != null ? " (" + p.score + "/100)" : ""}`),
+    p.resumo ? el("div", {}, p.resumo) : null) : null;
+  const caixa = el("div", {class: "faltas"}, el("b", {}, "O que falta"), autos,
+    el("ul", {}, manuais.map(m => m.li)), detalhes);
+  let ultimoEstado = {};
+  function atualizar(est) {
+    if (est) ultimoEstado = est;
+    const e = ultimoEstado;
+    const pend = [];
+    if (!e.preco) pend.push("Digitar o preço");
+    if (!e.titulo) pend.push("Escolher o título (até 60 letras)");
+    if (e.bloqueio || e.erro) pend.push("Resolver o que está em vermelho na Conferência, lá embaixo");
+    autos.replaceChildren(...pend.map(x => el("li", {}, "☐ " + x)));
+    manuais.forEach(m => m.li.classList.toggle("feito", m.cb.checked));
+    const n = pend.length + manuais.filter(m => !m.cb.checked).length;
+    selo.className = "selo " + (e.bloqueio ? "vermelho" : n ? "" : "verde");
+    selo.textContent = e.bloqueio ? "⛔ Tem bloqueio" : n === 0 ? "✅ Pronto pra publicar" : n === 1 ? "⚠ Falta 1 coisa" : `⚠ Faltam ${n} coisas`;
+    caixa.style.display = n ? "" : "none";
+  }
+  manuais.forEach(m => m.cb.addEventListener("change", () => atualizar()));
+  return {selo, caixa, atualizar};
 }
 
 // Resumo depois de publicar: link de cada cor, descrição e Flex, e "Tentar de novo" na cor que falhou.
@@ -269,8 +314,12 @@ function cartao(c) {
     decisoes: quadro.ler(), descricao: Object.fromEntries(Object.entries(caixas).map(([k, t]) => [k, t.value]))});
 
   let espera, ultimo = [], seq = 0, publicando = false;
+  const falta = oQueFalta(c);
   function botao() {
     const v = lerPreco(preco.value);
+    const tit = titulo().trim();
+    falta.atualizar({preco: !!v, titulo: !!tit && tit.length <= TETO_TITULO,
+      bloqueio: ultimo.some(i => i.nivel === "bloqueio"), erro: ultimo.some(i => i.nivel === "erro")});
     vaiPor.textContent = preco.value.trim() ? (v ? `Vai publicar por ${reais(v)}` : "Esse preço não foi entendido") : "";
     if (publicando) { btAprovar.disabled = true; return; }
     const bloq = ultimo.some(i => i.nivel === "bloqueio"), errado = ultimo.some(i => i.nivel === "erro");
@@ -354,7 +403,7 @@ function cartao(c) {
   const cx = c.caixa_cm || {};
 
   caixa.append(
-    topo(c),
+    topo(c, falta.selo), falta.caixa,
     el("div", {class: "secao"}, el("b", {}, "Cores"), tabelaCores(c, titulo, conferirAgora)),
     el("div", {class: "secao"}, el("b", {}, "Preço"), preco, vaiPor, el("div", {class: "just"}, "Vale para todas as cores. Sem preço o anúncio não sai.")),
     el("div", {class: "secao"}, el("b", {}, "Título (vira o nome do anúncio; o ML acrescenta a cor)"), opcoes,

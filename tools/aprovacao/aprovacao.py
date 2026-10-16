@@ -113,6 +113,21 @@ def _parecer(saida, pai):
     return {"status": d.get("status"), "score": d.get("score_total"), "resumo": resumo}
 
 
+def _faltas_revisao(saida, pai):
+    """Frases curtas da revisao para o topo do cartao. O Vinicius grava `para_o_almir` (ate 4
+    frases); parecer antigo sem isso: a decisao final encurtada, so se nao foi aprovado."""
+    p = Path(saida) / "revisao" / f"parecer-{pai}.yaml"
+    if not p.is_file():
+        return []
+    d = _ler_yaml(p) or {}
+    if "para_o_almir" in d:
+        return [str(x).strip() for x in d.get("para_o_almir") or [] if str(x).strip()][:4]
+    if d.get("status") == "aprovado" or not d.get("decisao_final"):
+        return []
+    f = " ".join(str(d["decisao_final"]).split())
+    return [f if len(f) <= 90 else f[:89].rstrip() + "…"]
+
+
 def _cores(saida, pai, a, titulo):
     p = Path(saida) / "capas" / f"capas-{pai}.yaml"
     capas = {}
@@ -157,6 +172,8 @@ def _cartao(saida, doc, entrada):
         "categoria": " > ".join(cat.get("breadcrumb") or []) or cat.get("category_name"),
         "tipo_anuncio": TIPOS.get(cat.get("listing_type_id") or "gold_special", "Clássico"),
         "parecer": _parecer(saida, pai),
+        "faltas_revisao": _faltas_revisao(saida, pai),
+        "categoria_curta": (cat.get("breadcrumb") or [None])[-1] or cat.get("category_name"),
         "cores": _cores(saida, pai, a, _titulo_inicial(doc)),
         "preco": doc.get("preco"),
         "quadro": quadro_mod.montar(_brief(saida, pai), attrs),
