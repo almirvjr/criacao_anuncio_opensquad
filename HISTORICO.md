@@ -545,3 +545,15 @@ ainda assim longe do que ele quer. Causa raiz identificada: **o StorySelling do 
 o prompt original dele**. Ver DECISOES 2026-09-17/23.
 
 **Gasto de API no periodo: ~US$ 6,40.**
+
+## 2026-10-16 — 1a publicacao pelo botao `1 - Criar anuncios` (boleira Brinox)
+- **No ar:** `MLB7828103466` (BRI-coza34-40652_3009), Boleira Com Cupula Bambu 26,5 Cm, R$ 142,71, Classico, loja oficial 458566,
+  garantia do vendedor 30 dias, Flex ligado, 9 fotos, GTIN 7900161004929, marca Coza (escolha do Almir), caixa 32x32x16 0,8 kg.
+  Ficha com a regra "nao se aplica": COLOR/MAIN_COLOR/LENGTH/WIDTH/PATTERN_NAME = -1, WITH_PEDESTAL = Nao, TOTAL_HEIGHT 12,2 cm.
+- **Tropecos e correcoes:** (1) `ML Publicar` estava INATIVO desde maio ("ate o 1o teste") -> n8n 404 -> tela dizia "recusou: sem motivo";
+  ligado em 16/10 e a tela agora diz "sistema de publicacao desligado" (commit 8f180be). (2) Marca digitada pelo Almir na tela
+  nao gera mais aviso de "fora do padrao"; aviso de limitacao fora do texto em portugues simples (df5d109). (3) Limitacao
+  "pe nao confirmado" virou "Sem pe (versao prato)" depois que o Almir confirmou (copia em `inteligencia/_antes/`).
+  (4) A aba da tela de teste (`tela_sem_publicar.py`) ficou aberta depois de o programa encerrar e parecia a tela real.
+- **Melhorias pendentes:** tela guardar os ajustes se a aba cair; tela de teste com faixa "TESTE"; maestro conferir se o
+  `ML Publicar` esta ligado antes de abrir a tela; conferencia de limitacao por sentido, nao so por palavra exata.
