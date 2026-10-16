@@ -116,6 +116,12 @@ def _edicao(**kw):
     return e
 
 
+def _sem_limitacao():
+    d = _edicao()["descricao"]
+    d["bloco_1_abertura"] = "Lixeira bonita.\n"
+    return d
+
+
 def _codigos(itens, nivel=None):
     return [i["codigo"] for i in itens if nivel is None or i["nivel"] == nivel]
 
@@ -131,10 +137,24 @@ class TestConferir:
     def test_titulo_vazio_bloqueia(self, saida):
         assert "TITULO_VAZIO" in _codigos(ap.conferir(saida, PAI, _edicao(titulo="  ")), "bloqueio")
 
-    def test_marca_fora_do_padrao_e_erro_nao_bloqueio(self, saida):
+    def test_marca_fora_do_padrao_da_renata_e_erro_nao_bloqueio(self, saida):
+        f = saida / "copywriting" / f"anuncio-{PAI}.yaml"
+        f.write_text(yaml.safe_dump(_doc(attributes={"BRAND": "Viel Inox", "MODEL": "Cesto Lixo Redondo"}),
+                                    allow_unicode=True), encoding="utf-8")
         itens = ap.conferir(saida, PAI, _edicao(marca="Viel Inox"))
         assert "MARCA_FORA_DO_PADRAO" in _codigos(itens, "erro")
         assert _codigos(itens, "bloqueio") == []
+
+    def test_marca_digitada_pelo_almir_vale(self, saida):
+        # 16/10: ele escolheu Coza (marca da Brinox) na boleira; nao quer aviso
+        assert "MARCA_FORA_DO_PADRAO" not in _codigos(ap.conferir(saida, PAI, _edicao(marca="Coza")))
+
+    def test_limitacao_fora_do_texto_fala_simples(self, saida):
+        d = _edicao()["descricao"]
+        d["bloco_1_abertura"] = "Lixeira bonita.\n"
+        it = [i for i in ap.conferir(saida, PAI, _edicao(descricao=d)) if i["codigo"] == "LIMITACAO_FORA_DA_COPY"]
+        assert it and it[0]["texto"].startswith("O texto não avisa o comprador sobre:")
+        assert "Nao tem balde interno removivel" in it[0]["texto"]
 
     def test_promessa_falsa_aparece(self, saida):
         d = _edicao()["descricao"]
@@ -195,9 +215,9 @@ class TestAprovar:
         assert (saida / "copywriting" / f"anuncio-{PAI}.yaml").read_text(encoding="utf-8") == antes
 
     def test_aviso_aceito_fica_registrado(self, saida):
-        ap.aprovar(saida, PAI, _edicao(marca="Viel Inox"), vistos=["MARCA_FORA_DO_PADRAO"], agora=AGORA)
+        ap.aprovar(saida, PAI, _edicao(descricao=_sem_limitacao()), vistos=["LIMITACAO_FORA_DA_COPY"], agora=AGORA)
         doc = yaml.safe_load((saida / "copywriting" / f"anuncio-{PAI}.yaml").read_text(encoding="utf-8"))
-        assert "MARCA_FORA_DO_PADRAO" in doc["avisos_aceitos"]
+        assert "LIMITACAO_FORA_DA_COPY" in doc["avisos_aceitos"]
 
     def test_ja_aprovado_nao_aprova_de_novo(self, saida):
         ap.aprovar(saida, PAI, _edicao(), agora=AGORA)
@@ -349,9 +369,9 @@ class TestRevisaoFinal:
 
     # I3: so aprova com erro que a pagina mostrou
     def test_recusa_erro_que_o_almir_nao_viu(self, saida):
-        r = ap.aprovar(saida, PAI, _edicao(marca="Viel Inox"), vistos=[], agora=AGORA)
+        r = ap.aprovar(saida, PAI, _edicao(descricao=_sem_limitacao()), vistos=[], agora=AGORA)
         assert r["ok"] is False
-        assert "MARCA_FORA_DO_PADRAO" in [i["codigo"] for i in r["conferencia"]]
+        assert "LIMITACAO_FORA_DA_COPY" in [i["codigo"] for i in r["conferencia"]]
         assert ap.listar_pendentes(saida)[0]["pai_sku"] == PAI
 
     # I4: codigo de saida le os arquivos

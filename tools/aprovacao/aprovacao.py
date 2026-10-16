@@ -299,6 +299,14 @@ def aplicar_edicao(doc, edicao):
     return novo
 
 
+def _curto(codigo, msg):
+    """Mensagem da tela em portugues simples (a do validador e para a Renata)."""
+    if codigo == "LIMITACAO_FORA_DA_COPY":
+        lim = msg.split("'")[1] if msg.count("'") >= 2 else ""
+        return f"O texto não avisa o comprador sobre: \"{lim}\". Escreva isso na descrição ou aprove mesmo assim."
+    return msg
+
+
 def conferir(saida, pai, edicao):
     doc = _ler_yaml(caminho_anuncio(saida, pai))
     novo = aplicar_edicao(doc, edicao)
@@ -326,7 +334,11 @@ def conferir(saida, pai, edicao):
                 itens.append({"codigo": "BLOCO_VAZIO", "nivel": "erro",
                               "texto": f"Uma parte da descricao ficou vazia ({k})."})
     attrs = novo["attributes"]
+    # marca digitada pelo Almir vale (16/10): a regra do fornecedor so cobra a marca que a Renata pos
+    marca_do_almir = attrs["BRAND"] != str((doc.get("attributes") or {}).get("BRAND") or "").strip()
     for cod, msg in validar_ficha(pai, titulo, attrs["BRAND"], attrs["MODEL"], descricao_do_copy(novo)):
+        if cod == "MARCA_FORA_DO_PADRAO" and marca_do_almir:
+            continue
         itens.append({"codigo": cod, "nivel": "aviso" if cod.startswith("WARN") else "erro", "texto": msg})
     for campo, valor in valores_inventados(attrs):
         itens.append({"codigo": "VALOR_INVENTADO", "nivel": "erro",
@@ -341,7 +353,7 @@ def conferir(saida, pai, edicao):
                       "texto": "Nao achei a pesquisa deste anuncio: a conferencia de promessas NAO rodou."})
     else:
         blocks, warns = validar_claims(_ler_yaml(brief_p), copy_doc=novo, sem_fotos=True)
-        itens += [{"codigo": c, "nivel": "erro", "texto": m} for c, m in blocks]
+        itens += [{"codigo": c, "nivel": "erro", "texto": _curto(c, m)} for c, m in blocks]
         itens += [{"codigo": c, "nivel": "aviso", "texto": m} for c, m in warns]
     return itens
 
