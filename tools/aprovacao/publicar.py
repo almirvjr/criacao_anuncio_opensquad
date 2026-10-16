@@ -71,6 +71,11 @@ def _enviar(pacote, enviar):
         item.update(incerto=True, erro="o sistema de publicacao nao respondeu: nao sei se publicou. "
                                        "confira no ML antes de tentar de novo")
         return item
+    if r.get("http") == 404:
+        # n8n responde 404 quando o workflow esta desligado: o pedido nem chegou ao ML
+        item["erro"] = ("o sistema de publicacao (ML Publicar, no n8n) esta desligado: nada foi publicado. "
+                        "Ligue o workflow e clique em Tentar de novo")
+        return item
     if resp.get("status") not in ("success", "partial") or not resp.get("mlb_id"):
         item["erro"] = f"o Mercado Livre recusou: {resp.get('error_message') or resp.get('error_code') or 'sem motivo'}"
         return item

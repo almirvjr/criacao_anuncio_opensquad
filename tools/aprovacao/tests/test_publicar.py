@@ -83,6 +83,12 @@ def test_tentar_de_novo_so_a_cor(saida):
     assert _doc(saida)["publicacao"]["VIE-1-BR"]["ok"] is False
 
 
+def test_workflow_desligado_diz_isso(saida):
+    # 16/10: ML Publicar inativo no n8n devolve 404 e a tela dizia "recusou: sem motivo"
+    r = pub.publicar_anuncio(saida, PAI, enviar=lambda c: {"http": 404, "resposta": {}}, completar=None, token=lambda: "tk")
+    assert all(not i["ok"] and "desligado" in i["erro"] and not i["incerto"] for i in r)
+
+
 def test_sem_preco_nao_publica(saida):
     d = _doc(saida); d.pop("preco")
     (saida / "copywriting" / f"anuncio-{PAI}.yaml").write_text(yaml.safe_dump(d), encoding="utf-8")
