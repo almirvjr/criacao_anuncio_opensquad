@@ -1,6 +1,6 @@
 # PROGRESSO
 
-> Atualizado 2026-10-07. **Frentes:** (1) **esteira de anúncio SEM fotos** — 1º teste com a Viel 5L e 8L (seção 0); (2) **ficha técnica dos anúncios no ar** (seção 5), parada esperando 4 decisões suas; (3) **Raio-X do anúncio** e (4) **entrar em catálogo sem oferta** — prontos e em uso. O trabalho de fotos do 8L foi encerrado aqui e vai para um projeto de fotos separado (HISTORICO 07/10).
+> Atualizado 2026-10-16 (1ª publicação pelo botão: boleira MLB7828103466). **Frentes:** (1) **esteira de anúncio SEM fotos** — 1º teste com a Viel 5L e 8L (seção 0); (2) **ficha técnica dos anúncios no ar** (seção 5), parada esperando 4 decisões suas; (3) **Raio-X do anúncio** e (4) **entrar em catálogo sem oferta** — prontos e em uso. O trabalho de fotos do 8L foi encerrado aqui e vai para um projeto de fotos separado (HISTORICO 07/10).
 
 ## 0. Esteira sem fotos — 1º teste CONCLUÍDO em 08/10/2026 (Viel 5L e 8L, 3 cores cada)
 **No ar, ativos, estoque vindo do Tiny (10 por cor), Flex ligado, descrição gravada:** 5L (R$ 92,71) Branco MLB7771661140 · Cinza MLB5354173009 · Preto MLB7771661510; 8L (R$ 112,71) Branco MLB7771685954 · Cinza MLB7771661556 · Preto MLB7771706672. Marca Terra Casa Decor, códigos de barras novos da GS1, caixa da cubagem.

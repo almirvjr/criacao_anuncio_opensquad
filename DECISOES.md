@@ -693,3 +693,8 @@ projeto**, nao so o prompt de uma foto.
 **Decisao:** o servidor local da tela (`tools/aprovacao/aprovacao.py`) recusa (403) pedido com Host diferente de `127.0.0.1:<porta>`/`localhost:<porta>` e qualquer `/api/` sem o cabecalho `X-Tela-Token` igual ao selo gerado a cada abertura (`secrets.token_urlsafe`, embutido na pagina no lugar de `__TELA_TOKEN__`).
 **Por que:** o botao aprovar PUBLICA no ML. Sem isso, um site aberto no mesmo navegador poderia apontar o proprio endereco pra 127.0.0.1 (DNS rebinding) e aprovar sozinho. Porta aleatoria e "so JSON" nao bastavam.
 **Como aplicar:** fetch novo na pagina passa pela funcao `api()` (que manda o selo); teste novo de servidor usa `_get`/`_post` dos testes. Atributo chama `selo`, nao `token` - o secret-guard confunde `srv.token = ...` com segredo escrito.
+
+## 2026-10-16 - Regra do "não se aplica", marca do Almir e ML Publicar ligado
+- **Todo campo da ficha que o comprador ve (obrigatorio ou visivel; fora escondido/so-leitura) tem destino:** valor real, "não se aplica" (vai ao ML com `value_id "-1"`) ou `campos_pendentes` (Almir decide no quadro da tela). Valor de enchimento ("N/A", "-", "nenhum", "não informado") e proibido (`validar_ficha_nsa.py`). Sim/Não e resposta valida. Por que: campo vazio ou "N/A" piora a ficha e o ML le "-1" como resposta de verdade.
+- **Marca digitada pelo Almir na tela vale sem aviso** (ex.: Coza, marca da Brinox). A regra "so o fornecedor ou Terra Casa Decor" passa a valer so para a marca que a Renata escreve. Por que: o Almir e quem decide; o aviso era ruido.
+- **`ML Publicar` (n8n `0rzNJ7RLqLzMbKnf`) ligado** na 1a publicacao (boleira MLB7828103466). Continua no n8n sem mudanca; levar para o Supabase segue pendente (regra do hub).
