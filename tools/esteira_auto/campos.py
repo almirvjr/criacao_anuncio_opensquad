@@ -4,6 +4,7 @@ O maestro busca no ML (so leitura, com o acesso da loja — o Claude sem convers
 e grava `categorizacao/campos-{pai}.json` no lote. A redacao usa a lista para dar destino a cada
 campo, e a conferencia (`validar_ficha_nsa.py`) cobra. Falha de rede nao para a esteira."""
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -13,6 +14,10 @@ TOOLS = Path(__file__).resolve().parents[1]
 ESCONDIDO = ("hidden", "read_only", "fixed", "others", "inferred")
 A_ESTEIRA_POE = {"GTIN", "SELLER_SKU", "EMPTY_GTIN_REASON"}  # vem da planilha, nao da redacao
 DA_VARIACAO = {"COLOR", "MAIN_COLOR"}  # com cores, vem de cada cor
+# categorias.yaml vem do Claude sem conversa: so aceita o formato esperado, senao o codigo viraria
+# outro endereco do ML lido com o acesso da loja, e o SKU viraria caminho fora do lote
+CATEGORIA_OK = re.compile(r"^MLB\d+$")
+PAI_OK = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 def _ler_api(category_id):
@@ -49,6 +54,9 @@ def buscar_campos(lote, ler=_ler_api):
         return ["(lista de categorias)"]
     falhou = []
     for c in cats:
+        if not CATEGORIA_OK.match(str(c.get("category_id") or "")) or not PAI_OK.match(str(c.get("pai_sku") or "")):
+            falhou.append(c.get("pai_sku"))
+            continue
         try:
             lista = visiveis(ler(c["category_id"]), c.get("modo"))
         except Exception:  # noqa: BLE001

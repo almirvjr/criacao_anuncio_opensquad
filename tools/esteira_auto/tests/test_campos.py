@@ -50,3 +50,15 @@ def test_falha_de_rede_nao_para_a_esteira(tmp_path):
 
 def test_sem_lista_de_categorias_nao_quebra(tmp_path):
     assert campos.buscar_campos(tmp_path, ler=lambda cat: 1 / 0) == ["(lista de categorias)"]
+
+
+def test_codigo_de_categoria_estranho_nao_vira_pedido_com_o_acesso_da_loja(tmp_path):
+    # categorias.yaml e escrito pelo Claude sem conversa: valor de fora nao pode virar outro endereco do ML
+    (tmp_path / "categorizacao").mkdir()
+    (tmp_path / "categorizacao" / "categorias.yaml").write_text(yaml.safe_dump({"categorias": [
+        {"pai_sku": "P", "category_id": "MLB1/../../users/me"},
+        {"pai_sku": "../../fora", "category_id": "MLB2"}]}), encoding="utf-8")
+    pedidos = []
+    falhou = campos.buscar_campos(tmp_path, ler=lambda cat: pedidos.append(cat) or API)
+    assert pedidos == [] and sorted(falhou) == ["../../fora", "P"]
+    assert not (tmp_path / "fora.json").exists() and not list(tmp_path.parent.glob("campos-*.json"))
