@@ -2,6 +2,15 @@
 
 <!-- Decisoes tecnicas importantes. Formato: data - contexto - decisao - motivo. -->
 
+## 2026-10-19/20
+
+### Pesquisa de concorrentes: API do ML + Chrome de verdade (ramo `pesquisa-api-chrome`)
+**Contexto:** no lote da boleira (09/10) o navegador escondido e a API **sem a chave** foram barrados pelo ML; a pesquisa caiu para a Amazon (32 opiniões, 0 perguntas, confiança baixa). Teste completo em `projects/rea_base/desenho/_teste_pesquisa_boleira/_RESULTADO.md`.
+**Decisão:** o maestro roda `tools/esteira_auto/coletar_concorrentes.py` logo depois dos campos da categoria (programa com o acesso da loja; o Claude sem conversa continua sem acesso). API: ficha do **mesmo produto** pelo código de barras, mais vendidos + busca pelo nome (só entra quem tem a palavra do tipo do produto e tem vendedor), atributos, descrição, perguntas. Opiniões: a API **não entrega de concorrente (403)**; vêm de um Chrome de verdade com perfil próprio (`_opensquad/_perfil_opinioes`, porta 9336) pela lista que a janela "Mostrar todas as opiniões" pede (`/noindex/catalog/reviews/{id}/search`, parâmetro `rating=N` filtra por nota): 90 relevantes + 30 de 1, 2 e 3 estrelas por concorrente. Grava `inteligencia/_coleta/coleta-{pai}.json` e cada concorrente em `_raw/` (a trava de citação continua valendo). Falha só anota; a Helena cai no caminho antigo.
+**Resultado na boleira (cópia do lote):** 507 opiniões (54 de 1★, 49 de 2★, 74 de 3★) e 82 perguntas em 4 anúncios do ML, incluindo o mesmo produto; confiança **alta**; trava aprovada.
+**Regra nova (step-04):** atributo do mesmo produto no catálogo do ML vale mais que dossiê vindo de concorrente e que opinião vaga; conflito vira divergência, nunca afirmação. Motivo: 1ª rodada voltou a prometer "pedestal removível" (herdado do irmão da linha na Amazon), contra `WITH_PEDESTAL: Não` do catálogo e contra o "sem pé" do Almir (16/10).
+**Achados:** Firecrawl também é barrado pelo ML (19/10); `/items/{id}` e `/reviews/item/{id}` de terceiro = 403; `/sites/MLB/search` = 403; `/products/search`, `/products/{id}`, `/products/{id}/items`, `/highlights`, `/questions/search` e `/items/{id}/description` = 200 com o acesso da loja.
+
 ## 2026-10-09 — Esteira sem conversa (botão "1 - Criar anuncios")
 
 **Contexto:** o Almir quer criar anúncio sozinho, sem sessão com o Claude. Regra nova do hub no mesmo dia: automação nova = Supabase, nunca n8n.

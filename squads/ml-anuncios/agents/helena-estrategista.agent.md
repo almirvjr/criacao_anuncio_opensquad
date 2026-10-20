@@ -35,7 +35,9 @@ Frameworks de referência: `pipeline/data/storyselling-framework.md` (MECLABS, e
 
    **Caso sem concorrente:** se `concorrentes_top` vier vazio ou ausente, marcar `sem_concorrente: true`, manter os `pendente` como estão e **pular os passos 2 e 3**, indo direto ao passo 4 com amostra vazia.
 
-2. **Scraping de cada concorrente** (Playwright MCP, headless). Em cada permalink, coletar:
+2. **Desde 19/10/2026 a coleta já vem pronta**: `output/inteligencia/_coleta/coleta-{pai_sku}.json` + `output/inteligencia/_raw/{id}.json` (API do ML + opiniões por Chrome de verdade, incluindo as de 1–3 estrelas e a ficha do mesmo produto pelo código de barras). Use ela como fonte principal (detalhes no step-04, passo 2). O scraping abaixo só completa o que faltar nela.
+
+   **Caminho antigo — scraping de cada concorrente** (Playwright MCP, headless; o ML costuma barrar). Em cada permalink, coletar:
    - **Opiniões/Reviews**: até 50 por concorrente ou até esgotar. Para cada uma: texto, estrelas (1-5), data, se tem foto do comprador, se foi marcada como útil.
    - **Perguntas e Respostas**: até 30 (a pergunta E a resposta do vendedor).
    - **Descrição**: texto integral.
