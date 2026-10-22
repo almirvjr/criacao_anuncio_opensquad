@@ -2,11 +2,28 @@
 
 <!-- Decisoes tecnicas importantes. Formato: data - contexto - decisao - motivo. -->
 
+## 2026-10-22
+
+### Concorrentes vêm da busca do ML no Chrome logado; sem opinião não paga o texto
+**Contexto:** pedido 9 do Prato Cozy (`BRI-coza18-PAI`, plástico, raso, por unidade): 0 opiniões e 3 concorrentes errados (jogos de prato **fundo de vidro**). Duas causas: (1) o PC suspendeu no meio da leitura e a esteira seguiu e pagou o texto assim; (2) o catálogo da API só tinha fichas de prato de plástico **sem vendedor e sem opinião**, e a regra (palavra "prato" + ter vendedor) pegou os mais vendidos de vidro. Na boleira (19/10) deu certo por sorte: ela tinha ficha com vendedores.
+**Decisão (`coletar_concorrentes.py`, roda no começo da etapa de pesquisa):**
+- Mesmo produto continua pela API (ficha pelo código de barras; perguntas e descrição).
+- Concorrentes: **busca do ML como o comprador vê**, no Chrome da esteira (`_opensquad/_perfil_opinioes`), com os termos "tipo + tipo da categoria + material" ("prato raso plastico"). Fica fora: anúncio pago (Ad), cartão sem nota, título sem a palavra do tipo, material diferente do nosso. Mais parecido primeiro, empate = ordem do ML. Anúncio comum ainda dá perguntas e descrição pela API.
+- Abre até 6 (3 + reserva) e ficam os **3 primeiros com opinião**; quem repete as mesmas opiniões (mesmo produto noutra cor) sai. O catálogo da API só completa se a busca vier curta (lá também: mesmo material e o nome começando pelo tipo).
+- Ficha com nota e **sem comentário** (o próprio Cozy) não é erro.
+- **Nenhuma opinião lida por falha = a etapa não roda**: tenta de novo na próxima volta; na 3ª para o produto com o motivo (o pedido volta ao hub). Antes "falha só anota" e a Helena caía no caminho antigo.
+- Enquanto o maestro roda, o Windows não suspende por inatividade (`SetThreadExecutionState`); fechar a tampa ainda suspende.
+**Achado:** depois de ~40 páginas em 2 h de teste, o ML passou a pedir login ao Chrome da esteira (`/gz/account-verification`, "Para continuar, acesse sua conta") — com janela visível ou escondida. O Almir escolheu (opção 1) **logar ali uma conta de comprador, não a TERRACASADECOR** (conta que robô usa pode ser marcada). O perfil do dia a dia do Almir não serve: o Chrome não deixa programa controlar o perfil padrão.
+**Resultado (cópia do lote, antes do bloqueio):** 360 opiniões de 3 anúncios de prato raso de plástico (contra 0).
+
+### Entrega feita não vira "pedido devolvido no site"
+Depois de terminar o pedido, o banco recusa anotar andamento (pedido já `produzido`); a esteira lia isso como "devolvido no site". O entregador desliga o espelho do andamento assim que entrega (teste `test_entrega_feita_nao_vira_pedido_perdido`).
+
 ## 2026-10-19/20
 
 ### Pesquisa de concorrentes: API do ML + Chrome de verdade (ramo `pesquisa-api-chrome`)
 **Contexto:** no lote da boleira (09/10) o navegador escondido e a API **sem a chave** foram barrados pelo ML; a pesquisa caiu para a Amazon (32 opiniões, 0 perguntas, confiança baixa). Teste completo em `projects/rea_base/desenho/_teste_pesquisa_boleira/_RESULTADO.md`.
-**Decisão:** o maestro roda `tools/esteira_auto/coletar_concorrentes.py` logo depois dos campos da categoria (programa com o acesso da loja; o Claude sem conversa continua sem acesso). API: ficha do **mesmo produto** pelo código de barras, mais vendidos + busca pelo nome (só entra quem tem a palavra do tipo do produto e tem vendedor), atributos, descrição, perguntas. Opiniões: a API **não entrega de concorrente (403)**; vêm de um Chrome de verdade com perfil próprio (`_opensquad/_perfil_opinioes`, porta 9336) pela lista que a janela "Mostrar todas as opiniões" pede (`/noindex/catalog/reviews/{id}/search`, parâmetro `rating=N` filtra por nota): 90 relevantes + 30 de 1, 2 e 3 estrelas por concorrente. Grava `inteligencia/_coleta/coleta-{pai}.json` e cada concorrente em `_raw/` (a trava de citação continua valendo). Falha só anota; a Helena cai no caminho antigo.
+[SUPERADA 2026-10-22 -> ver "## 2026-10-22" acima: concorrentes vêm da busca do ML no Chrome; falha não "só anota"] **Decisão:** o maestro roda `tools/esteira_auto/coletar_concorrentes.py` logo depois dos campos da categoria (programa com o acesso da loja; o Claude sem conversa continua sem acesso). API: ficha do **mesmo produto** pelo código de barras, mais vendidos + busca pelo nome (só entra quem tem a palavra do tipo do produto e tem vendedor), atributos, descrição, perguntas. Opiniões: a API **não entrega de concorrente (403)**; vêm de um Chrome de verdade com perfil próprio (`_opensquad/_perfil_opinioes`, porta 9336) pela lista que a janela "Mostrar todas as opiniões" pede (`/noindex/catalog/reviews/{id}/search`, parâmetro `rating=N` filtra por nota): 90 relevantes + 30 de 1, 2 e 3 estrelas por concorrente. Grava `inteligencia/_coleta/coleta-{pai}.json` e cada concorrente em `_raw/` (a trava de citação continua valendo). Falha só anota; a Helena cai no caminho antigo.
 **Resultado na boleira (cópia do lote):** 507 opiniões (54 de 1★, 49 de 2★, 74 de 3★) e 82 perguntas em 4 anúncios do ML, incluindo o mesmo produto; confiança **alta**; trava aprovada.
 **Regra nova (step-04):** atributo do mesmo produto no catálogo do ML vale mais que dossiê vindo de concorrente e que opinião vaga; conflito vira divergência, nunca afirmação. Motivo: 1ª rodada voltou a prometer "pedestal removível" (herdado do irmão da linha na Amazon), contra `WITH_PEDESTAL: Não` do catálogo e contra o "sem pé" do Almir (16/10).
 **Achados:** Firecrawl também é barrado pelo ML (19/10); `/items/{id}` e `/reviews/item/{id}` de terceiro = 403; `/sites/MLB/search` = 403; `/products/search`, `/products/{id}`, `/products/{id}/items`, `/highlights`, `/questions/search` e `/items/{id}/description` = 200 com o acesso da loja.

@@ -2,6 +2,12 @@
 
 <!-- Tarefas concluidas (arquivo morto). Formato: data - resumo. -->
 
+## 2026-10-21/22 - Esteira pela fila do hub + pesquisa de concorrentes refeita
+- `maestro.py --fila` + `fila.py` + `pedido.py` + `rodar_fila.ps1`; tarefa agendada "Esteira - fila do hub" (5 em 5 min) instalada 21/10. Pedido 8 parou nas capas (Cozy sem `capa-anuncio`); capas das 4 cores subidas em 22/10 (`Brinox/BRI-coza18-10570_*_capa_01`, Chumbo recortado de foto de kit, aprovado pelo Almir).
+- Pedido 9 produzido 14:17 (≈18 min de esteira, fora 3 h de PC suspenso): título recomendado "Prato Raso Refeição Plástico Bordas Altas Micro-ondas Cozy", revisão 87. Pendências do Almir no resultado: forma Redonda/diâmetro 25,7 cm, Chumbo como nome livre, marca Coza×Brinox. Vendido por **unidade** (Almir, 22/10).
+- Consertos: motivo do erro que vai ao hub; "entrega feita" lida como devolvida; coleta de concorrentes nova (DECISOES 2026-10-22). Pedido 10 parou sozinho em 3 tentativas (bloqueio de login do ML); pedido 11 cancelado (PC ia desligar). Chrome da esteira logado em conta de comprador pelo Almir.
+- Commits `cd555bd`, `b6c3856`, `0326df9` no GitHub (branch `esteira-sem-fotos`).
+
 ## 2026-10-15 - Branch esteira-sem-fotos no GitHub + 2 consertos de seguranca
 - Branch enviada (50 commits so locais), sem segredo na varredura; aviso falso de "conflito" do hook de inicio de sessao corrigido (era branch sem par no GitHub).
 - Tela de aprovacao: so aceita a propria pagina (Host fixo + senha de uso unico). Capas: SKU com `/` ou `..` nao grava fora da pasta. 3 testes novos; 277 passando.
