@@ -10,8 +10,9 @@ Caminho misto:
 - Opinioes: a API nao entrega de concorrente (403). Vem de um Chrome de verdade com perfil proprio
   (`_opensquad/_perfil_opinioes`), pela mesma lista que a janela "Mostrar todas as opinioes" do ML pede.
 
-Grava `inteligencia/_coleta/coleta-{pai}.json` no lote. So le; nao mexe em anuncio. Falha de rede ou do Chrome
-so anota (a Helena cai no caminho antigo). Nao guarda dado de pessoa: opiniao do ML ja vem sem autor; da
+Grava `inteligencia/_coleta/coleta-{pai}.json` no lote. So le; nao mexe em anuncio. Falha de rede ou nenhuma
+opiniao lida por falha do Chrome = pai devolvido em `falhou` (o maestro tenta de novo antes da pesquisa e, na 3a,
+para o produto: sem opiniao o texto sai fraco, 22/10). Nao guarda dado de pessoa: opiniao do ML ja vem sem autor; da
 pergunta fica so texto, resposta e data."""
 import json
 import re
@@ -32,6 +33,7 @@ CATEGORIA_OK = re.compile(r"^MLB\d+$")
 PAI_OK = re.compile(r"^[A-Za-z0-9_-]+$")
 EAN_OK = re.compile(r"^\d{8,14}$")
 MAX_PERGUNTAS = 50
+LIMITE, RESERVA = 3, 3  # concorrentes que ficam; quantos a mais o Chrome abre para achar os que tem opiniao
 # por concorrente: as mais relevantes (o ML poe as boas na frente) + as ruins e medias, que mostram o medo do
 # comprador (parametro `rating` da lista, achado em 19/10). Sem repetir opiniao.
 COTAS = [({}, 90), ({"rating": "1"}, 30), ({"rating": "2"}, 30), ({"rating": "3"}, 30)]
@@ -60,21 +62,91 @@ def _sem_acento(s):
     return "".join(ch for ch in unicodedata.normalize("NFD", str(s or "").lower()) if unicodedata.category(ch) != "Mn")
 
 
-def escolher(mesma, candidatos, termo, limite=3):
-    """Mesmo produto (se houver) + ate `limite` concorrentes.
-    Candidato = {id, nome, vendedores, mais_vendido}. So entra quem tem no nome a 1a palavra do termo (o tipo do
-    produto: na boleira, 19/10, os mais vendidos da categoria traziam um suporte de fotografia). Ordem: mais
-    vendido da categoria primeiro, depois quem tem mais vendedores (ficha sem vendedor nao tem opiniao)."""
+# Grupos de material: concorrente de vidro nao ensina nada sobre prato de plastico (Prato Cozy, 22/10: vieram 3
+# jogos de prato fundo de vidro porque o filtro era so a palavra "prato").
+MATERIAIS = {"plastico": ("plastico", "polipropileno", "pp", "polietileno", "acrilico", "melamina", "policarbonato", "tritan"),
+             "vidro": ("vidro", "opaline", "opalina", "opalino", "cristal", "borossilicato"),
+             "descartavel": ("isopor", "descartavel", "papelao"),
+             "ceramica": ("ceramica", "porcelana", "gres", "faianca", "stoneware"),
+             "metal": ("inox", "aco", "metal", "aluminio", "ferro", "cobre"),
+             "madeira": ("madeira", "bambu")}
+
+
+def grupo_material(valor):
+    palavras = _sem_acento(valor).replace("-", " ").split()
+    palavras += [p[:-1] for p in palavras if p.endswith("s")]  # "Pratos Plásticos"
+    return next((g for g, ps in MATERIAIS.items() if any(p in palavras for p in ps)), None)
+
+
+def _atributos(x):
+    """{ID: valor} da ficha do ML (a busca ja traz; o resto vem de /products/{id})."""
+    return {a.get("id"): a.get("value_name") for a in (x or {}).get("attributes") or [] if a.get("id") and a.get("value_name")}
+
+
+def perfil_de(atrs):
+    """O que o concorrente precisa ter igual ao nosso: grupo do material e o 'tipo' da categoria (ex. prato Raso)."""
+    return {"material": grupo_material(atrs.get("MATERIAL")),
+            "tipos": {k: v for k, v in atrs.items() if k.endswith("_TYPE")},
+            "unidades": atrs.get("UNITS_PER_PACK")}
+
+
+def _raiz(v):
+    return {p.rstrip("s") for p in _sem_acento(v).split()}
+
+
+def parecenca(perfil, atrs, nome=None, exigir_material=False):
+    """Quanto o concorrente se parece com o nosso produto; None = outro produto (material ou tipo diferente).
+    Material vem da ficha ou, sem ela, do nome ("Prato Plástico ..."). Com `exigir_material`, material desconhecido
+    tambem fica fora (Prato Cozy, 22/10: sem isso entraram um prato infantil e um descartavel de isopor)."""
+    if not perfil:
+        return 0
+    pontos = 0
+    mat = grupo_material(atrs.get("MATERIAL")) or grupo_material(nome)
+    if perfil["material"]:
+        if mat and mat != perfil["material"]:
+            return None
+        if not mat and exigir_material:
+            return None
+        pontos += 2 if mat else 0
+    for k, v in perfil["tipos"].items():
+        if atrs.get(k):
+            if not _raiz(v) & _raiz(atrs[k]):
+                return None
+            pontos += 2
+    if perfil["unidades"] and atrs.get("UNITS_PER_PACK") == perfil["unidades"]:
+        pontos += 1
+    return pontos
+
+
+def escolher(mesma, candidatos, termo, limite=3, perfil=None, reserva=0):
+    """Mesmo produto (se houver) + ate `limite` concorrentes (+ `reserva` a mais, para o Chrome ficar com os que
+    tem opiniao). Candidato = {id, nome, vendedores, mais_vendido, atributos}.
+    Sem `perfil` (mesmo produto fora do catalogo): o nome tem que ter a 1a palavra do termo e a ficha um vendedor
+    (na boleira, 19/10, os mais vendidos traziam um suporte de fotografia).
+    Com `perfil`: o nome tem que COMECAR pelo tipo ("Descanso de Prato" e "Kit 5 Prato" ficam fora) e o material
+    tem que bater; ficha sem vendedor entra (no Prato Cozy, 22/10, quase todo prato de plastico do catalogo
+    tinha 0 vendedor e a opiniao existe assim mesmo). Se o material conhecido nao fechar a conta, completa com
+    quem so nao contradiz. Ordem: mais parecido, mais vendido da categoria, mais vendedores."""
     out, vistos = [], set()
     chave = (_sem_acento(termo).split() or [""])[0]
     if mesma and FICHA_OK.match(str(mesma.get("id") or "")):
         vistos.add(mesma["id"])
         out.append({"id": mesma["id"], "origem": "mesmo_produto"})
-    bons = [c for c in candidatos or [] if FICHA_OK.match(str(c.get("id") or "")) and c["id"] not in vistos
-            and (c.get("vendedores") or 0) > 0 and chave and chave in _sem_acento(c.get("nome")).split()]
-    bons.sort(key=lambda c: (not c.get("mais_vendido"), -(c.get("vendedores") or 0)))
+    validos = [c for c in candidatos or [] if FICHA_OK.match(str(c.get("id") or "")) and c["id"] not in vistos and chave]
+    if perfil:
+        validos = [c for c in validos if _sem_acento(c.get("nome")).split()[:1] == [chave]]
+    else:
+        validos = [c for c in validos if (c.get("vendedores") or 0) > 0 and chave in _sem_acento(c.get("nome")).split()]
+    bons = []
+    for exigir in ((True, False) if perfil else (False,)):
+        nota = {c["id"]: parecenca(perfil, c.get("atributos") or {}, c.get("nome"), exigir) for c in validos}
+        lista = sorted((c for c in validos if nota[c["id"]] is not None and c not in bons),
+                       key=lambda c: (-nota[c["id"]], not c.get("mais_vendido"), -(c.get("vendedores") or 0)))
+        bons += lista
+        if len(bons) >= limite + reserva:
+            break
     for c in bons:
-        if c["id"] not in vistos and len(out) - (1 if mesma else 0) < limite:
+        if c["id"] not in vistos and len(out) - (1 if mesma else 0) < limite + reserva:
             vistos.add(c["id"])
             out.append({"id": c["id"], "origem": "mais_vendidos" if c.get("mais_vendido") else "busca"})
     return out
@@ -130,17 +202,107 @@ def _ficha(api, cid):
     }
 
 
-def _opinioes_chrome(ids):
-    """{ficha: {"media_texto", "lidas": [...]}} abrindo cada ficha num Chrome de verdade (perfil proprio)."""
+def _ficha_da_busca(api, c):
+    """Concorrente que veio da busca do Chrome. Ficha do catalogo (/p/) = ficha completa pela API; anuncio comum
+    (MLB-123) = descricao e perguntas pela API (essas abrem para anuncio de terceiro); o resto, so titulo e pagina."""
+    if "/p/" in c["url"] and FICHA_OK.match(c["id"]):
+        f = _ficha(api, c["id"])
+        return {**f, "nome": f.get("nome") or c["titulo"], "pagina": c["url"], "nota_na_busca": c.get("nota")}
+    item = c["id"] if "/up/" not in c["url"] and FICHA_OK.match(c["id"]) else None
+    q = (api(f"/questions/search?item={item}&api_version=4&limit=50") or {}) if item else {}
+    return {"nome": c["titulo"], "pagina": c["url"], "nota_na_busca": c.get("nota"), "atributos": [], "destaques": [],
+            "fotos": None, "vendedores": None, "preco_min": None, "preco_mediano": None,
+            "descricao": (api(f"/items/{item}/description") or {}).get("plain_text") if item else None,
+            "perguntas": [{"pergunta": x.get("text"), "resposta": (x.get("answer") or {}).get("text"), "data": x.get("date_created")}
+                          for x in q.get("questions") or [] if x.get("text")][:MAX_PERGUNTAS]}
+
+
+PAGINA_OK = re.compile(r"^https://(www|produto)\.mercadolivre\.com\.br/[^#?\s]+$")
+ID_NA_PAGINA = re.compile(r"/(?:p|up)/(MLBU?\d+)|/(MLB)-(\d+)")
+
+
+def _abrir_chrome():
     import subprocess
     import time
-    from playwright.sync_api import sync_playwright
     PERFIL.mkdir(parents=True, exist_ok=True)
     proc = subprocess.Popen([CHROME, f"--remote-debugging-port={PORTA}", "--remote-debugging-address=127.0.0.1",
                              f"--user-data-dir={PERFIL}", "--no-first-run", "--window-size=1300,900", "about:blank"])
+    time.sleep(4)
+    return proc
+
+
+def id_da_pagina(url):
+    """Endereco de anuncio/ficha do ML -> codigo (MLB123 da ficha, MLBU123 do produto do vendedor, MLB123 do anuncio)."""
+    m = ID_NA_PAGINA.search(str(url or ""))
+    return (m.group(1) or f"{m.group(2)}{m.group(3)}") if m else None
+
+
+def _busca_chrome(termos):
+    """Cartoes da busca do ML como o comprador ve (Chrome de verdade; a busca pela API da 403 e o catalogo da API
+    so tem ficha sem venda e sem opiniao: Prato Cozy, 22/10). Anuncio pago (Ad) fica fora."""
+    from playwright.sync_api import sync_playwright
+    proc = _abrir_chrome()
+    cartoes = []
+    try:
+        with sync_playwright() as pw:
+            nav = pw.chromium.connect_over_cdp(f"http://127.0.0.1:{PORTA}")
+            pg = nav.contexts[0].new_page()
+            for termo in termos:
+                slug = "-".join(_sem_acento(termo).split())
+                if not re.fullmatch(r"[a-z0-9-]+", slug):
+                    continue
+                try:
+                    pg.goto(f"https://lista.mercadolivre.com.br/{slug}", wait_until="domcontentloaded", timeout=60000)
+                    pg.wait_for_timeout(4000)
+                    lidos = pg.evaluate(r"""() => [...document.querySelectorAll('li.ui-search-layout__item')].map(li => {
+                        const a = [...li.querySelectorAll('a[href]')].map(x => x.href);
+                        return {titulo: (li.querySelector('h3, .poly-component__title') || {}).innerText || '',
+                                url: a.find(h => !h.includes('click1.')) || null, ad: a.some(h => h.includes('click1.')),
+                                nota: (li.querySelector('.poly-component__review-compacted, [class*=reviews__rating]') || {}).innerText || '',
+                                preco: (li.querySelector('.andes-money-amount__fraction') || {}).innerText || ''}; })""")
+                except Exception:  # noqa: BLE001
+                    continue
+                for c in lidos:
+                    url = str(c.get("url") or "").split("#")[0].split("?")[0]
+                    if c.get("ad") or not PAGINA_OK.match(url) or not id_da_pagina(url):
+                        continue
+                    cartoes.append({"id": id_da_pagina(url), "url": url, "titulo": " ".join(c["titulo"].split()),
+                                    "nota": c["nota"].strip(), "preco": c["preco"].strip(), "termo": termo})
+            pg.close()
+    finally:
+        proc.terminate()
+    return cartoes
+
+
+def escolher_busca(cartoes, termo, perfil, ja, n):
+    """Dos cartoes da busca: o tipo no titulo (palavra, plural vale), com nota (tem opiniao), sem contradizer o
+    material. Mais parecido primeiro (material e tipo no titulo); empate = ordem do ML (relevancia/venda)."""
+    chave = (_sem_acento(termo).split() or [""])[0].rstrip("s")
+    tipos = set().union(*[_raiz(v) for v in (perfil or {}).get("tipos", {}).values()]) if perfil else set()
+    mat_nosso = (perfil or {}).get("material")
+    bons, vistos = [], set(ja)
+    for pos, c in enumerate(cartoes):
+        if c["id"] in vistos or not c.get("nota"):
+            continue
+        palavras = _raiz(c["titulo"])
+        if not chave or chave not in palavras:
+            continue
+        mat = grupo_material(c["titulo"])
+        if mat_nosso and mat and mat != mat_nosso:
+            continue
+        vistos.add(c["id"])
+        pontos = (2 if mat_nosso and mat == mat_nosso else 0) + (2 if tipos & palavras else 0)
+        bons.append((-pontos, pos, c))
+    return [c for _, _, c in sorted(bons, key=lambda x: (x[0], x[1]))][:n]
+
+
+def _opinioes_chrome(ids, paginas=None):
+    """{ficha: {"media_texto", "lidas": [...]}} abrindo cada ficha num Chrome de verdade (perfil proprio).
+    `paginas` = endereco de quem nao e ficha do catalogo (veio da busca)."""
+    from playwright.sync_api import sync_playwright
+    proc = _abrir_chrome()
     out = {}
     try:
-        time.sleep(4)
         with sync_playwright() as pw:
             nav = pw.chromium.connect_over_cdp(f"http://127.0.0.1:{PORTA}")
             pg = nav.contexts[0].new_page()
@@ -152,12 +314,22 @@ def _opinioes_chrome(ids):
                         lista["url"] = r.url
                 pg.on("response", pegar)
                 try:
-                    pg.goto(f"https://www.mercadolivre.com.br/p/{cid}", wait_until="domcontentloaded", timeout=60000)
+                    url = (paginas or {}).get(cid) or f"https://www.mercadolivre.com.br/p/{cid}"
+                    if not PAGINA_OK.match(url):
+                        raise ValueError("endereco estranho")
+                    pg.goto(url, wait_until="domcontentloaded", timeout=60000)
                     pg.wait_for_timeout(3000)
                     pg.mouse.wheel(0, 6000)
                     pg.wait_for_timeout(2500)
                     resumo = pg.evaluate("() => (document.querySelector(\"[class*='ui-review-capability__rating']\")||{}).innerText||''")
-                    pg.get_by_text("Mostrar todas as opiniões").first.click(timeout=10000)
+                    botao = pg.get_by_text("Mostrar todas as opiniões")
+                    if not botao.count() and resumo.strip():
+                        # ficha com poucas notas e nenhum comentario (o proprio Prato Cozy, 22/10): nao e falha.
+                        # Sem o bloco de notas na pagina (nao carregou) segue para o clique, que falha como erro.
+                        out[cid] = {"media_texto": " ".join(resumo.split())[:200], "lidas": [], "sem_comentarios": True}
+                        pg.remove_listener("response", pegar)
+                        continue
+                    botao.first.click(timeout=10000)
                     pg.wait_for_timeout(4000)
                     fr = next(f for f in pg.frames if "/noindex/catalog/reviews/" in f.url)
                     for _ in range(4):  # rolar a janela faz a pagina pedir a lista; dela se tira o endereco
@@ -195,7 +367,7 @@ def _opinioes_chrome(ids):
     return out
 
 
-def coletar(lote, api=_api_real, opinioes=_opinioes_chrome):
+def coletar(lote, api=_api_real, opinioes=_opinioes_chrome, buscar=_busca_chrome):
     """Grava coleta-{pai}.json para cada produto do lote. Devolve os pais que falharam."""
     lote = Path(lote)
     try:
@@ -218,25 +390,53 @@ def coletar(lote, api=_api_real, opinioes=_opinioes_chrome):
             if ean:
                 r = (api(f"/products/search?status=active&site_id=MLB&product_identifier={ean}") or {}).get("results") or []
                 mesma = r[0] if r else None
+            perfil = None
+            if mesma and FICHA_OK.match(str(mesma.get("id") or "")):
+                perfil = perfil_de(_atributos(mesma) or _atributos(api(f"/products/{mesma['id']}")))
             destaques = (api(f"/highlights/MLB/category/{cat}") or {}).get("content") or []
             termo = termo_busca(a.get("nome_base"))
-            busca = ((api(f"/products/search?status=active&site_id=MLB&q={urllib.parse.quote(termo)}") or {}).get("results") or []) if termo else []
+            # 2a busca pelo que o produto E (tipo + material), nao pelo nome: "prato raso plastico"
+            termos = [termo]
+            if perfil and termo:
+                tipo = termo.split()[0]
+                termos.append(" ".join([tipo, *perfil["tipos"].values(), perfil["material"] or ""]).strip())
+                if perfil["material"]:
+                    termos.append(f"{tipo} {perfil['material']}")
+            busca = []
+            for t in dict.fromkeys(x for x in termos if x):
+                busca += ((api(f"/products/search?status=active&site_id=MLB&q={urllib.parse.quote(t)}") or {}).get("results") or [])[:10]
             candidatos, ja = [], set()
-            for c, mv in [(x, True) for x in destaques if x.get("type", "PRODUCT") == "PRODUCT"][:10] + [(x, False) for x in busca[:10]]:
+            for c, mv in [(x, True) for x in destaques if x.get("type", "PRODUCT") == "PRODUCT"][:10] + [(x, False) for x in busca]:
                 cid = str(c.get("id") or "")
                 if not FICHA_OK.match(cid) or cid in ja:
                     continue
                 ja.add(cid)
-                nome = c.get("name") or (api(f"/products/{cid}") or {}).get("name")
+                atrs = _atributos(c)
+                if not c.get("name") or (perfil and not atrs):
+                    ficha = api(f"/products/{cid}") or {}
+                    c = {**ficha, **{k: v for k, v in c.items() if v}}
+                    atrs = atrs or _atributos(ficha)
                 vend = len((api(f"/products/{cid}/items") or {}).get("results") or [])
-                candidatos.append({"id": cid, "nome": nome, "vendedores": vend, "mais_vendido": mv})
-            escolhidos = escolher(mesma, candidatos, termo)
-            concorrentes = [{**e, **_ficha(api, e["id"])} for e in escolhidos]
+                candidatos.append({"id": cid, "nome": c.get("name"), "vendedores": vend, "mais_vendido": mv, "atributos": atrs})
+            escolhidos = escolher(mesma, candidatos, termo, perfil=perfil, reserva=RESERVA if perfil else 0)
+            # quem vende de verdade (e tem opiniao) vem da busca do ML no Chrome; o catalogo da API so completa
+            try:
+                cartoes = buscar(list(dict.fromkeys(t for t in reversed(termos) if t)))  # o descritivo primeiro
+            except Exception:  # noqa: BLE001
+                cartoes = []
+            mesmos = [e for e in escolhidos if e["origem"] == "mesmo_produto"]
+            da_busca = escolher_busca(cartoes, termo, perfil, {e["id"] for e in mesmos}, LIMITE + RESERVA)
+            ids_busca = {c["id"] for c in da_busca}
+            do_catalogo = [e for e in escolhidos if e["origem"] != "mesmo_produto" and e["id"] not in ids_busca]
+            concorrentes = ([{**e, **_ficha(api, e["id"])} for e in mesmos]
+                            + [{"id": c["id"], "origem": "busca_ml", **_ficha_da_busca(api, c)} for c in da_busca]
+                            + [{**e, **_ficha(api, e["id"])} for e in do_catalogo[:max(0, LIMITE + RESERVA - len(da_busca))]])
+            paginas = {c["id"]: c["url"] for c in da_busca}
         except Exception:  # noqa: BLE001
             falhou.append(pai)
             continue
         try:
-            ops = opinioes([e["id"] for e in concorrentes])
+            ops = opinioes([e["id"] for e in concorrentes], paginas)
             status = "ok"
         except Exception as e:  # noqa: BLE001
             ops, status = {}, f"falhou: {type(e).__name__} (a Helena usa o caminho antigo para as opinioes)"
@@ -244,7 +444,23 @@ def coletar(lote, api=_api_real, opinioes=_opinioes_chrome):
             o = ops.get(k["id"]) or {}
             lidas = o.get("lidas") or []
             k["opinioes"] = {"media_texto": o.get("media_texto"), "lidas": len(lidas), "por_nota": por_nota(lidas),
-                             "erro": o.get("erro"), "itens": lidas}
+                             "erro": o.get("erro"), "sem_comentarios": bool(o.get("sem_comentarios")), "itens": lidas}
+        # dos concorrentes lidos, ficam os 3 primeiros que tem opiniao (a reserva so serve para isso)
+        # A mesma opiniao em dois concorrentes = mesmo produto em outra cor (Prato Cozy, 22/10: Bege e Preto com as
+        # mesmas 120 opinioes); fica so o primeiro.
+        outros = [k for k in concorrentes if k["origem"] != "mesmo_produto"]
+        com, ja_lidas = [], set()
+        for k in outros:
+            ids = {o["id"] for o in k["opinioes"]["itens"]}
+            if ids and len(ids & ja_lidas) * 2 <= len(ids) and len(com) < LIMITE:
+                com.append(k)
+                ja_lidas |= ids
+        fica = {k["id"] for k in com + [k for k in outros if k not in com][:LIMITE - len(com)]}
+        concorrentes = [k for k in concorrentes if k["origem"] == "mesmo_produto" or k["id"] in fica]
+        # nenhuma opiniao lida por falha (Chrome caiu, PC dormiu: pedido 9, 22/10) = falhou; o maestro tenta de novo
+        # antes de pagar o texto. Ficha sem comentario nenhum nao e falha.
+        if concorrentes and (status != "ok" or all(k["opinioes"]["erro"] for k in concorrentes)):
+            falhou.append(pai)
         saida = {
             "pai_sku": pai, "category_id": cat, "ean": ean,
             "mesmo_produto": ({"id": mesma.get("id"), "nome": mesma.get("name")} if mesma else None),

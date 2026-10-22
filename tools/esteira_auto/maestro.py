@@ -18,6 +18,17 @@ STEPS = {"capas": "step-07-capas.md", "curadoria": "step-02-curadoria-produtos.m
          "categoria": "step-03-categorizacao.md", "pesquisa": "step-04-inteligencia-conversao.md",
          "texto": "step-05-copywriting.md", "revisao": "step-08-revisao.md"}
 COM_CABECA = ["capas", "curadoria", "categoria", "pesquisa", "texto", "revisao"]
+TENTATIVAS_COLETA = 3
+
+
+def _manter_acordado(ligar):
+    """Enquanto trabalha, o Windows nao suspende o PC por inatividade (fechar a tampa ainda suspende)."""
+    try:
+        import ctypes
+        ES_CONTINUOUS, ES_SYSTEM_REQUIRED = 0x80000000, 0x00000001
+        ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS | (ES_SYSTEM_REQUIRED if ligar else 0))
+    except Exception:  # noqa: BLE001  (fora do Windows: nada a fazer)
+        pass
 
 
 def _rel(lote):
@@ -140,6 +151,25 @@ def rodar_lote(lote, chamar=chamar_claude.chamar, conferir=travas.conferir,
                 L.anotar(lote, "tela fechada com anuncio pendente: clique de novo para reabrir", agora())
                 return 2
         pais = _pais(lote)
+        if pais and etapa == "pesquisa":
+            # concorrentes pela API (com o acesso da loja) + opinioes por Chrome de verdade. Sem opiniao o texto sai
+            # fraco (pedido 9, 22/10: PC dormiu no meio, 0 opinioes, e a esteira pagou o texto assim mesmo):
+            # falhou = tenta de novo na proxima volta; na 3a vez para o produto com o motivo.
+            avisar(f"{agora():%H:%M} juntando concorrentes e opinioes do ML…")
+            falhou = [p for p in coletar(lote) if p in pais]
+            if falhou:
+                d = L.ler(lote)
+                n = d.get("coleta_tentativas", 0) + 1
+                d["coleta_tentativas"] = n
+                L._salvar(lote, d)
+                if n < TENTATIVAS_COLETA:
+                    L.anotar(lote, f"nao consegui ler concorrentes e opinioes do ML de {', '.join(falhou)} "
+                                   f"(tentativa {n} de {TENTATIVAS_COLETA}): tento de novo na proxima volta", agora())
+                    return 4
+                for p in falhou:
+                    L.parar_pai(lote, p, f"{TENTATIVAS_COLETA} tentativas sem conseguir ler as opinioes dos "
+                                         "concorrentes no ML (o Chrome da esteira abriu?)", agora())
+                pais = _pais(lote)
         if not pais:
             L.anotar(lote, "nenhum produto sobrou neste lote", agora())
             L.concluir(lote, agora())
@@ -153,12 +183,6 @@ def rodar_lote(lote, chamar=chamar_claude.chamar, conferir=travas.conferir,
             if falhou:
                 L.anotar(lote, f"nao consegui ler os campos da categoria de {', '.join(falhou)}; "
                                "a ficha sai sem a conferencia de campo esquecido", agora())
-            # concorrentes pela API (com o acesso da loja) + opinioes por Chrome de verdade; falhar so anota
-            avisar(f"{agora():%H:%M} juntando concorrentes e opinioes do ML…")
-            falhou = coletar(lote)
-            if falhou:
-                L.anotar(lote, f"nao consegui juntar os concorrentes de {', '.join(falhou)}; "
-                               "a pesquisa usa o caminho antigo para eles", agora())
 
 
 def _abrir_tela(lote):
@@ -358,4 +382,9 @@ def _main_fila(lotes, fila, rodar, agora, trava):
 
 
 if __name__ == "__main__":
-    sys.exit(main_fila() if "--fila" in sys.argv else main())
+    _manter_acordado(True)
+    try:
+        cod = main_fila() if "--fila" in sys.argv else main()
+    finally:
+        _manter_acordado(False)
+    sys.exit(cod)

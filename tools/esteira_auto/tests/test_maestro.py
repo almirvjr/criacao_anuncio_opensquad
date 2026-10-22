@@ -5,12 +5,19 @@ import re
 import sys
 from datetime import datetime
 
+import pytest
 import yaml
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from esteira_auto import lote as L, maestro as M  # noqa: E402
 
 T = lambda: datetime(2026, 10, 9, 14, 0, 0)
+
+
+@pytest.fixture(autouse=True)
+def _sem_ml(monkeypatch):
+    """Teste nunca abre Chrome nem chama o ML: a coleta padrao finge que deu certo."""
+    monkeypatch.setattr(M.coletar_concorrentes, "coletar", lambda lote: [])
 
 
 def _lote(tmp_path, pais=("A", "B")):
@@ -208,9 +215,26 @@ def test_coleta_os_concorrentes_depois_dos_campos_e_antes_da_pesquisa(tmp_path):
     assert ordem.index("COLETA") < ordem.index("step-04-inteligencia-conversao.md")
 
 
-def test_falha_na_coleta_so_anota(tmp_path):
+def test_coleta_falhou_tenta_de_novo_sem_pagar_o_texto_e_na_3a_para_o_produto(tmp_path):
     lt, lp = _lote(tmp_path)
-    r = M.rodar_lote(lt, chamar=lambda i, raiz, **kw: (True, "pronto"), conferir=lambda e, l, p: {}, ler_planilha=lp,
-                     abrir_tela=lambda l: 0, agora=T, avisar=lambda *a: None, buscar_campos=lambda l: [],
-                     coletar=lambda l: ["A"])
-    assert r == 0 and "concorrentes" in (lt / "andamento.txt").read_text(encoding="utf-8")
+    passos = []
+    chamar = lambda i, raiz, **kw: (passos.append(re.search(r"step-\d+[a-z]?-[\w-]+\.md", i).group(0)) or (True, "pronto"))
+    rodar = lambda: M.rodar_lote(lt, chamar=chamar, conferir=lambda e, l, p: {}, ler_planilha=lp, abrir_tela=lambda l: 0,
+                                 agora=T, avisar=lambda *a: None, buscar_campos=lambda l: [], coletar=lambda l: ["A"])
+    assert rodar() == 4 and "step-04-inteligencia-conversao.md" not in passos
+    assert rodar() == 4
+    assert rodar() == 0  # 3a: A para, B segue ate a tela
+    d = L.ler(lt)
+    assert "A" in d["parados"] and "opinioes" in d["parados"]["A"] and d["concluido"]
+    assert passos.count("step-04-inteligencia-conversao.md") == 1
+    assert "tentativa 1 de 3" in (lt / "andamento.txt").read_text(encoding="utf-8")
+
+
+def test_coleta_ok_depois_de_falhar_segue(tmp_path):
+    lt, lp = _lote(tmp_path)
+    vez = []
+    coletar = lambda l: (vez.append(1) or (["A", "B"] if len(vez) == 1 else []))
+    rodar = lambda: M.rodar_lote(lt, chamar=lambda i, raiz, **kw: (True, "pronto"), conferir=lambda e, l, p: {},
+                                 ler_planilha=lp, abrir_tela=lambda l: 0, agora=T, avisar=lambda *a: None,
+                                 buscar_campos=lambda l: [], coletar=coletar)
+    assert rodar() == 4 and rodar() == 0 and L.ler(lt)["parados"] == {}
