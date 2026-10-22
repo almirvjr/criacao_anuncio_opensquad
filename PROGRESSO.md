@@ -4,8 +4,6 @@
 
 **22/10/2026 — esteira pela fila do hub rodando** (`maestro.py --fila`, tarefa agendada "Esteira - fila do hub"; pedido 9 do Prato Cozy `BRI-coza18-PAI` produzido). **Pesquisa de concorrentes refeita** (DECISOES 2026-10-22): concorrentes vêm da busca do ML no Chrome da esteira, que agora está **logado numa conta de comprador** (pelo Almir, 22/10; sem login o ML mostra "acesse sua conta"). Sem opinião lida = não paga o texto (3 tentativas).
 **PRÓXIMO:** (a) pedir o Prato Cozy de novo pela fila e conferir opiniões/concorrentes na coleta (pedido 11 cancelado: PC ia desligar); (b) consertar o risco de rodada em dobro: PC suspenso > 90 min + trava velha = tarefa nova pega o mesmo lote enquanto o processo antigo acorda; (c) a etapa de categoria (Cibele) ainda tenta `/sites/MLB/search` (403 sempre) — usar a coleta.
-⚠️ O commit de 20/10 da pesquisa (que o Almir pediu para ficar só local) **subiu ao GitHub em 22/10** junto com o trabalho do hub (sem segredo; conferido). Ver com o Almir se quer tirar.
-
 ## 0. Esteira sem fotos — 1º teste CONCLUÍDO em 08/10/2026 (Viel 5L e 8L, 3 cores cada)
 **No ar, ativos, estoque vindo do Tiny (10 por cor), Flex ligado, descrição gravada:** 5L (R$ 92,71) Branco MLB7771661140 · Cinza MLB5354173009 · Preto MLB7771661510; 8L (R$ 112,71) Branco MLB7771685954 · Cinza MLB7771661556 · Preto MLB7771706672. Marca Terra Casa Decor, códigos de barras novos da GS1, caixa da cubagem.
 **Como ficou a esteira:** aprovação do texto na tela (`tools/aprovacao/`, botão `2 - Aprovar anuncios` em `G:\Meu Drive\TERRA CASA DECOR\ANUNCIOS`); publicação no **modelo novo do ML** (um anúncio por cor, `family_name`, preta primeiro, descrição e Flex em 2º envio) — ver `DECISOES.md` 2026-10-08 e step-10.
