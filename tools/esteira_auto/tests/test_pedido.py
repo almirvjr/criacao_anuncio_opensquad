@@ -184,6 +184,24 @@ def test_entrega_grava_e_termina(tmp_path):
     assert f.gravados[0]["lote"] == lt.name and f.terminados == [(7, None)]
 
 
+def test_entrega_feita_nao_vira_pedido_perdido(tmp_path):
+    # pedido 9 (22/10): depois de terminar, o banco recusa anotar (pedido ja 'produzido') e a esteira
+    # achava que o pedido tinha sido devolvido no site.
+    f = FilaFalsa(PEDIDO)
+    anotar = f.anotar
+    f.anotar = lambda pid, etapa, texto, lote=None: anotar(pid, etapa, texto, lote) and not f.terminados
+    def rodar(lote, entregar):
+        P.montar_entrada(lote, ler_cubagem=lambda c: {})
+        assert entregar(lote) is True
+        L.marcar_feita(lote, "entregar", T())
+        L.concluir(lote, T())
+        return 0
+    assert M.main_fila(tmp_path / "lotes", fila=f, rodar=rodar, agora=T) == 0
+    lt = next(p for p in (tmp_path / "lotes").iterdir() if p.is_dir())
+    assert "nao aceita mais" not in (lt / "andamento.txt").read_text(encoding="utf-8")
+    assert f.terminados == [(7, None)]
+
+
 def test_uma_rodada_por_vez_e_trava_velha_e_tomada(tmp_path):
     lotes = tmp_path / "lotes"
     trava = M._pegar_trava(lotes)

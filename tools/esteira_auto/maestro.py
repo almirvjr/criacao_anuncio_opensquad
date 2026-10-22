@@ -234,6 +234,7 @@ def _entregador(fila, pid):
                 raise PedidoPerdido()
         except F.SemAcesso:
             return False
+        L.ESPELHO = None  # pedido ja terminado: o banco recusa anotar e isso nao e "devolvido no site"
         return True
     return entregar
 
