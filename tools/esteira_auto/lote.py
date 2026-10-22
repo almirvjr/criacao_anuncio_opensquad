@@ -5,9 +5,15 @@ import os
 from pathlib import Path
 
 ETAPAS = ["entrada", "capas", "curadoria", "categoria", "pesquisa", "texto", "revisao", "tela"]
-NOMES = {"entrada": "lendo a planilha", "capas": "conferindo as fotos", "curadoria": "organizando os dados",
+NOMES = {"entrada": "lendo os produtos", "capas": "conferindo as fotos", "curadoria": "organizando os dados",
          "categoria": "escolhendo a categoria", "pesquisa": "pesquisando concorrentes",
-         "texto": "escrevendo o texto", "revisao": "revisando", "tela": "esperando voce na tela"}
+         "texto": "escrevendo o texto", "revisao": "revisando", "tela": "esperando voce na tela",
+         "entregar": "entregando ao hub"}
+# Lote que veio da fila do hub: sem tela no PC (aprovacao e publicacao sao no site); no fim entrega ao banco.
+ETAPAS_PEDIDO = ETAPAS[:-1] + ["entregar"]
+
+# Lote de pedido: cada linha do andamento.txt tambem vai para o banco (o maestro liga isto). Recebe o texto.
+ESPELHO = None
 
 
 def _salvar(lote, d):
@@ -24,6 +30,8 @@ def ler(lote):
 def anotar(lote, texto, agora):
     with open(Path(lote) / "andamento.txt", "a", encoding="utf-8") as fh:
         fh.write(f"{agora:%d/%m %H:%M} - {texto}\n")
+    if ESPELHO is not None:
+        ESPELHO(texto)
 
 
 def criar_lote(planilha, raiz_lotes, agora):
@@ -32,6 +40,18 @@ def criar_lote(planilha, raiz_lotes, agora):
     _salvar(lote, {"planilha": str(planilha), "criado_em": f"{agora:%Y-%m-%d %H:%M}",
                    "feitas": [], "parados": {}, "concluido": False})
     anotar(lote, f"lote criado para a planilha {Path(planilha).name}", agora)
+    return lote
+
+
+def criar_lote_do_pedido(pedido, raiz_lotes, agora):
+    """Pedido da fila do hub -> lote proprio. pedido.json guarda o que o banco mandou (leitura do Olist)."""
+    pid, pai = pedido["pedido_id"], pedido["produto"]["sku_pai"]
+    lote = Path(raiz_lotes) / f"{agora:%Y-%m-%d-%H%M%S}-pedido{pid}"
+    lote.mkdir(parents=True, exist_ok=False)
+    (lote / "pedido.json").write_text(json.dumps(pedido, ensure_ascii=False, indent=1), encoding="utf-8")
+    _salvar(lote, {"pedido_id": pid, "sku_pai": pai, "criado_em": f"{agora:%Y-%m-%d %H:%M}",
+                   "etapas": ETAPAS_PEDIDO, "feitas": [], "parados": {}, "concluido": False})
+    anotar(lote, f"lote criado para o pedido {pid} do hub ({pai})", agora)
     return lote
 
 
@@ -70,14 +90,16 @@ def proxima(lote):
     d = ler(lote)
     if d.get("concluido"):
         return None
-    return next((e for e in ETAPAS if e not in d["feitas"]), None)
+    return next((e for e in d.get("etapas", ETAPAS) if e not in d["feitas"]), None)
 
 
-def lote_aberto(raiz_lotes):
+def lote_aberto(raiz_lotes, de_pedido=False):
+    """1o lote nao concluido do tipo pedido (fila do hub) ou planilha (botao): um nunca retoma o do outro."""
     raiz = Path(raiz_lotes)
     if not raiz.is_dir():
         return None
     for p in sorted(x for x in raiz.iterdir() if (x / "andamento.json").is_file()):
-        if not ler(p).get("concluido"):
+        d = ler(p)
+        if not d.get("concluido") and ("pedido_id" in d) == de_pedido:
             return p
     return None
