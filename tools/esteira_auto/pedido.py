@@ -98,5 +98,10 @@ def resultado(lote, ler_precos=precos_mod.ler_para_lote):
         produtos.append({"pai_sku": pai, "categoria": cats.get(pai), "anuncio": anuncio,
                          "parecer": _yaml(lote / "revisao" / f"parecer-{pai}.yaml"),
                          "capas": _yaml(lote / "capas" / f"capas-{pai}.yaml"),
-                         "precos": precos_mod.do_produto(tabela, [v.get("sku") for v in a.get("variacoes", [])])})
+                         "precos": precos_mod.do_produto(tabela, [v.get("sku") for v in a.get("variacoes", [])]),
+                         # o que a publicacao do hub precisa e so existe aqui: caixa ja com a cubagem (maior entre as
+                         # cores) e cada cor com o codigo de barras
+                         "pacote": {"peso_bruto_kg": a.get("peso_bruto_kg"), "dim_embalagem_cm": a.get("dim_embalagem_cm")},
+                         "variacoes": [{"sku": v.get("sku"), "cor": v.get("cor"), "ean": v.get("ean")}
+                                       for v in a.get("variacoes", [])]})
     return {"lote": lote.name, "produtos": produtos, "parados": d.get("parados", {})}

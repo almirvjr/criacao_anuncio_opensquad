@@ -114,6 +114,10 @@ def test_resultado_junta_o_que_a_esteira_fez_sem_preco(tmp_path):
     assert p["parecer"] == {"ok": True} and r["lote"] == lt.name
     # preco do Olist nunca; preco da planilha do hub so do SKU que ela tem (Magalu sem nenhum = fora)
     assert p["precos"] == {"ml": {"BRI-coza18-10570_0008-PT": 49.9}}
+    # a publicacao do hub precisa da caixa (cubagem) e do codigo de barras de cada cor
+    assert set(p["pacote"]) == {"peso_bruto_kg", "dim_embalagem_cm"}
+    assert [v["sku"] for v in p["variacoes"]] == ["BRI-coza18-10570_0007-BR", "BRI-coza18-10570_0008-PT"]
+    assert p["variacoes"][1]["ean"] == "7896553928006"
 
 
 def test_resultado_sem_planilha_segue_sem_preco(tmp_path):
