@@ -563,3 +563,9 @@ o prompt original dele**. Ver DECISOES 2026-09-17/23.
   (4) A aba da tela de teste (`tela_sem_publicar.py`) ficou aberta depois de o programa encerrar e parecia a tela real.
 - **Melhorias pendentes:** tela guardar os ajustes se a aba cair; tela de teste com faixa "TESTE"; maestro conferir se o
   `ML Publicar` esta ligado antes de abrir a tela; conferencia de limitacao por sentido, nao so por palavra exata.
+
+## 2026-10-22 (noite) — esteira pela fila do hub provada com a pesquisa nova
+- Pedido 12 (Prato Cozy `BRI-coza18-PAI`): 16 min, 3 concorrentes de prato raso de plástico, 250 opiniões, 14 perguntas, confiança alta, revisão aprovada (antes: 0 opiniões e concorrentes de vidro).
+- Trava da fila = arquivo trancado pelo Windows (`maestro._pegar_trava`, msvcrt.locking): PC suspenso horas não gera rodada em dobro; testes novos de trava velha e de processo morto.
+- Step-05 com `titulos_longos` (2–3, 100–150 letras) + `travas._titulos_longos`; instrução do texto avisa que as 3 conferências são do maestro (fim do aviso "terminal bloqueado").
+- `decisoes_almir` na entrada (vindas do hub, mig 198) + regra nas instruções de categoria/curadoria/pesquisa/texto/revisão + `travas._decisoes_almir`. Provado nos pedidos 19 e 21. Testes da esteira: 89.

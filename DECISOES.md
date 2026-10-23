@@ -4,6 +4,16 @@
 
 ## 2026-10-22
 
+### Decisão do Almir gravada no hub vale em todas as etapas (P27)
+O pedido da fila traz `decisoes` (mig 198); `pedido.montar_entrada` grava em `decisoes_almir` de cada anúncio (`campo`, `valor`, `sku`). As instruções de categoria, curadoria, pesquisa, texto e revisão mandam usar o valor sem registrar pendência. A trava do texto (`travas._decisoes_almir`) reprova campo da família contra a decisão ou em `campos_pendentes`. Motivo: no pedido 19 a esteira perguntou de novo "redondo ou quadrado?".
+
+### A redatora escreve também o título longo (hub, Fase 1 etapa 3b)
+Step-05 ganhou `titulos_longos` (2-3 opções de 100-150 letras, 1 recomendado; mesmas palavras de busca e regras do título curto) para Magalu/Shopee/TikTok/Shopify. O maestro confere contando as letras (`travas._titulos_longos`; anúncio `aprovado`/`tirado` não é cobrado). O hub copia o recomendado para cada canal do pedido (mig 197). A instrução da etapa diz que as 3 conferências do texto são do maestro: no pedido 12 a redatora escreveu "travas não puderam ser rodadas (terminal bloqueado)", mas o maestro tinha rodado e aprovado — era ruído.
+
+### Trava da fila = arquivo trancado pelo Windows, não pela idade
+**Contexto:** a trava (`lotes/.fila.trava`) valia por 90 min sem andamento. PC suspenso mais que isso = a tarefa de 5 em 5 min tomava a trava e rodava o mesmo lote enquanto o processo antigo acordava (etapa paga em dobro, dois escrevendo no mesmo lote).
+**Decisão:** `maestro._pegar_trava` abre o arquivo e tranca (`msvcrt.locking`). O Windows segura enquanto o processo existir, suspenso ou não, e solta sozinho quando ele morre. Sem prazo. O arquivo fica na pasta (não é lote: não tem `andamento.json`). Processo travado para sempre não acontece: `claude -p` tem limite de 40 min e as páginas do Chrome têm limite próprio. Testes: `test_uma_rodada_por_vez_mesmo_com_trava_velha`, `test_trava_de_processo_morto_e_tomada`; provado na pasta real (outra volta com a trava presa = "Outra rodada da fila esta trabalhando.").
+
 ### Concorrentes vêm da busca do ML no Chrome logado; sem opinião não paga o texto
 **Contexto:** pedido 9 do Prato Cozy (`BRI-coza18-PAI`, plástico, raso, por unidade): 0 opiniões e 3 concorrentes errados (jogos de prato **fundo de vidro**). Duas causas: (1) o PC suspendeu no meio da leitura e a esteira seguiu e pagou o texto assim; (2) o catálogo da API só tinha fichas de prato de plástico **sem vendedor e sem opinião**, e a regra (palavra "prato" + ter vendedor) pegou os mais vendidos de vidro. Na boleira (19/10) deu certo por sorte: ela tinha ficha com vendedores.
 **Decisão (`coletar_concorrentes.py`, roda no começo da etapa de pesquisa):**
