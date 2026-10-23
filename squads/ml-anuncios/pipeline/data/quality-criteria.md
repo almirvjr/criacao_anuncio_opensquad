@@ -45,7 +45,7 @@ A squad **não gera foto**. A capa de cada cor é subida pelo Almir no Cloudinar
 - [ ] Cada título com 50 ≤ caracteres ≤ 70
 - [ ] Cada título com `score_busca` (0-10), `score_conversao` (0-10), `justificativa` e `recomendado` (bool)
 - [ ] Exatamente UM título com `recomendado: true` (maior soma de scores)
-- [ ] Padrão PMME (Produto + Marca + Modelo + Especificação)
+- [ ] Padrão PMME sem a marca (Produto + Modelo + Especificação); nenhum título cita marca, fornecedor ou submarca (Almir 23/10/2026)
 - [ ] Cada título começa com tipo+material+capacidade
 - [ ] Cada título contém pelo menos 1 feature mecânica
 - [ ] Cada título cita ambientes de uso

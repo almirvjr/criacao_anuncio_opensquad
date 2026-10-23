@@ -108,10 +108,6 @@ class TestTitulo(unittest.TestCase):
         self.assertEqual(titulo_do_copy(doc), "B")
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TestMarcaPropriaSemFornecedor(unittest.TestCase):
     # 08/10: com a marca propria, o nome do fornecedor nao pode sobrar no texto
     def test_marca_propria_com_fornecedor_na_descricao_bloqueia(self):
@@ -129,3 +125,64 @@ class TestMarcaPropriaSemFornecedor(unittest.TestCase):
     def test_marca_do_fornecedor_pode_citar_o_fornecedor(self):
         e = validar_ficha("VIE-1066-PAI", TIT, "Viel", "Quarto", DESC + "\n- Marca: Viel")
         self.assertEqual(codigos(e), [])
+
+
+class TestRegras23Out(unittest.TestCase):
+    # Almir 23/10: titulo sem marca/fornecedor; Material e Linha = palavras de busca novas; bloco com titulo
+    COZY = "Prato Raso Refeição Plástico 25,7 cm Borda Alta Micro-ondas"
+
+    def test_titulo_com_fornecedor_bloqueia(self):
+        e = validar_ficha("VIE-1066-PAI", "Lixeira Viel Inox 5L com Pedal", "Viel", "Quarto", DESC)
+        self.assertIn("TITULO_CITA_MARCA", codigos(e))
+
+    def test_titulo_longo_com_submarca_bloqueia(self):
+        e = validar_ficha("BRI-coza18-PAI", self.COZY, "Brinox", "Mesa Posta", DESC,
+                          outros_titulos=["Prato Raso Plástico Coza 25,7 cm Vendido por Unidade"])
+        self.assertIn("TITULO_CITA_MARCA", codigos(e))
+
+    def test_marca_propria_nao_barra_casa_no_titulo(self):
+        e = validar_ficha("MDA-1-PAI", "Vaso Decorativo Cerâmica Casa Sala", "Terra Casa Decor", "Quarto",
+                          DESC + " Da marca Terra Casa Decor.")
+        self.assertNotIn("TITULO_CITA_MARCA", codigos(e))
+
+    def test_material_e_linha_repetindo_titulo_bloqueia(self):
+        e = validar_ficha("BRI-coza18-PAI", self.COZY, "Brinox", "Mesa Posta", DESC,
+                          material="Polipropileno Plástico", linha="Borda Alta")
+        self.assertEqual(codigos(e).count("PALAVRA_REPETIDA_TITULO"), 2)
+
+    def test_material_e_linha_novos_ok(self):
+        e = validar_ficha("BRI-coza18-PAI", self.COZY, "Brinox", "Mesa Posta", DESC,
+                          material="Polipropileno Reciclável", linha="Cozy Infantil Área Gourmet")
+        self.assertEqual(codigos(e), [])
+
+    def test_material_real_igual_ao_titulo_na_1a_palavra_ok(self):
+        e = validar_ficha("BRI-coza18-PAI", self.COZY, "Brinox", "Mesa Posta", DESC, material="Plástico Reciclável")
+        self.assertEqual(codigos(e), [])
+
+    def test_nome_da_linha_no_titulo_bloqueia(self):
+        e = validar_ficha("BRI-coza18-PAI", self.COZY, "Brinox", "Mesa Posta", DESC, linha="Cozy Infantil",
+                          outros_titulos=["Prato Raso Plástico Cozy 25,7 cm Vendido por Unidade"])
+        self.assertIn("TITULO_CITA_LINHA", codigos(e))
+
+    def test_nao_se_aplica_passa(self):
+        e = validar_ficha("BRI-coza18-PAI", self.COZY, "Brinox", "Mesa Posta", DESC, linha="não se aplica")
+        self.assertEqual(codigos(e), [])
+
+    def test_repeticao_entre_campos_so_avisa(self):
+        e = validar_ficha("BRI-coza18-PAI", self.COZY, "Brinox", "Mesa Posta", DESC, linha="Mesa Infantil")
+        self.assertIn("WARN_REPETIDA_ENTRE_CAMPOS", codigos(e, so_bloqueio=False))
+        self.assertEqual(codigos(e), [])
+
+    def test_bloco_sem_titulo_bloqueia(self):
+        e = validar_ficha("BRI-coza18-PAI", self.COZY, "Brinox", "Mesa Posta", DESC,
+                          blocos={"bloco_2_specs": "- Material: polipropileno\n- Diâmetro: 25,7 cm"})
+        self.assertIn("BLOCO_SEM_TITULO", codigos(e))
+
+    def test_bloco_com_titulo_ok(self):
+        e = validar_ficha("BRI-coza18-PAI", self.COZY, "Brinox", "Mesa Posta", DESC,
+                          blocos={"bloco_2_specs": "Especificações técnicas\n- Material: polipropileno"})
+        self.assertEqual(codigos(e), [])
+
+
+if __name__ == "__main__":
+    unittest.main()

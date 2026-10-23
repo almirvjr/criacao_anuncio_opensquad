@@ -38,7 +38,7 @@ Consome 4 fontes: `anuncios-entrada.json` (modo e variações), dossiê do Caio,
    - `categorias.yaml` (Cibele) → atributos obrigatórios, `top_keywords`, faixa de preço
    - `brief-{pai_sku}.yaml` (Helena) → `dor_interna`, `only_factor`, `linguagem_real_cliente`, `escada_e_dai`, `limitacoes`
 
-2. **Gerar 3 a 5 títulos**, cada um entre 50 e 60 caracteres, no padrão **PMME** (Produto + Marca + Modelo + Especificação) — aqui "Marca" é o fabricante e "Modelo" é a referência/linha do produto, não o campo `MODEL` da ficha (que leva palavras-chave **fora** do título). Cada título tem uma aposta diferente:
+2. **Gerar 3 a 5 títulos**, cada um entre 50 e 60 caracteres, no padrão **PMME sem a marca** (Produto + Modelo + Especificação; a marca saiu do título em 23/10/2026) — "Modelo" é a referência/linha do produto, não o campo `MODEL` da ficha (que leva palavras-chave **fora** do título). Cada título tem uma aposta diferente:
    - **SEO forte** — máximo de `top_keywords`, ordem ótima para busca
    - **StorySelling forte** — 1 ou 2 palavras da linguagem real do cliente
    - **Balanço** — SEO + 1 palavra emocional
@@ -47,6 +47,8 @@ Consome 4 fontes: `anuncios-entrada.json` (modo e variações), dossiê do Caio,
    Para cada um, computar `length`, `score_busca` (0-10), `score_conversao` (0-10) e `justificativa` de 1-2 linhas explicando o trade-off. Marcar `recomendado: true` em **um só** — o de maior soma. Empate → vence o maior `score_conversao`.
 
    **Em `modo: variacoes` nenhum título crava cor** — ele é compartilhado por todas, então "Branco" no título invalida as outras. Usar o `nome_base` como âncora e trocar cor por feature neutra (material, capacidade, ambiente). Em `modo: simples` a cor pode aparecer normalmente.
+
+**Cada bloco da descrição abre com uma linha de título** (Almir 23/10/2026): curta (até 60 letras), sem ponto no fim, sem CAPS, sem markdown; o texto começa na linha de baixo. Bloco 1 = frase-título do benefício principal; bloco 2 = "Especificações técnicas"; bloco 3 = "Por que escolher" + o produto. Trava `BLOCO_SEM_TITULO`.
 
 3. **Bloco 1 — abertura lifestyle**: 3-5 linhas ancoradas na `dor_interna` do brief, com 1-2 frases da linguagem real do cliente integradas naturalmente. Começa com cena concreta, nunca com "Apresentamos" nem com o nome da categoria. Não repete o título — o bloco 1 é narrativo.
 
@@ -60,7 +62,7 @@ Consome 4 fontes: `anuncios-entrada.json` (modo e variações), dossiê do Caio,
 
 ## Critérios de decisão
 
-- **Marca no título**: só marca de **fabricante** com pull de busca real (Tramontina, Brastemp). Sem fabricante relevante, omitir o slot Marca do PMME em todos os títulos e preencher com Produto + Especificação. O nome da loja nunca entra.
+- **Marca no título: NUNCA (Almir 23/10/2026).** Nenhum título (nem os longos dos outros canais) cita a marca, o fornecedor, submarca dele nem o nome da linha (Brinox, Coza, Viel, Cozy…). A marca fica no campo Marca da ficha e pode aparecer na descrição. O nome da loja também nunca entra.
 - **Cortar feature do título** (passou de 70): cortar primeiro as menos diferenciadoras, preservando capacidade e acionamento.
 - **`publico_genero` no título**: só em categoria onde pesa na busca (roupas, calçados, alguns acessórios). Na maior parte do catálogo, fica de fora.
 - **`compatibilidade` no título**: só se for diferencial-chave (ex.: "indução" para panelas). Senão vai para o bloco 2.
@@ -86,7 +88,7 @@ Arquivo `output/copywriting/anuncio-{pai_sku}.yaml`, um por anúncio, independen
 
 **Regras do anúncio:** título entre 50 e 60 caracteres (o teto real é `limites_categoria.max_title_length` da Cibele — o ML corta acima dele; Lixeiras = 60) (fora disso o título é vetado); descrição entre 200 e 350 palavras; exatamente 1 título com `recomendado: true`; 100% dos atributos obrigatórios preenchidos.
 
-**Campos `BRAND` (Marca) e `MODEL` (Modelo) — regra do Almir, 07/10/2026, Marca revista em 08/10.** **Marca = só o nome do fornecedor** (Viel, Brinox, Bellagio, Passerini…), sem palavra-chave depois — o Almir troca na tela de aprovação por só `Terra Casa Decor` quando quiser. **Modelo** leva as palavras-chave mais buscadas (`keywords_busca` do brief) **que não estão no título escolhido**, ~30 caracteres. **Mundiart (`MDA`)**: Marca = `Terra Casa Decor` e mais nada; a descrição apresenta o produto como da marca Terra Casa Decor (o título nunca cita a loja). A trava `validar_ficha_seo.py` é a autoridade.
+**Campos `BRAND` (Marca) e `MODEL` (Modelo) — regra do Almir, 07/10/2026, Marca revista em 08/10.** **Marca = só o nome do fornecedor** (Viel, Brinox, Bellagio, Passerini…), sem palavra-chave depois — o Almir troca na tela de aprovação por só `Terra Casa Decor` quando quiser. **Modelo, Material (`MATERIAL`) e Linha (`LINE`)** levam as palavras-chave mais buscadas (`keywords_busca` do brief) **que não estão no título escolhido**, ~30 caracteres cada, sem repetir palavra entre os três (cauda longa; Material e Linha desde 23/10/2026). Material: 1ª palavra = o material real que mais faz sentido para o campo (ex.: "Polipropileno"), nunca inventado, depois palavras de busca. Linha: 1ª palavra = nome da linha do fornecedor (ex.: "Cozy"), depois palavras de busca. O nome da linha **não entra em título nenhum** (trava `TITULO_CITA_LINHA`); pode ir na descrição. **Mundiart (`MDA`)**: Marca = `Terra Casa Decor` e mais nada; a descrição apresenta o produto como da marca Terra Casa Decor (o título nunca cita a loja). A trava `validar_ficha_seo.py` é a autoridade.
 
 ### A trava
 
@@ -159,10 +161,10 @@ description:
   word_count: 223
 
 attributes:
-  BRAND: "Viel Higiênica Consultório" # fornecedor + palavra-chave fora do título (~30 car.)
+  BRAND: "Viel"                       # só o fornecedor (regra de 08/10)
   MODEL: "Lixo Quarto Escritório"    # palavra-chave fora do título e da Marca
   CAPACITY: "12 L"
-  MAIN_MATERIAL: "Aço inox"
+  MAIN_MATERIAL: "Inoxidável Escovado Antiferrugem" # material real + busca fora do título
   COLOR: "Prateado escovado"
   HEIGHT: "31 cm"
   WIDTH: "24 cm"

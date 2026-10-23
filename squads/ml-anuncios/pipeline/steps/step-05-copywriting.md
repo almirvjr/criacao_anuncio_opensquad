@@ -30,7 +30,8 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
 
 1. Carregar `modo`, `pai_sku`, `variacoes[]` do anuncio; depois dossie + categoria + brief individual (`brief-{pai_sku}.yaml`).
 
-2. **Gerar 3-5 títulos alternativos** seguindo padrão PMME (Produto + Marca + Modelo + Especificação), 50-60 caracteres cada:
+2. **Gerar 3-5 títulos alternativos** seguindo padrão PMME sem a marca (Produto + Modelo + Especificação), 50-60 caracteres cada:
+   - **Sem marca no título (Almir 23/10/2026):** nenhum título (nem os longos do 2b) cita a Marca, o fornecedor, submarca dele nem o nome da linha (ex.: Brinox, Coza, Viel, Cozy). A marca fica só no campo Marca da ficha e pode aparecer na descrição. Trava: `validar_ficha_seo.py` (`TITULO_CITA_MARCA`).
    - **Se `modo: variacoes`**: o título NÃO deve mencionar cor específica em nenhuma das alternativas — usar o `nome_base` como âncora, preencher o slot de especificação com material, capacidade ou feature principal.
    - **Se `modo: simples`**: comportamento legado; a cor pode aparecer normalmente no título.
    - Título 1 — **SEO Forte**: máximo de top_keywords da Cibele, ordem otimizada para busca, emocionalmente neutro.
@@ -52,6 +53,7 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
    - Cada um com `texto`, `length` e `recomendado` (exatamente 1 `true`).
 
 3. **Escrever descrição em 3 blocos delimitados por linha em branco** (1 descrição por anuncio, compartilhada entre todas as cores):
+   - **Cada bloco abre com uma linha de título própria (Almir 23/10/2026)**, curta (até 60 letras), sem ponto no fim, sem CAPS e sem markdown; o texto do bloco começa na linha de baixo. Ex.: bloco 1 = uma frase-título do benefício principal ("Mesa posta sem medo de caco no chão"); bloco 2 = "Especificações técnicas"; bloco 3 = "Por que escolher este prato" (o parágrafo de limitação "Para ficar claro antes de comprar" fica no fim do bloco 3, como hoje). Trava: `BLOCO_SEM_TITULO`.
    - **Bloco 1 (3-5 linhas, abertura lifestyle)**: tocar a `dor_interna` do brief; integrar 1-2 frases da `linguagem_real_cliente` naturalmente; sem repetir título; tom acolhedor Terra Casa Decor. Se `modo: variacoes`, pode mencionar levemente a variedade de opções se enriquecer a narrativa.
    - **Bloco 2 (bullets `- ` de specs)**: material, capacidade, dimensões, peso, referência do fabricante (se houver), garantia. Incluir `publico_genero` e `compatibilidade` quando o dossiê tiver valor (não-`null`). Padronizar unidades (cm/kg/L). **Se `modo: variacoes`**: incluir linha `- Cores disponíveis: [lista das cores das variacoes, ex: Branco, Preto, Cinza]`.
    - **Bloco 3 (bullets `- ` features + fechamento)**: para cada feature da `escada_e_dai` do brief, montar `Feature: Benefício emocional` (camada 3 da escada). Fechar com frase acolhedora generica, **SEM citar marca ("Terra Casa Decor") nem slogan** (regra SEM MARCA, Almir 19/06) — exceto Mundiart, que a descrição apresenta como Terra Casa Decor (07/10).
@@ -63,7 +65,7 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
    - Sem HTML, markdown ou emojis (plain text estrito).
 
 5. **Preencher ficha técnica** (`attributes`) cobrindo 100% dos atributos obrigatórios da categoria mapeados para valores do dossie. Padronizar unidades.
-   - **`BRAND` e `MODEL` — regra do Almir (07/10/2026, Marca revista em 08/10):** **Marca = só o nome do fornecedor** (Viel, Brinox, Bellagio, Passerini…), nada depois. **Modelo** = palavras de `keywords_busca` do brief **que não estão no título recomendado**, ~30 caracteres. **Mundiart (`MDA`)**: Marca = `Terra Casa Decor` e mais nada, e a descrição apresenta o produto como da marca Terra Casa Decor (título nunca cita a loja).
+   - **`BRAND`, `MODEL`, `MATERIAL` e `LINE` — regra do Almir (07/10/2026, Marca revista em 08/10, Material e Linha em 23/10):** **Marca = só o nome do fornecedor** (Viel, Brinox, Bellagio, Passerini…), nada depois. **Modelo, Material e Linha** = espaço de palavras de busca (cauda longa): palavras de `keywords_busca` do brief **que não estão no título recomendado**, ~30 caracteres em cada campo, sem repetir palavra entre os três. **Material**: a 1ª palavra é o material de verdade, a que mais faz sentido para o campo (ex.: "Polipropileno"), depois palavras de busca; nunca inventa material. **Linha**: a 1ª palavra é o nome da linha do fornecedor (ex.: "Cozy"), depois palavras de busca. **O nome da linha não entra em nenhum título** (Almir 23/10/2026; trava `TITULO_CITA_LINHA`); pode aparecer na descrição. Campo que a categoria não tem: ignore. **Mundiart (`MDA`)**: Marca = `Terra Casa Decor` e mais nada, e a descrição apresenta o produto como da marca Terra Casa Decor (título nunca cita a loja).
    - Gravar `pai_sku` no topo do `anuncio-{pai_sku}.yaml` (as travas leem dali).
 
 6. **Marcar `status_copy`**:

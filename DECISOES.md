@@ -2,6 +2,13 @@
 
 <!-- Decisoes tecnicas importantes. Formato: data - contexto - decisao - motivo. -->
 
+## 2026-10-23
+
+### Título sem marca; Modelo, Material e Linha = palavras de busca; bloco da descrição com título (Almir, revisando o Cozy BRI-coza18-PAI)
+- **Nenhum título** (ML nem os longos) cita marca, fornecedor, submarca (Coza = plástico da Brinox, em `SUBMARCAS`) **nem o nome da linha** (Cozy). Supera o "PMME com marca de fabricante" de 19/06: a marca fica no campo Marca e pode ir na descrição. Travas `TITULO_CITA_MARCA` e `TITULO_CITA_LINHA` em `validar_ficha_seo.py`.
+- **Modelo, Material e Linha** (cauda longa): palavras de busca que não estão no título, ~30 letras cada, sem repetir entre os três. A 1ª palavra da **Linha** é o nome da linha; a 1ª do **Material** é o material de verdade que mais faz sentido no campo (ex.: Polipropileno). Antes só o Modelo seguia a regra.
+- **Cada bloco da descrição abre com uma linha de título** (até 60 letras, sem ponto). Trava `BLOCO_SEM_TITULO`.
+
 ## 2026-10-22
 
 ### Decisão do Almir gravada no hub vale em todas as etapas (P27)
