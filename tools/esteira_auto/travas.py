@@ -17,7 +17,7 @@ def _py(script, *args, rodar):
 
 
 def _titulos_longos(anuncio):
-    """Titulos de 100-150 letras para os outros canais (hub, Fase 1). Conta o texto, nunca o `length` declarado."""
+    """Titulos de 85-100 letras para os outros canais (hub, Fase 1; teto 100 = Magalu, Portal 23/10/2026). Conta o texto, nunca o `length` declarado."""
     if not anuncio.is_file():
         return None  # sem o arquivo as outras travas ja reprovam
     a = yaml.safe_load(anuncio.read_text(encoding="utf-8")) or {}
@@ -25,12 +25,12 @@ def _titulos_longos(anuncio):
         return None
     longos = a.get("titulos_longos")
     if not isinstance(longos, list) or not longos:
-        return "faltam os titulos longos (titulos_longos, 100-150 letras, para os outros canais)"
+        return "faltam os titulos longos (titulos_longos, 85-100 letras, para os outros canais)"
     if not 2 <= len(longos) <= 3:
         return f"titulos longos: sao {len(longos)}, tem que ser de 2 a 3"
-    fora = [len(t.get("texto") or "") for t in longos if not 100 <= len(t.get("texto") or "") <= 150]
+    fora = [len(t.get("texto") or "") for t in longos if not 85 <= len(t.get("texto") or "") <= 100]
     if fora:
-        return f"titulos longos com {', '.join(map(str, fora))} letras (tem que ser 100-150)"
+        return f"titulos longos com {', '.join(map(str, fora))} letras (tem que ser 85-100)"
     if sum(1 for t in longos if t.get("recomendado") is True) != 1:
         return "titulos longos: marque exatamente 1 como recomendado"
     return None

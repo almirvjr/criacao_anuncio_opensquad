@@ -65,11 +65,11 @@ def _ok(cmd, **kw):
 
 
 def test_titulos_longos_conferidos_pelo_tamanho_de_verdade(tmp_path):
-    bom = [{"texto": "x" * 120, "length": 120, "recomendado": True}, {"texto": "y" * 101, "recomendado": False}]
+    bom = [{"texto": "x" * 100, "length": 100, "recomendado": True}, {"texto": "y" * 85, "recomendado": False}]
     _anuncio(tmp_path, bom)
     assert travas.conferir("texto", tmp_path, ["A"], rodar=_ok) == {}
-    _anuncio(tmp_path, [bom[0], {"texto": "y" * 90, "length": 120, "recomendado": False}])  # length mente
-    assert "90" in travas.conferir("texto", tmp_path, ["A"], rodar=_ok)["A"]
+    _anuncio(tmp_path, [bom[0], {"texto": "y" * 101, "length": 99, "recomendado": False}])  # length mente
+    assert "101" in travas.conferir("texto", tmp_path, ["A"], rodar=_ok)["A"]
     _anuncio(tmp_path, [dict(bom[0]), dict(bom[1], recomendado=True)])
     assert "recomendado" in travas.conferir("texto", tmp_path, ["A"], rodar=_ok)["A"]
     _anuncio(tmp_path, [bom[0]])
@@ -91,7 +91,7 @@ def _lote_decisao(tmp_path, attrs, pendentes=(), decisoes=None):
         decisoes if decisoes is not None else [{"campo": "SHAPE", "valor": "Redonda", "sku": None},
                                                {"campo": "SALE_FORMAT", "valor": "Unidade", "sku": None}]}]}),
         encoding="utf-8")
-    longos = [{"texto": "x" * 120, "recomendado": True}, {"texto": "y" * 120, "recomendado": False}]
+    longos = [{"texto": "x" * 95, "recomendado": True}, {"texto": "y" * 95, "recomendado": False}]
     _anuncio(tmp_path, longos, attributes=attrs, campos_pendentes=list(pendentes))
 
 

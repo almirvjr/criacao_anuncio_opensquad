@@ -47,7 +47,7 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
    
    Marcar `recomendado: true` em UM título (aquele com maior soma `score_busca + score_conversao`; em empate, prioriza `score_conversao`).
 
-2b. **Gerar 2-3 títulos longos (`titulos_longos`) para os outros canais** (Magalu, Shopee, TikTok, Shopify; hub, Fase 1, 22/10/2026), **100-150 caracteres** cada:
+2b. **Gerar 2-3 títulos longos (`titulos_longos`) para os outros canais** (Magalu, Shopee, TikTok, Shopify; hub, Fase 1, 22/10/2026), **85-100 caracteres** cada (o Magalu aceita no máximo 100, Portal 23/10/2026):
    - Mesmas palavras de busca do título recomendado (tipo + material + medida/capacidade + uso), mais as que não couberam nos 60: ambientes, 2ª dúvida mais repetida das opiniões, formato de venda (ex.: "Vendido por Unidade").
    - Mesmas regras do título curto: sem cor específica em `modo: variacoes`, sem marca da loja, sem `! ? *`, emoji ou CAPS fora de sigla, sem promessa que o brief não sustenta.
    - Cada um com `texto`, `length` e `recomendado` (exatamente 1 `true`).
@@ -108,7 +108,7 @@ anuncios:
         score_conversao: <0-10>
         justificativa: "<string>"
         recomendado: <bool>
-    titulos_longos:                    # 2-3, 100-150 caracteres, para Magalu/Shopee/TikTok/Shopify
+    titulos_longos:                    # 2-3, 85-100 caracteres, para Magalu/Shopee/TikTok/Shopify
       - texto: "<string>"
         length: <int>
         recomendado: <bool>
@@ -217,7 +217,7 @@ Rejeitar e refazer se ALGUMA for verdadeira:
 10. Presença de termos proibidos ("melhor do mercado", "imbatível", "adquira", "produto premium").
 11. CAPS LOCK fora de siglas, emojis em qualquer lugar, HTML ou markdown na descrição.
 12. Bloco 1 sem âncora na dor_interna do brief (quando brief tem `diagnostico_neutro: false`).
-13. `titulos_longos` com menos de 2 ou mais de 3, algum fora de 100-150 caracteres, ou sem exatamente 1 `recomendado`.
+13. `titulos_longos` com menos de 2 ou mais de 3, algum fora de 85-100 caracteres, ou sem exatamente 1 `recomendado`.
 
 ## Quality Criteria
 
@@ -225,7 +225,7 @@ Rejeitar e refazer se ALGUMA for verdadeira:
 - [ ] Cada anuncio tem 3-5 títulos com scoring (busca + conversão + justificativa)
 - [ ] Exatamente 1 título marcado como `recomendado`
 - [ ] Cada título passa o range 50-60 chars
-- [ ] 2-3 títulos longos de 100-150 chars, 1 recomendado
+- [ ] 2-3 títulos longos de 85-100 chars, 1 recomendado
 - [ ] `modo: variacoes`: nenhum título menciona cor específica
 - [ ] `modo: variacoes`: bloco 2 contém linha "Cores disponíveis: [lista]"
 - [ ] Descrição tem 3 blocos e 200-350 palavras em plain text estrito
