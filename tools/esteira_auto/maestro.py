@@ -297,26 +297,26 @@ def _motivo(lote):
     return " | ".join(partes) or " | ".join(linhas[-3:])
 
 
-TRAVA_VELHA_S = 90 * 60  # a trava se renova a cada linha do andamento; 90 min parada = rodada morta/congelada
-
-
 def _pegar_trava(lotes):
-    """Uma rodada da fila por vez neste PC. A tarefa agendada dispara de 5 em 5 min e o lote leva quase 1 h.
-    Trava = arquivo; velha (PC dormiu no meio, processo morreu) e tomada."""
-    import os
-    import time
+    """Uma rodada da fila por vez neste PC. A tarefa agendada dispara de 5 em 5 min e o lote leva ~15 min.
+    Trava = arquivo aberto e trancado pelo Windows: fica presa enquanto o processo existir (PC suspenso horas
+    inclusive) e solta sozinha quando ele morre. Antes era pela idade (90 min): PC suspenso mais que isso
+    = rodada nova no mesmo lote enquanto a antiga acordava. Devolve o arquivo aberto (fechar = soltar) ou None."""
     p = Path(lotes) / ".fila.trava"
     p.parent.mkdir(parents=True, exist_ok=True)
+    f = open(p, "a+b")
     try:
-        fd = os.open(p, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError:
-        if time.time() - p.stat().st_mtime < TRAVA_VELHA_S:
-            return None
-        p.unlink(missing_ok=True)
-        return _pegar_trava(lotes)
-    os.write(fd, str(os.getpid()).encode())
-    os.close(fd)
-    return p
+        f.seek(0)
+        if sys.platform == "win32":
+            import msvcrt
+            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        f.close()
+        return None
+    return f
 
 
 def main_fila(lotes=LOTES, fila=None, rodar=None, agora=datetime.now):
@@ -325,12 +325,12 @@ def main_fila(lotes=LOTES, fila=None, rodar=None, agora=datetime.now):
         print("Outra rodada da fila esta trabalhando.")
         return 0
     try:
-        return _main_fila(lotes, fila, rodar, agora, trava)
+        return _main_fila(lotes, fila, rodar, agora)
     finally:
-        trava.unlink(missing_ok=True)
+        trava.close()
 
 
-def _main_fila(lotes, fila, rodar, agora, trava):
+def _main_fila(lotes, fila, rodar, agora):
     """Tarefa agendada do PC: faz UM pedido da fila do hub por vez (retoma o que ficou aberto).
     Parou no meio = devolve ao hub com o motivo (o Almir pede de novo pelo site); nao repete etapa paga sozinho.
     So a entrega do fim e tentada de novo na proxima volta."""
@@ -348,11 +348,7 @@ def _main_fila(lotes, fila, rodar, agora, trava):
             lote = L.criar_lote_do_pedido(pedido, lotes, agora())
             print(f"Pedido {pedido['pedido_id']}: {pedido['produto']['sku_pai']}")
         pid = L.ler(lote)["pedido_id"]
-        espelho = _espelho(fila, pid, lote)
-        def espelhar(texto):
-            trava.touch()  # sinal de vida da rodada (a trava nao envelhece enquanto trabalha)
-            espelho(texto)
-        L.ESPELHO = espelhar
+        L.ESPELHO = _espelho(fila, pid, lote)
         try:
             if novo:
                 L.anotar(lote, f"esteira trabalhando nisto ({fila.maquina})", agora())

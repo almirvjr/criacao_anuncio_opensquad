@@ -67,6 +67,20 @@ def test_montar_entrada_usa_cubagem_e_normalizer(tmp_path):
     assert a["preco_provisorio"] is False and e["origem"] == "pedido 7 do hub"
 
 
+def test_decisoes_do_almir_entram_no_anuncio(tmp_path):
+    ped = dict(PEDIDO, decisoes=[{"atributo": "shape", "atributo_ml": "SHAPE", "valor": "Redonda", "sku": None},
+                                 {"atributo": "cor_x", "atributo_ml": None, "valor": "Azul",
+                                  "sku": "BRI-coza18-10570_0007-BR"}])
+    lt = _lote_pedido(tmp_path, ped)
+    P.montar_entrada(lt, ler_cubagem=lambda c: {})
+    a = json.loads((lt / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]
+    assert a["decisoes_almir"] == [{"campo": "SHAPE", "valor": "Redonda", "sku": None},
+                                   {"campo": "cor_x", "valor": "Azul", "sku": "BRI-coza18-10570_0007-BR"}]
+    lt2 = _lote_pedido(tmp_path / "b")  # pedido antigo, sem a chave: lista vazia
+    P.montar_entrada(lt2, ler_cubagem=lambda c: {})
+    assert json.loads((lt2 / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]["decisoes_almir"] == []
+
+
 def test_montar_entrada_para_sem_medida(tmp_path):
     sem = json.loads(json.dumps(PEDIDO))
     for f in [sem["olist"]["pai"]] + sem["olist"]["variacoes"]:
@@ -171,7 +185,7 @@ def test_pedido_devolvido_no_site_para_a_esteira(tmp_path):
     f = FilaFalsa(PEDIDO, anotar_ok=False)
     chamado = []
     assert M.main_fila(tmp_path / "lotes", fila=f, rodar=lambda *a, **k: chamado.append(1), agora=T) == 1
-    lt = next((tmp_path / "lotes").iterdir())
+    lt = next(p for p in (tmp_path / "lotes").iterdir() if p.is_dir())
     assert chamado == [] and L.ler(lt)["concluido"]
     assert "nao aceita mais" in (lt / "andamento.txt").read_text(encoding="utf-8")
 
@@ -202,13 +216,37 @@ def test_entrega_feita_nao_vira_pedido_perdido(tmp_path):
     assert f.terminados == [(7, None)]
 
 
-def test_uma_rodada_por_vez_e_trava_velha_e_tomada(tmp_path):
+def test_uma_rodada_por_vez_mesmo_com_trava_velha(tmp_path):
     lotes = tmp_path / "lotes"
     trava = M._pegar_trava(lotes)
     assert trava is not None and M._pegar_trava(lotes) is None
     assert M.main_fila(lotes, fila=FilaFalsa(PEDIDO), rodar=lambda *a, **k: 1 / 0) == 0  # nem pegou o pedido
-    os.utime(trava, (0, 0))  # 1970: velha
+    os.utime(lotes / ".fila.trava", (0, 0))  # 1970: PC suspenso horas com a rodada viva
+    assert M._pegar_trava(lotes) is None  # a rodada antiga ainda existe: nao toma
+    trava.close()
     assert M._pegar_trava(lotes) is not None
+
+
+def test_trava_de_processo_morto_e_tomada(tmp_path):
+    import subprocess
+    import textwrap
+    lotes = tmp_path / "lotes"
+    raiz = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    filho = subprocess.Popen([sys.executable, "-c", textwrap.dedent(f"""
+        import sys, time
+        sys.path.insert(0, {raiz!r})
+        from esteira_auto import maestro as M
+        t = M._pegar_trava({str(lotes)!r})
+        print("peguei" if t else "nao", flush=True)
+        time.sleep(60)
+    """)], stdout=subprocess.PIPE, text=True)
+    try:
+        assert filho.stdout.readline().strip() == "peguei"
+        assert M._pegar_trava(lotes) is None
+    finally:
+        filho.kill()
+        filho.wait()
+    assert M._pegar_trava(lotes) is not None  # morreu = o Windows soltou
 
 
 def test_motivo_que_vai_ao_hub_diz_por_que_parou(tmp_path):

@@ -16,6 +16,55 @@ def _py(script, *args, rodar):
     return r.returncode, ((r.stdout or "") + (r.stderr or "")).strip()[-800:]
 
 
+def _titulos_longos(anuncio):
+    """Titulos de 100-150 letras para os outros canais (hub, Fase 1). Conta o texto, nunca o `length` declarado."""
+    if not anuncio.is_file():
+        return None  # sem o arquivo as outras travas ja reprovam
+    a = yaml.safe_load(anuncio.read_text(encoding="utf-8")) or {}
+    if a.get("status_copy") in ("aprovado", "tirado"):
+        return None
+    longos = a.get("titulos_longos")
+    if not isinstance(longos, list) or not longos:
+        return "faltam os titulos longos (titulos_longos, 100-150 letras, para os outros canais)"
+    if not 2 <= len(longos) <= 3:
+        return f"titulos longos: sao {len(longos)}, tem que ser de 2 a 3"
+    fora = [len(t.get("texto") or "") for t in longos if not 100 <= len(t.get("texto") or "") <= 150]
+    if fora:
+        return f"titulos longos com {', '.join(map(str, fora))} letras (tem que ser 100-150)"
+    if sum(1 for t in longos if t.get("recomendado") is True) != 1:
+        return "titulos longos: marque exatamente 1 como recomendado"
+    return None
+
+
+def _decisoes_almir(lote, pai, anuncio, campos):
+    """Campo da ficha que o Almir decidiu no hub (decisoes_almir da entrada) tem o valor dele e nao fica pendente.
+    So cobra campo da familia (sem sku) que existe na categoria ou que o texto preencheu."""
+    entrada = lote / "anuncios-entrada.json"
+    if not (anuncio.is_file() and entrada.is_file()):
+        return None
+    ent = json.loads(entrada.read_text(encoding="utf-8"))
+    decisoes = next((x.get("decisoes_almir") or [] for x in ent.get("anuncios", []) if x.get("pai_sku") == pai), [])
+    if not decisoes:
+        return None
+    a = yaml.safe_load(anuncio.read_text(encoding="utf-8")) or {}
+    if a.get("status_copy") in ("aprovado", "tirado"):
+        return None
+    attrs = a.get("attributes") or {}
+    pendentes = set(a.get("campos_pendentes") or [])
+    na_categoria = {c.get("id") for c in json.loads(campos.read_text(encoding="utf-8"))} if campos.is_file() else set()
+    norm = lambda v: str(v).strip().casefold()
+    erros = []
+    for d in decisoes:
+        k = d.get("campo")
+        if d.get("sku") or not k or (k not in na_categoria and k not in attrs):
+            continue
+        if k in pendentes or norm(attrs.get(k, "")) != norm(d.get("valor")):
+            erros.append(f"{k} = {d.get('valor')} (no texto: {attrs.get(k, 'pendente')})")
+    if erros:
+        return "ficha tecnica contra a decisao do Almir (decisoes_almir na entrada): " + "; ".join(erros)
+    return None
+
+
 def conferir(etapa, lote, pais, rodar=subprocess.run):
     lote = Path(lote)
     ruins = {}
@@ -58,6 +107,10 @@ def conferir(etapa, lote, pais, rodar=subprocess.run):
                 if cod != 0:
                     ruins[p] = s or f"{script} reprovou"
                     break
+            else:
+                motivo = _titulos_longos(anuncio) or _decisoes_almir(lote, p, anuncio, campos)
+                if motivo:
+                    ruins[p] = motivo
         elif etapa == "revisao":
             if not (lote / "revisao" / f"parecer-{p}.yaml").is_file():
                 ruins[p] = "a revisao deste produto nao foi gravada"

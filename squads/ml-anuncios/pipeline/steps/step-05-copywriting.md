@@ -46,6 +46,11 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
    
    Marcar `recomendado: true` em UM título (aquele com maior soma `score_busca + score_conversao`; em empate, prioriza `score_conversao`).
 
+2b. **Gerar 2-3 títulos longos (`titulos_longos`) para os outros canais** (Magalu, Shopee, TikTok, Shopify; hub, Fase 1, 22/10/2026), **100-150 caracteres** cada:
+   - Mesmas palavras de busca do título recomendado (tipo + material + medida/capacidade + uso), mais as que não couberam nos 60: ambientes, 2ª dúvida mais repetida das opiniões, formato de venda (ex.: "Vendido por Unidade").
+   - Mesmas regras do título curto: sem cor específica em `modo: variacoes`, sem marca da loja, sem `! ? *`, emoji ou CAPS fora de sigla, sem promessa que o brief não sustenta.
+   - Cada um com `texto`, `length` e `recomendado` (exatamente 1 `true`).
+
 3. **Escrever descrição em 3 blocos delimitados por linha em branco** (1 descrição por anuncio, compartilhada entre todas as cores):
    - **Bloco 1 (3-5 linhas, abertura lifestyle)**: tocar a `dor_interna` do brief; integrar 1-2 frases da `linguagem_real_cliente` naturalmente; sem repetir título; tom acolhedor Terra Casa Decor. Se `modo: variacoes`, pode mencionar levemente a variedade de opções se enriquecer a narrativa.
    - **Bloco 2 (bullets `- ` de specs)**: material, capacidade, dimensões, peso, referência do fabricante (se houver), garantia. Incluir `publico_genero` e `compatibilidade` quando o dossiê tiver valor (não-`null`). Padronizar unidades (cm/kg/L). **Se `modo: variacoes`**: incluir linha `- Cores disponíveis: [lista das cores das variacoes, ex: Branco, Preto, Cinza]`.
@@ -100,6 +105,10 @@ anuncios:
         score_busca: <0-10>
         score_conversao: <0-10>
         justificativa: "<string>"
+        recomendado: <bool>
+    titulos_longos:                    # 2-3, 100-150 caracteres, para Magalu/Shopee/TikTok/Shopify
+      - texto: "<string>"
+        length: <int>
         recomendado: <bool>
     description:                       # EXATAMENTE estas chaves: tools/montar_payload.py junta os bloco_* na ordem
       bloco_1_abertura: |
@@ -206,6 +215,7 @@ Rejeitar e refazer se ALGUMA for verdadeira:
 10. Presença de termos proibidos ("melhor do mercado", "imbatível", "adquira", "produto premium").
 11. CAPS LOCK fora de siglas, emojis em qualquer lugar, HTML ou markdown na descrição.
 12. Bloco 1 sem âncora na dor_interna do brief (quando brief tem `diagnostico_neutro: false`).
+13. `titulos_longos` com menos de 2 ou mais de 3, algum fora de 100-150 caracteres, ou sem exatamente 1 `recomendado`.
 
 ## Quality Criteria
 
@@ -213,6 +223,7 @@ Rejeitar e refazer se ALGUMA for verdadeira:
 - [ ] Cada anuncio tem 3-5 títulos com scoring (busca + conversão + justificativa)
 - [ ] Exatamente 1 título marcado como `recomendado`
 - [ ] Cada título passa o range 50-60 chars
+- [ ] 2-3 títulos longos de 100-150 chars, 1 recomendado
 - [ ] `modo: variacoes`: nenhum título menciona cor específica
 - [ ] `modo: variacoes`: bloco 2 contém linha "Cores disponíveis: [lista]"
 - [ ] Descrição tem 3 blocos e 200-350 palavras em plain text estrito
