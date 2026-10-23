@@ -9,6 +9,7 @@ Produtos deste lote: {PAIS}
 
 Regras:
 - DECISOES DO ALMIR (hub): o campo `decisoes_almir` de cada anuncio em {LOTE}/anuncios-entrada.json (campo + valor; `sku` vazio = vale para a familia toda) ja foi decidido por ele e vale sobre qualquer fonte (dossie, catalogo, concorrente, opiniao). Use o valor, nao registre como pendencia, divergencia ou pergunta. Fonte que discorda: ignore.
+- RECADO DO ALMIR (hub): se o campo `recado_almir` de um anuncio em {LOTE}/anuncios-entrada.json nao estiver vazio, e o Almir dizendo o que saiu errado da outra vez (pedido refeito do zero). Ele vale acima de qualquer fonte e do que voce acharia sozinho: siga o recado nesta etapa no que couber a ela e nao repita o erro que ele aponta. Recado que nao cabe nesta etapa: ignore aqui.
 - Nao publique nada. Nao chame o webhook, nao rode disparar_publicacao.py nem completar_anuncio.py.
 - Checkpoint humano (step-04b, step-06, step-09) NAO para a esteira: deixe pendencias e divergencias registradas no brief/dossie, a tela mostra ao Almir.
 - So grave arquivos dentro da pasta do lote. Programa (.py) nao se cria nem se altera.

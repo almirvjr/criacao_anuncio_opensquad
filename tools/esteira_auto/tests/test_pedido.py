@@ -78,7 +78,15 @@ def test_decisoes_do_almir_entram_no_anuncio(tmp_path):
                                    {"campo": "cor_x", "valor": "Azul", "sku": "BRI-coza18-10570_0007-BR"}]
     lt2 = _lote_pedido(tmp_path / "b")  # pedido antigo, sem a chave: lista vazia
     P.montar_entrada(lt2, ler_cubagem=lambda c: {})
-    assert json.loads((lt2 / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]["decisoes_almir"] == []
+    a2 = json.loads((lt2 / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]
+    assert a2["decisoes_almir"] == [] and a2["recado_almir"] == ""
+
+
+def test_recado_do_almir_entra_no_anuncio(tmp_path):
+    lt = _lote_pedido(tmp_path, dict(PEDIDO, recado="  é prato de louça, não descartável \n"))
+    P.montar_entrada(lt, ler_cubagem=lambda c: {})
+    a = json.loads((lt / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]
+    assert a["recado_almir"] == "é prato de louça, não descartável"
 
 
 def test_montar_entrada_para_sem_medida(tmp_path):

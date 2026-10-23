@@ -58,9 +58,12 @@ def montar_entrada(lote, cubagem=precheck.CUBAGEM, ler_cubagem=tte.carregar_cuba
     # Decisoes do Almir gravadas no hub (ficha tecnica manual ou conferida) valem sobre qualquer fonte [P27]
     decisoes = [{"campo": d.get("atributo_ml") or d.get("atributo"), "valor": d.get("valor"), "sku": d.get("sku")}
                 for d in pedido.get("decisoes") or []]
+    # Recado do Almir ao pedir ("Refazer do zero" no app: o que estava errado) vale para todas as etapas
+    recado = str(pedido.get("recado") or "").strip()
     for a in out["anuncios"]:
         a["preco_provisorio"] = False
         a["decisoes_almir"] = decisoes
+        a["recado_almir"] = recado
     out["origem"] = f"pedido {pedido['pedido_id']} do hub"
     saida = Path(lote) / "anuncios-entrada.json"
     tmp = saida.with_name(saida.name + ".novo")
