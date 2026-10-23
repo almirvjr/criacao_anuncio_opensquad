@@ -14,6 +14,7 @@ sys.path.insert(0, str(RAIZ / "tools"))
 from esteira.normalizer import normalize  # noqa: E402
 import tiny_to_esteira as tte  # noqa: E402
 from esteira_auto import precheck  # noqa: E402
+from esteira_auto import precos as precos_mod  # noqa: E402
 
 
 def _cor(grade):
@@ -79,9 +80,11 @@ def _yaml(p):
     return (yaml.safe_load(p.read_text(encoding="utf-8")) or {}) if p.is_file() else None
 
 
-def resultado(lote):
-    """O que a esteira produziu, por produto (cru; o hub espalha para a ficha mestra). Sem preco."""
+def resultado(lote, ler_precos=precos_mod.ler_para_lote):
+    """O que a esteira produziu, por produto (cru; o hub espalha para a ficha mestra). Preco do Olist nunca;
+    `precos` = proposta da planilha de precificacao do hub por canal e SKU (o Almir confere na aprovacao)."""
     lote = Path(lote)
+    tabela = ler_precos(lote)
     d = json.loads((lote / "andamento.json").read_text(encoding="utf-8"))
     entrada = json.loads((lote / "anuncios-entrada.json").read_text(encoding="utf-8"))
     cats = {c.get("pai_sku"): c for c in (_yaml(lote / "categorizacao" / "categorias.yaml") or {}).get("categorias", [])}
@@ -94,5 +97,6 @@ def resultado(lote):
         anuncio.pop("preco", None)
         produtos.append({"pai_sku": pai, "categoria": cats.get(pai), "anuncio": anuncio,
                          "parecer": _yaml(lote / "revisao" / f"parecer-{pai}.yaml"),
-                         "capas": _yaml(lote / "capas" / f"capas-{pai}.yaml")})
+                         "capas": _yaml(lote / "capas" / f"capas-{pai}.yaml"),
+                         "precos": precos_mod.do_produto(tabela, [v.get("sku") for v in a.get("variacoes", [])])})
     return {"lote": lote.name, "produtos": produtos, "parados": d.get("parados", {})}

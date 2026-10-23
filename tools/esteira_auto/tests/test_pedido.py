@@ -107,10 +107,20 @@ def test_resultado_junta_o_que_a_esteira_fez_sem_preco(tmp_path):
                               ("categorizacao", "categorias.yaml", {"categorias": [{"pai_sku": "BRI-coza18-PAI", "category_id": "MLB1"}]})]:
         (lt / pasta).mkdir(exist_ok=True)
         (lt / pasta / nome).write_text(yaml.safe_dump(dado), encoding="utf-8")
-    r = P.resultado(lt)
+    tabela = {"ml": {"BRI-COZA18-10570-0008-PT": 49.9}, "magalu": {"OUTRO": 10}}
+    r = P.resultado(lt, ler_precos=lambda lote: tabela)
     p = r["produtos"][0]
     assert p["anuncio"] == {"titulo_final": "Prato"} and p["categoria"]["category_id"] == "MLB1"
     assert p["parecer"] == {"ok": True} and r["lote"] == lt.name
+    # preco do Olist nunca; preco da planilha do hub so do SKU que ela tem (Magalu sem nenhum = fora)
+    assert p["precos"] == {"ml": {"BRI-coza18-10570_0008-PT": 49.9}}
+
+
+def test_resultado_sem_planilha_segue_sem_preco(tmp_path):
+    lt = _lote_pedido(tmp_path)
+    P.montar_entrada(lt, ler_cubagem=lambda c: {})
+    r = P.resultado(lt, ler_precos=lambda lote: {})
+    assert r["produtos"][0]["precos"] == {}
 
 
 def test_lote_de_pedido_e_de_planilha_nao_se_misturam(tmp_path):

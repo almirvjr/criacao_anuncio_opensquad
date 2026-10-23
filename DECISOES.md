@@ -4,6 +4,9 @@
 
 ## 2026-10-23
 
+### A esteira propõe o preço pela planilha de precificação do hub (Almir)
+`esteira_auto/precos.py`: no fim do pedido copia `G:\...\TABELAS DE PRECIFICAÇÃO\Precificação - HUB.xlsx` para o lote (prazo 120 s), lê cada aba de canal pelo cabeçalho (SKU, PREÇO VENDA), arredonda em centavos, ignora 0/vazio, e manda `precos: {canal: {sku: preço}}` no resultado. Sem planilha ou planilha estragada = sem preço, a entrega segue. Quem confirma é o Almir na aprovação da ficha, no site do hub. Preço do Olist continua nunca entrando.
+
 ### Título sem marca; Modelo, Material e Linha = palavras de busca; bloco da descrição com título (Almir, revisando o Cozy BRI-coza18-PAI)
 - **Nenhum título** (ML nem os longos) cita marca, fornecedor, submarca (Coza = plástico da Brinox, em `SUBMARCAS`) **nem o nome da linha** (Cozy). Supera o "PMME com marca de fabricante" de 19/06: a marca fica no campo Marca e pode ir na descrição. Travas `TITULO_CITA_MARCA` e `TITULO_CITA_LINHA` em `validar_ficha_seo.py`.
 - **Modelo, Material e Linha** (cauda longa): palavras de busca que não estão no título, ~30 letras cada, sem repetir entre os três. A 1ª palavra da **Linha** é o nome da linha; a 1ª do **Material** é o material de verdade que mais faz sentido no campo (ex.: Polipropileno). Antes só o Modelo seguia a regra.
