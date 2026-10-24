@@ -16,7 +16,9 @@ import yaml
 TOOLS = Path(__file__).resolve().parents[1]
 ESCONDIDO = ("read_only", "fixed", "others", "inferred")  # o vendedor nao escreve
 SISTEMA = {"APGID", "AGID", "PRODUCT_DATA_SOURCE", "ITEM_CONDITION"}  # ocultos de controle do ML (condicao = a publicacao)
-A_ESTEIRA_POE = {"GTIN", "SELLER_SKU", "EMPTY_GTIN_REASON"}  # vem da planilha, nao da redacao
+A_ESTEIRA_POE = {"GTIN", "SELLER_SKU", "EMPTY_GTIN_REASON",  # vem da planilha, nao da redacao
+                 # caixa (oculto): a publicacao poe a da planilha de cubagem
+                 "SELLER_PACKAGE_HEIGHT", "SELLER_PACKAGE_WIDTH", "SELLER_PACKAGE_LENGTH", "SELLER_PACKAGE_WEIGHT"}
 DA_VARIACAO = {"COLOR", "MAIN_COLOR"}  # com cores, vem de cada cor
 # categorias.yaml vem do Claude sem conversa: so aceita o formato esperado, senao o codigo viraria
 # outro endereco do ML lido com o acesso da loja, e o SKU viraria caminho fora do lote

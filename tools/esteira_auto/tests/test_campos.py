@@ -15,6 +15,7 @@ API = [
     {"id": "GTIN", "name": "Código", "value_type": "string", "tags": {"variation_attribute": True}},
     {"id": "SELLER_SKU", "name": "SKU", "value_type": "string", "tags": {}},
     {"id": "APGID", "name": "APGID", "value_type": "string", "tags": {"hidden": True}},
+    {"id": "SELLER_PACKAGE_WEIGHT", "name": "Peso da embalagem", "value_type": "number_unit", "tags": {"hidden": True}},
     {"id": "IEPS", "name": "IEPS", "value_type": "list", "tags": {"hidden": True, "read_only": True}},
     {"id": "COLOR", "name": "Cor", "value_type": "string", "tags": {}},
 ]
