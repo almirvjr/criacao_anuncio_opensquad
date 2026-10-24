@@ -68,6 +68,12 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
    - **`BRAND`, `MODEL`, `MATERIAL` e `LINE` — regra do Almir (07/10/2026, Marca revista em 08/10, Material e Linha em 23/10):** **Marca = só o nome do fornecedor** (Viel, Brinox, Bellagio, Passerini…), nada depois. **Modelo, Material e Linha** = espaço de palavras de busca (cauda longa): palavras de `keywords_busca` do brief **que não estão no título recomendado**, ~30 caracteres em cada campo, sem repetir palavra entre os três. **Material**: a 1ª palavra é o material de verdade, a que mais faz sentido para o campo (ex.: "Polipropileno"), depois palavras de busca; nunca inventa material. **Linha**: a 1ª palavra é o nome da linha do fornecedor (ex.: "Cozy"), depois palavras de busca. **O nome da linha não entra em nenhum título** (Almir 23/10/2026; trava `TITULO_CITA_LINHA`); pode aparecer na descrição. Campo que a categoria não tem: ignore. **Mundiart (`MDA`)**: Marca = `Terra Casa Decor` e mais nada, e a descrição apresenta o produto como da marca Terra Casa Decor (título nunca cita a loja).
    - Gravar `pai_sku` no topo do `anuncio-{pai_sku}.yaml` (as travas leem dali).
 
+5b. **Ficha do Magalu (`ficha_magalu`)** — só quando o anúncio da entrada tem `magalu.candidatas` (hub, regra do Almir 24/10/2026: "todo campo preenchido ou em branco de propósito"):
+   - `categoria_id`: o `id` de UMA das `candidatas` (a que descreve o produto; `fixa: true` = só há uma).
+   - `campos`: TODOS os campos da categoria escolhida (`candidatas[].campos[].nome`), cada um com **`valor`** = a informação real, no formato do `exemplo` do Magalu (ex.: Diâmetro "25,7 cm", Pode ir "ao Micro-ondas, à Lava-Louças"), **ou `motivo`** = por que fica em branco (nenhuma fonte trouxe o dado; nunca chute). Nunca os dois, nunca nenhum; campo `obrigatorio` sempre com valor; "Não se aplica" é valor válido quando o campo não faz sentido para o produto.
+   - **Modelo, Linha e Material = só a informação real** (Modelo "Cozy 10570", Material "Polipropileno"). A palavra de busca nesses campos é só do ML (passo 5, `attributes`).
+   - `magalu.decisoes` da entrada (categoria_id + campo + valor ou motivo) já foi decidido pelo Almir: use igual.
+
 6. **Marcar `status_copy`**:
    - `ok`: todos os checks passam.
    - `warning`: algum critério no limite (ex: 1 atributo opcional ausente do dossie).
@@ -125,6 +131,13 @@ anuncios:
       BRAND: "<fornecedor + palavras-chave>"
       MODEL: "<palavras-chave>"
       <ID_DO_ATRIBUTO>: "<valor>"
+    ficha_magalu:                      # só com magalu.candidatas na entrada (passo 5b)
+      categoria_id: "<id de uma das candidatas>"
+      campos:                          # TODOS os campos da categoria: valor OU motivo
+        - nome: "<nome do campo no Magalu>"
+          valor: "<informação real>"
+        - nome: "<nome do campo>"
+          motivo: "<por que fica em branco>"
     keywords_seo_aplicadas: ["<string>", ...]
     preco_venda: <num>
 ```
@@ -218,6 +231,7 @@ Rejeitar e refazer se ALGUMA for verdadeira:
 11. CAPS LOCK fora de siglas, emojis em qualquer lugar, HTML ou markdown na descrição.
 12. Bloco 1 sem âncora na dor_interna do brief (quando brief tem `diagnostico_neutro: false`).
 13. `titulos_longos` com menos de 2 ou mais de 3, algum fora de 85-100 caracteres, ou sem exatamente 1 `recomendado`.
+14. Entrada com `magalu.candidatas` e `ficha_magalu` faltando, com categoria fora das candidatas, ou com algum campo da categoria sem `valor` nem `motivo` (ou com os dois, ou obrigatório em branco).
 
 ## Quality Criteria
 

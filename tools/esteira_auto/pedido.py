@@ -61,10 +61,19 @@ def montar_entrada(lote, cubagem=precheck.CUBAGEM, ler_cubagem=tte.carregar_cuba
                 for d in pedido.get("decisoes") or []]
     # Recado do Almir ao pedir ("Refazer do zero" no app: o que estava errado) vale para todas as etapas
     recado = str(pedido.get("recado") or "").strip()
+    # Magalu (hub, 24/10/2026): categorias candidatas que o hub achou no Magalu (com TODOS os campos de cada uma) e as
+    # decisoes do Almir nesses campos. A etapa do texto escolhe a categoria e responde todos os campos (ficha_magalu).
+    magalu = None
+    if "magalu" in (pedido.get("canais") or []):
+        lido = pedido.get("magalu") or {}
+        magalu = {"candidatas": lido.get("candidatas") or [], "fixa": bool(lido.get("fixa")),
+                  "decisoes": pedido.get("decisoes_magalu") or []}
     for a in out["anuncios"]:
         a["preco_provisorio"] = False
         a["decisoes_almir"] = decisoes
         a["recado_almir"] = recado
+        if magalu is not None:
+            a["magalu"] = magalu
     out["origem"] = f"pedido {pedido['pedido_id']} do hub"
     saida = Path(lote) / "anuncios-entrada.json"
     tmp = saida.with_name(saida.name + ".novo")
@@ -95,7 +104,10 @@ def resultado(lote, ler_precos=precos_mod.ler_para_lote):
             continue
         anuncio = _yaml(lote / "copywriting" / f"anuncio-{pai}.yaml") or {}
         anuncio.pop("preco", None)
-        produtos.append({"pai_sku": pai, "categoria": cats.get(pai), "anuncio": anuncio,
+        canais = {}
+        if a.get("magalu") is not None and isinstance(anuncio.get("ficha_magalu"), dict):
+            canais["magalu"] = anuncio.pop("ficha_magalu")  # {categoria_id, campos: [{nome, valor|motivo}]}
+        produtos.append({"pai_sku": pai, "categoria": cats.get(pai), "anuncio": anuncio, "canais": canais,
                          "parecer": _yaml(lote / "revisao" / f"parecer-{pai}.yaml"),
                          "capas": _yaml(lote / "capas" / f"capas-{pai}.yaml"),
                          "precos": precos_mod.do_produto(tabela, [v.get("sku") for v in a.get("variacoes", [])]),

@@ -65,6 +65,62 @@ def _decisoes_almir(lote, pai, anuncio, campos):
     return None
 
 
+ENCHIMENTO = {"n/a", "na", "-", "nenhum", "nao informado", "não informado", "sem informacao", "sem informação", "?"}
+
+
+def _ficha_magalu(lote, pai, anuncio):
+    """Magalu (hub, regra do Almir 24/10/2026): categoria = uma das candidatas que o hub leu no Magalu; TODO campo
+    dela com `valor` real OU `motivo` de ficar em branco (nunca os dois, nunca nenhum); obrigatorio nunca em branco;
+    decisao do Almir (magalu.decisoes da entrada) vale sobre tudo. Sem Magalu no pedido: nao cobra."""
+    entrada = lote / "anuncios-entrada.json"
+    if not (anuncio.is_file() and entrada.is_file()):
+        return None
+    ent = json.loads(entrada.read_text(encoding="utf-8"))
+    mg = next((x.get("magalu") for x in ent.get("anuncios", []) if x.get("pai_sku") == pai), None)
+    if not mg or not mg.get("candidatas"):
+        return None
+    a = yaml.safe_load(anuncio.read_text(encoding="utf-8")) or {}
+    if a.get("status_copy") in ("aprovado", "tirado"):
+        return None
+    f = a.get("ficha_magalu")
+    if not isinstance(f, dict):
+        return "falta a ficha do Magalu (ficha_magalu: categoria_id + todos os campos da categoria escolhida)"
+    cands = {str(c.get("id")): c for c in mg["candidatas"]}
+    cat = cands.get(str(f.get("categoria_id")))
+    if not cat:
+        return "ficha_magalu: categoria_id tem que ser uma das candidatas (" + ", ".join(
+            f"{c.get('nome')} = {i}" for i, c in cands.items()) + ")"
+    norm = lambda v: " ".join(str(v or "").split()).casefold()
+    dados, erros = {}, []
+    for x in f.get("campos") or []:
+        k = norm((x or {}).get("nome"))
+        if k in dados:
+            erros.append(f"{x.get('nome')}: repetido")
+        dados[k] = x or {}
+    da_categoria = {norm(c.get("nome")) for c in cat.get("campos") or []}
+    for c in cat.get("campos") or []:
+        x = dados.get(norm(c.get("nome")))
+        valor, motivo = str((x or {}).get("valor") or "").strip(), str((x or {}).get("motivo") or "").strip()
+        if x is None:
+            erros.append(f"{c.get('nome')}: sem resposta")
+        elif bool(valor) == bool(motivo):
+            erros.append(f"{c.get('nome')}: precisa de valor OU de motivo (nunca os dois, nunca nenhum)")
+        elif not valor and c.get("obrigatorio"):
+            erros.append(f"{c.get('nome')}: obrigatorio no Magalu, nao pode ficar em branco")
+        elif valor and norm(valor) in ENCHIMENTO:
+            erros.append(f"{c.get('nome')}: valor de enchimento ({valor})")
+    erros += [f"{x.get('nome')}: nao existe na categoria" for k, x in dados.items() if k not in da_categoria]
+    for d in mg.get("decisoes") or []:
+        if str(d.get("categoria_id")) != str(f.get("categoria_id")):
+            continue
+        x = dados.get(norm(d.get("campo"))) or {}
+        if norm(x.get("valor")) != norm(d.get("valor")) or (not d.get("valor") and not x.get("motivo")):
+            erros.append(f"{d.get('campo')}: contra a decisao do Almir ({d.get('valor') or 'em branco: ' + str(d.get('motivo'))})")
+    if erros:
+        return f"ficha do Magalu ({cat.get('nome')}): " + "; ".join(erros[:15]) + (f" (+{len(erros) - 15})" if len(erros) > 15 else "")
+    return None
+
+
 def conferir(etapa, lote, pais, rodar=subprocess.run):
     lote = Path(lote)
     ruins = {}
@@ -108,7 +164,8 @@ def conferir(etapa, lote, pais, rodar=subprocess.run):
                     ruins[p] = s or f"{script} reprovou"
                     break
             else:
-                motivo = _titulos_longos(anuncio) or _decisoes_almir(lote, p, anuncio, campos)
+                motivo = (_titulos_longos(anuncio) or _decisoes_almir(lote, p, anuncio, campos)
+                          or _ficha_magalu(lote, p, anuncio))
                 if motivo:
                     ruins[p] = motivo
         elif etapa == "revisao":

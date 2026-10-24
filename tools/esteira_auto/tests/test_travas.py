@@ -104,3 +104,52 @@ def test_texto_segue_a_decisao_do_almir(tmp_path):
     assert "SHAPE" in travas.conferir("texto", tmp_path, ["A"], rodar=_ok)["A"]
     _lote_decisao(tmp_path, {"SHAPE": "Quadrada"}, decisoes=[])  # sem decisao, a esteira decide
     assert travas.conferir("texto", tmp_path, ["A"], rodar=_ok) == {}
+
+
+def _magalu(tmp_path, ficha, decisoes=(), status="ok"):
+    campos = [{"nome": "Marca", "obrigatorio": True}, {"nome": "Material", "obrigatorio": False},
+              {"nome": "Peso do Produto", "obrigatorio": False}]
+    cands = [{"id": "bc2b", "nome": "Prato", "campos": campos}, {"id": "a609", "nome": "Prato Decorativo", "campos": campos}]
+    (tmp_path / "anuncios-entrada.json").write_text(json.dumps({"anuncios": [
+        {"pai_sku": "A", "magalu": {"candidatas": cands, "fixa": False, "decisoes": list(decisoes)}}]}), encoding="utf-8")
+    (tmp_path / "copywriting").mkdir(exist_ok=True)
+    an = tmp_path / "copywriting" / "anuncio-A.yaml"
+    dado = {"status_copy": status}
+    if ficha is not None:
+        dado["ficha_magalu"] = ficha
+    an.write_text(yaml.safe_dump(dado, allow_unicode=True), encoding="utf-8")
+    return travas._ficha_magalu(tmp_path, "A", an)
+
+
+def test_ficha_magalu_todo_campo_com_valor_ou_motivo(tmp_path):
+    boa = {"categoria_id": "bc2b", "campos": [{"nome": "Marca", "valor": "Coza"}, {"nome": "Material", "valor": "Polipropileno"},
+                                             {"nome": "Peso do Produto", "motivo": "sem a pesagem sem a caixa"}]}
+    assert _magalu(tmp_path, boa) is None
+    assert "falta a ficha do Magalu" in _magalu(tmp_path, None)
+    assert "uma das candidatas" in _magalu(tmp_path, dict(boa, categoria_id="xx"))
+    falta = dict(boa, campos=boa["campos"][:2])
+    assert "Peso do Produto: sem resposta" in _magalu(tmp_path, falta)
+    dois = dict(boa, campos=boa["campos"][:2] + [{"nome": "Peso do Produto", "valor": "1 kg", "motivo": "x"}])
+    assert "precisa de valor OU de motivo" in _magalu(tmp_path, dois)
+    marca = dict(boa, campos=[{"nome": "Marca", "motivo": "nao sei"}] + boa["campos"][1:])
+    assert "obrigatorio no Magalu" in _magalu(tmp_path, marca)
+    ench = dict(boa, campos=[{"nome": "Marca", "valor": "N/A"}] + boa["campos"][1:])
+    assert "enchimento" in _magalu(tmp_path, ench)
+    extra = dict(boa, campos=boa["campos"] + [{"nome": "Forma", "valor": "Redonda"}])
+    assert "Forma: nao existe na categoria" in _magalu(tmp_path, extra)
+    assert _magalu(tmp_path, None, status="aprovado") is None  # anuncio ja aprovado nao se cobra
+
+
+def test_ficha_magalu_decisao_do_almir_vale(tmp_path):
+    boa = {"categoria_id": "bc2b", "campos": [{"nome": "Marca", "valor": "Coza"}, {"nome": "Material", "valor": "Plastico"},
+                                             {"nome": "Peso do Produto", "motivo": "sem pesagem"}]}
+    dec = [{"categoria_id": "bc2b", "campo": "Material", "valor": "Polipropileno"}]
+    assert "contra a decisao do Almir" in _magalu(tmp_path, boa, dec)
+    assert _magalu(tmp_path, boa, [dict(dec[0], categoria_id="outra")]) is None  # decisao de outra categoria nao cobra
+
+
+def test_ficha_magalu_sem_magalu_no_pedido_nao_cobra(tmp_path):
+    (tmp_path / "anuncios-entrada.json").write_text(json.dumps({"anuncios": [{"pai_sku": "A"}]}), encoding="utf-8")
+    (tmp_path / "copywriting").mkdir()
+    (tmp_path / "copywriting" / "anuncio-A.yaml").write_text("status_copy: ok\n", encoding="utf-8")
+    assert travas._ficha_magalu(tmp_path, "A", tmp_path / "copywriting" / "anuncio-A.yaml") is None

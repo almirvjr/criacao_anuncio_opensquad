@@ -282,3 +282,25 @@ def test_motivo_que_vai_ao_hub_diz_por_que_parou(tmp_path):
     assert f.terminados[0][1] == "BRI-coza18-PAI: falta capa da cor 'Branco'"
     lt = next(p for p in (tmp_path / "lotes").iterdir() if p.is_dir())
     assert (lt / "andamento.txt").read_text(encoding="utf-8").count("lote concluido") == 1
+
+
+CAND = {"id": "bc2b", "nome": "Prato", "caminho": "Casa e Jardim/Utensílios para Cozinha/Prato",
+        "campos": [{"nome": "Marca", "obrigatorio": True, "exemplo": None}], "variacao": ["Cor"]}
+
+
+def test_magalu_entra_no_anuncio_e_a_ficha_volta_no_resultado(tmp_path):
+    dec = [{"categoria_id": "bc2b", "campo": "Peso do Produto", "valor": None, "motivo": "sem pesagem"}]
+    lt = _lote_pedido(tmp_path, dict(PEDIDO, magalu={"candidatas": [CAND], "fixa": False}, decisoes_magalu=dec))
+    P.montar_entrada(lt, ler_cubagem=lambda c: {})
+    a = json.loads((lt / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]
+    assert a["magalu"] == {"candidatas": [CAND], "fixa": False, "decisoes": dec}
+    ficha = {"categoria_id": "bc2b", "campos": [{"nome": "Marca", "valor": "Coza"}]}
+    (lt / "copywriting").mkdir()
+    (lt / "copywriting" / "anuncio-BRI-coza18-PAI.yaml").write_text(
+        yaml.safe_dump({"titulo_final": "Prato", "ficha_magalu": ficha}), encoding="utf-8")
+    p = P.resultado(lt, ler_precos=lambda lote: {})["produtos"][0]
+    assert p["canais"] == {"magalu": ficha} and "ficha_magalu" not in p["anuncio"]
+    # pedido so do ML: nada de Magalu na entrada nem no resultado
+    lt2 = _lote_pedido(tmp_path / "b", dict(PEDIDO, canais=["ml"], magalu={"candidatas": [CAND]}))
+    P.montar_entrada(lt2, ler_cubagem=lambda c: {})
+    assert "magalu" not in json.loads((lt2 / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]
