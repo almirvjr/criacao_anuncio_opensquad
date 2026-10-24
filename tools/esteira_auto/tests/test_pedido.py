@@ -118,6 +118,21 @@ def test_resultado_junta_o_que_a_esteira_fez_sem_preco(tmp_path):
     assert set(p["pacote"]) == {"peso_bruto_kg", "dim_embalagem_cm"}
     assert [v["sku"] for v in p["variacoes"]] == ["BRI-coza18-10570_0007-BR", "BRI-coza18-10570_0008-PT"]
     assert p["variacoes"][1]["ean"] == "7896553928006"
+    assert "campos" not in p["categoria"]  # sem a lista de campos do ML, a categoria vai como estava
+
+
+def test_resultado_leva_os_campos_do_ml_com_os_ocultos(tmp_path):
+    lt = _lote_pedido(tmp_path)
+    P.montar_entrada(lt, ler_cubagem=lambda c: {})
+    (lt / "categorizacao").mkdir(exist_ok=True)
+    (lt / "categorizacao" / "categorias.yaml").write_text(yaml.safe_dump(
+        {"categorias": [{"pai_sku": "BRI-coza18-PAI", "category_id": "MLB1"}]}), encoding="utf-8")
+    (lt / "categorizacao" / "campos-BRI-coza18-PAI.json").write_text(json.dumps([
+        {"id": "BRAND", "nome": "Marca", "tipo": "string", "values": []},
+        {"id": "IS_KIT", "nome": "É kit", "tipo": "boolean", "values": ["Sim", "Não"], "oculto": True}]), encoding="utf-8")
+    p = P.resultado(lt, ler_precos=lambda lote: {})["produtos"][0]
+    assert p["categoria"]["campos"] == [{"id": "BRAND", "nome": "Marca", "oculto": False},
+                                        {"id": "IS_KIT", "nome": "É kit", "oculto": True}]
 
 
 def test_resultado_sem_planilha_segue_sem_preco(tmp_path):
