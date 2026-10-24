@@ -175,3 +175,15 @@ def test_modelo_linha_material_levam_o_valor_real(tmp_path):
     assert "BRAND: so Modelo" in _reais(tmp_path, ml, dict(reais, BRAND="Coza"))
     assert _reais(tmp_path, {"BRAND": "Coza", "LINE": "não se aplica"}) is None  # sem palavra de busca, nada a separar
     assert _reais(tmp_path, ml, status="aprovado") is None
+
+
+def test_decisao_do_almir_em_modelo_vale_contra_o_valor_real(tmp_path):
+    (tmp_path / "anuncios-entrada.json").write_text(json.dumps({"anuncios": [{"pai_sku": "A", "decisoes_almir": [
+        {"campo": "MODEL", "valor": "Cozy 10570"}]}]}), encoding="utf-8")
+    an = tmp_path / "anuncio-A.yaml"
+    an.write_text(yaml.safe_dump({"status_copy": "ok", "attributes": {"MODEL": "Prato Raso Jantar"},
+                                  "atributos_reais": {"MODEL": "Cozy 10570"}}, allow_unicode=True), encoding="utf-8")
+    assert travas._decisoes_almir(tmp_path, "A", an, tmp_path / "campos-A.json") is None
+    an.write_text(yaml.safe_dump({"status_copy": "ok", "attributes": {"MODEL": "Prato Raso Jantar"},
+                                  "atributos_reais": {"MODEL": "Cozy"}}, allow_unicode=True), encoding="utf-8")
+    assert "MODEL = Cozy 10570" in travas._decisoes_almir(tmp_path, "A", an, tmp_path / "campos-A.json")

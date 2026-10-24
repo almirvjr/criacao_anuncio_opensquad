@@ -49,7 +49,9 @@ def _decisoes_almir(lote, pai, anuncio, campos):
     a = yaml.safe_load(anuncio.read_text(encoding="utf-8")) or {}
     if a.get("status_copy") in ("aprovado", "tirado"):
         return None
-    attrs = a.get("attributes") or {}
+    # Modelo/Linha/Material: a decisao do Almir e o valor real (no ML vai a versao com palavra de busca)
+    reais = a.get("atributos_reais") if isinstance(a.get("atributos_reais"), dict) else {}
+    attrs = {**(a.get("attributes") or {}), **{k: v for k, v in reais.items() if k in BUSCA}}
     pendentes = set(a.get("campos_pendentes") or [])
     na_categoria = {c.get("id") for c in json.loads(campos.read_text(encoding="utf-8"))} if campos.is_file() else set()
     norm = lambda v: str(v).strip().casefold()
