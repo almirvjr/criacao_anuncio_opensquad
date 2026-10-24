@@ -2,7 +2,10 @@
 
 O maestro busca no ML (so leitura, com o acesso da loja — o Claude sem conversa nao tem o acesso)
 e grava `categorizacao/campos-{pai}.json` no lote. A redacao usa a lista para dar destino a cada
-campo, e a conferencia (`validar_ficha_nsa.py`) cobra. Falha de rede nao para a esteira."""
+campo, e a conferencia (`validar_ficha_nsa.py`) cobra. Falha de rede nao para a esteira.
+Campos OCULTOS (tag hidden) tambem entram, marcados `oculto` (Almir, 23-24/10/2026: todos os campos de ficha): o
+comprador nao ve, mas o ML usa na busca e nos filtros (ex.: e apto para lava-loucas, e kit). Ficam fora so os que
+o vendedor nao escreve (so-leitura, fixo, inferido) e os de controle do proprio ML (SISTEMA)."""
 import json
 import re
 import sys
@@ -11,7 +14,8 @@ from pathlib import Path
 import yaml
 
 TOOLS = Path(__file__).resolve().parents[1]
-ESCONDIDO = ("hidden", "read_only", "fixed", "others", "inferred")
+ESCONDIDO = ("read_only", "fixed", "others", "inferred")  # o vendedor nao escreve
+SISTEMA = {"APGID", "AGID", "PRODUCT_DATA_SOURCE", "ITEM_CONDITION"}  # ocultos de controle do ML (condicao = a publicacao)
 A_ESTEIRA_POE = {"GTIN", "SELLER_SKU", "EMPTY_GTIN_REASON"}  # vem da planilha, nao da redacao
 DA_VARIACAO = {"COLOR", "MAIN_COLOR"}  # com cores, vem de cada cor
 # categorias.yaml vem do Claude sem conversa: so aceita o formato esperado, senao o codigo viraria
@@ -34,14 +38,17 @@ def _ler_api(category_id):
 
 
 def visiveis(atributos, modo):
-    fora = A_ESTEIRA_POE | (DA_VARIACAO if modo == "variacoes" else set())
+    fora = A_ESTEIRA_POE | SISTEMA | (DA_VARIACAO if modo == "variacoes" else set())
     out = []
     for a in atributos or []:
         tags = a.get("tags") or {}
         if a.get("id") in fora or any(tags.get(t) for t in ESCONDIDO):
             continue
-        out.append({"id": a["id"], "nome": a.get("name"), "tipo": a.get("value_type"),
-                    "values": [v.get("name") for v in a.get("values") or [] if v.get("name")]})
+        c = {"id": a["id"], "nome": a.get("name"), "tipo": a.get("value_type"),
+             "values": [v.get("name") for v in a.get("values") or [] if v.get("name")]}
+        if tags.get("hidden"):
+            c["oculto"] = True
+        out.append(c)
     return out
 
 

@@ -121,6 +121,35 @@ def _ficha_magalu(lote, pai, anuncio):
     return None
 
 
+BUSCA = ("MODEL", "LINE", "MATERIAL", "MAIN_MATERIAL")  # campos que no ML levam palavra de busca (step-05, passo 5)
+
+
+def _atributos_reais(anuncio):
+    """Hub (Almir 23-24/10/2026): a ficha guarda a informacao real; a palavra de busca em Modelo/Linha/Material e so
+    do ML. Todo campo desses preenchido em `attributes` tem o valor real em `atributos_reais` (ex.: Modelo
+    "Cozy 10570", Material "Polipropileno"), mesmo quando igual."""
+    if not anuncio.is_file():
+        return None
+    a = yaml.safe_load(anuncio.read_text(encoding="utf-8")) or {}
+    if a.get("status_copy") in ("aprovado", "tirado"):
+        return None
+    attrs, reais = a.get("attributes") or {}, a.get("atributos_reais") or {}
+    if not isinstance(reais, dict):
+        return "atributos_reais tem que ser um bloco campo: valor real"
+    norm = lambda v: " ".join(str(v or "").split()).casefold()
+    erros = [f"{k}: so Modelo, Linha e Material levam valor real separado" for k in reais if k not in BUSCA]
+    for k in BUSCA:
+        v = norm(attrs.get(k))
+        if not v or v in ("não se aplica", "nao se aplica"):
+            continue
+        r = norm(reais.get(k))
+        if not r:
+            erros.append(f"{k}: falta o valor real (atributos_reais)")
+        elif r in ENCHIMENTO:
+            erros.append(f"{k}: valor de enchimento no valor real ({reais.get(k)})")
+    return ("valor real de Modelo/Linha/Material: " + "; ".join(erros)) if erros else None
+
+
 def conferir(etapa, lote, pais, rodar=subprocess.run):
     lote = Path(lote)
     ruins = {}
@@ -165,7 +194,7 @@ def conferir(etapa, lote, pais, rodar=subprocess.run):
                     break
             else:
                 motivo = (_titulos_longos(anuncio) or _decisoes_almir(lote, p, anuncio, campos)
-                          or _ficha_magalu(lote, p, anuncio))
+                          or _ficha_magalu(lote, p, anuncio) or _atributos_reais(anuncio))
                 if motivo:
                     ruins[p] = motivo
         elif etapa == "revisao":

@@ -14,6 +14,8 @@ API = [
     {"id": "WITH_PEDESTAL", "name": "Com pé", "value_type": "boolean", "tags": {}, "values": [{"name": "Não"}, {"name": "Sim"}]},
     {"id": "GTIN", "name": "Código", "value_type": "string", "tags": {"variation_attribute": True}},
     {"id": "SELLER_SKU", "name": "SKU", "value_type": "string", "tags": {}},
+    {"id": "APGID", "name": "APGID", "value_type": "string", "tags": {"hidden": True}},
+    {"id": "IEPS", "name": "IEPS", "value_type": "list", "tags": {"hidden": True, "read_only": True}},
     {"id": "COLOR", "name": "Cor", "value_type": "string", "tags": {}},
 ]
 
@@ -29,8 +31,10 @@ def test_so_os_campos_que_o_comprador_ve(tmp_path):
     lt = _lote(tmp_path, "simples")
     assert campos.buscar_campos(lt, ler=lambda cat: API) == []
     c = json.loads((lt / "categorizacao" / "campos-P.json").read_text(encoding="utf-8"))
-    assert [x["id"] for x in c] == ["BRAND", "WITH_PEDESTAL", "COLOR"]  # sem escondido, so-leitura, GTIN e SKU (a esteira poe)
-    assert c[1]["values"] == ["Não", "Sim"]
+    # oculto entra marcado; so-leitura, controle do ML, GTIN e SKU (a esteira poe) ficam fora
+    assert [x["id"] for x in c] == ["BRAND", "SHAPE", "WITH_PEDESTAL", "COLOR"]
+    assert c[1].get("oculto") is True and "oculto" not in c[0]
+    assert c[2]["values"] == ["Não", "Sim"]
 
 
 def test_com_cores_a_cor_vem_da_variacao(tmp_path):

@@ -66,6 +66,8 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
 
 5. **Preencher ficha técnica** (`attributes`) cobrindo 100% dos atributos obrigatórios da categoria mapeados para valores do dossie. Padronizar unidades.
    - **`BRAND`, `MODEL`, `MATERIAL` e `LINE` — regra do Almir (07/10/2026, Marca revista em 08/10, Material e Linha em 23/10):** **Marca = só o nome do fornecedor** (Viel, Brinox, Bellagio, Passerini…), nada depois. **Modelo, Material e Linha** = espaço de palavras de busca (cauda longa): palavras de `keywords_busca` do brief **que não estão no título recomendado**, ~30 caracteres em cada campo, sem repetir palavra entre os três. **Material**: a 1ª palavra é o material de verdade, a que mais faz sentido para o campo (ex.: "Polipropileno"), depois palavras de busca; nunca inventa material. **Linha**: a 1ª palavra é o nome da linha do fornecedor (ex.: "Cozy"), depois palavras de busca. **O nome da linha não entra em nenhum título** (Almir 23/10/2026; trava `TITULO_CITA_LINHA`); pode aparecer na descrição. Campo que a categoria não tem: ignore. **Mundiart (`MDA`)**: Marca = `Terra Casa Decor` e mais nada, e a descrição apresenta o produto como da marca Terra Casa Decor (título nunca cita a loja).
+   - **Valor real (`atributos_reais`) — regra do Almir (23-24/10/2026: a ficha do hub guarda a informação real):** para cada `MODEL`, `LINE`, `MATERIAL` ou `MAIN_MATERIAL` preenchido em `attributes`, grave em `atributos_reais` só a informação de verdade, sem palavra de busca (ex.: Modelo "Cozy 10570", Linha "Cozy", Material "Polipropileno"), mesmo quando igual à do ML. É o que vai para os outros canais; a versão com palavra de busca fica só no ML. Trava `_atributos_reais`.
+   - **Campos ocultos** (`oculto: true` na lista de campos): o comprador não vê, mas o ML usa na busca e nos filtros (ex.: É apto para lava-louças, É kit, Comprimento, Altura, MPN = código do fornecedor). Responda igual aos outros: valor real, "não se aplica" ou `campos_pendentes`.
    - Gravar `pai_sku` no topo do `anuncio-{pai_sku}.yaml` (as travas leem dali).
 
 5b. **Ficha do Magalu (`ficha_magalu`)** — só quando o anúncio da entrada tem `magalu.candidatas` (hub, regra do Almir 24/10/2026: "todo campo preenchido ou em branco de propósito"):
@@ -131,6 +133,8 @@ anuncios:
       BRAND: "<fornecedor + palavras-chave>"
       MODEL: "<palavras-chave>"
       <ID_DO_ATRIBUTO>: "<valor>"
+    atributos_reais:                   # MODEL/LINE/MATERIAL/MAIN_MATERIAL preenchidos acima, sem palavra de busca
+      MODEL: "<informação real>"
     ficha_magalu:                      # só com magalu.candidatas na entrada (passo 5b)
       categoria_id: "<id de uma das candidatas>"
       campos:                          # TODOS os campos da categoria: valor OU motivo

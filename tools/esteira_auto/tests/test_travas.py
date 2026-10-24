@@ -153,3 +153,25 @@ def test_ficha_magalu_sem_magalu_no_pedido_nao_cobra(tmp_path):
     (tmp_path / "copywriting").mkdir()
     (tmp_path / "copywriting" / "anuncio-A.yaml").write_text("status_copy: ok\n", encoding="utf-8")
     assert travas._ficha_magalu(tmp_path, "A", tmp_path / "copywriting" / "anuncio-A.yaml") is None
+
+
+def _reais(tmp_path, attrs, reais=None, status="ok"):
+    an = tmp_path / "anuncio-A.yaml"
+    dado = {"status_copy": status, "attributes": attrs}
+    if reais is not None:
+        dado["atributos_reais"] = reais
+    an.write_text(yaml.safe_dump(dado, allow_unicode=True), encoding="utf-8")
+    return travas._atributos_reais(an)
+
+
+def test_modelo_linha_material_levam_o_valor_real(tmp_path):
+    ml = {"BRAND": "Coza", "MODEL": "Lava-louças Micro-ondas Jantar", "LINE": "Cozy Mesa Posta",
+          "MATERIAL": "Polipropileno Colorido Criança"}
+    reais = {"MODEL": "Cozy 10570", "LINE": "Cozy", "MATERIAL": "Polipropileno"}
+    assert _reais(tmp_path, ml, reais) is None
+    assert "MODEL: falta o valor real" in _reais(tmp_path, ml, {"LINE": "Cozy", "MATERIAL": "Polipropileno"})
+    assert "MATERIAL: falta o valor real" in _reais(tmp_path, ml)
+    assert "enchimento" in _reais(tmp_path, ml, dict(reais, LINE="-"))
+    assert "BRAND: so Modelo" in _reais(tmp_path, ml, dict(reais, BRAND="Coza"))
+    assert _reais(tmp_path, {"BRAND": "Coza", "LINE": "não se aplica"}) is None  # sem palavra de busca, nada a separar
+    assert _reais(tmp_path, ml, status="aprovado") is None
