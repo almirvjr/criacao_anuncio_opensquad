@@ -38,6 +38,32 @@ class TestUrl(unittest.TestCase):
 
 
 class TestMontar(unittest.TestCase):
+    def test_numeradas_do_chatgpt_valem_sozinhas_e_na_ordem(self):
+        sku = "BEL-4006-0761-M-PE"
+        rs = [res("cadastro", [sku, "foto-cadastro"], criado="2026-10-22T12:00:00+00:00"),
+              res("capa_velha", [sku, "capa-anuncio"], criado="2026-10-20T12:00:00+00:00")]
+        rs += [res(f"n{n:02d}", [sku, f"anuncio-{n:02d}", "do-chatgpt"] + (["capa-anuncio"] if n == 1 else []),
+                   criado="2026-10-25T00:00:00+00:00") for n in (3, 1, 2, 10, 4, 5, 6, 7, 8, 9)]
+        rs.append(res("n02_nova", [sku, "anuncio-02", "do-chatgpt"], criado="2026-10-25T01:00:00+00:00"))
+        capas, erros = montar(rs, [anuncio("BEL-4006-PAI", [sku])])
+        self.assertEqual(erros, [])
+        ids = [o["public_id"] for o in capas["BEL-4006-PAI"]["picture_ids_por_variacao"][0]["origem"]]
+        self.assertEqual(ids, ["n01", "n02_nova", "n03", "n04", "n05", "n06", "n07", "n08", "n09", "n10"])
+
+    def test_capa_compartilhada_com_outro_tamanho(self):
+        m, g = "BEL-4006-0761-M-PE", "BEL-4006-0762-G-PE"
+        rs = [res("n01", [m, g, "anuncio-01", "capa-anuncio"]), res("n02", [m, "anuncio-02"]),
+              res("cad_g", [g, "foto-cadastro"])]
+        capas, erros = montar(rs, [anuncio("BEL-4006-PAI", [m, g])])
+        self.assertEqual(erros, [])
+        pv = {p["sku_variacao"]: [o["public_id"] for o in p["origem"]] for p in capas["BEL-4006-PAI"]["picture_ids_por_variacao"]}
+        self.assertEqual(pv, {m: ["n01", "n02"], g: ["n01"]})
+
+    def test_numeradas_sem_a_01_trava(self):
+        rs = [res("n02", ["SKU-A", "anuncio-02"]), res("capa", ["SKU-A", "capa-anuncio"])]
+        _, erros = montar(rs, [anuncio("PAI", ["SKU-A"])])
+        self.assertTrue(any("anuncio-01" in e for e in erros))
+
     def test_uma_capa_por_cor(self):
         rs = [res("a", ["capa-anuncio", "VIE-1066-3402-BR"]), res("b", ["VIE-1066-3405-PT", "capa-anuncio"])]
         capas, erros = montar(rs, [anuncio("VIE-1066-PAI", ["VIE-1066-3402-BR", "VIE-1066-3405-PT"])])

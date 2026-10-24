@@ -5,6 +5,9 @@ Cloudinary (esteira sem fotos, 07/10/2026).
 
 O Almir sobe a capa na pasta do fornecedor e etiqueta com o SKU DA COR + 'capa-anuncio'.
 As outras fotos com a etiqueta do SKU vao depois da capa (Almir 09/10/2026), ate 10.
+Fotos que vem do ChatGPT pelo hub (conector hub-fotos-chatgpt, 24/10/2026) chegam numeradas: 'anuncio-01'..'anuncio-10'
+(01 = capa). Se o SKU tem foto numerada, valem SO as numeradas, nessa ordem (a foto de cadastro fica fora); numero
+repetido = a mais nova.
 O orquestrador busca no Cloudinary (MCP search-assets: as fotos com as etiquetas dos SKUs
 do lote, com e sem 'capa-anuncio') e salva o JSON da resposta; este script casa por SKU e trava se faltar cor.
 
@@ -22,6 +25,7 @@ SKU_SEGURO = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 TRANSF = "c_pad,w_1200,h_1200,b_white,q_auto"
 PREFIXO = f"https://res.cloudinary.com/{NUVEM}/image/upload/"
 MAX_FOTOS = 10
+NUMERADA = re.compile(r"^anuncio-(\d{2})$")
 
 
 def url_ml(secure_url):
@@ -38,8 +42,13 @@ def url_ml(secure_url):
 def montar(resources, anuncios):
     """Fotos de cada cor: as com 'capa-anuncio' + SKU da cor primeiro (a 1a e a capa), depois as
     OUTRAS fotos com a etiqueta do SKU (Almir 09/10/2026), ate 10. Sem capa = falta."""
-    capas_por_sku, extras_por_sku = {}, {}
+    capas_por_sku, extras_por_sku, numeradas_por_sku = {}, {}, {}
     for r in resources:
+        nums = [int(m.group(1)) for t in (r.get("tags") or []) for m in [NUMERADA.match(t)] if m]
+        if nums:
+            for t in r.get("tags") or []:
+                if t != TAG_CAPA and not NUMERADA.match(t):
+                    numeradas_por_sku.setdefault(t, []).append((nums[0], r))
         tags = r.get("tags") or []
         destino = capas_por_sku if TAG_CAPA in tags else extras_por_sku
         for t in tags:
@@ -51,6 +60,21 @@ def montar(resources, anuncios):
     for a in anuncios:
         pv = []
         for v in a.get("variacoes", []):
+            numeradas = numeradas_por_sku.get(v["sku"])
+            if numeradas:
+                por_num = {}
+                for n, r in sorted(numeradas, key=lambda x: ordem(x[1])):  # a mais nova fica
+                    por_num[n] = r
+                if 1 not in por_num:
+                    erros.append(f"{a['pai_sku']}: cor '{v.get('cor')}' tem fotos numeradas (anuncio-NN) mas falta "
+                                 f"a capa 'anuncio-01' do SKU '{v['sku']}'.")
+                    continue
+                achadas = [por_num[n] for n in sorted(por_num)][:MAX_FOTOS]
+                pv.append({"sku_variacao": v["sku"], "cor": v.get("cor"),
+                           "picture_ids": [url_ml(r["secure_url"]) for r in achadas],
+                           "origem": [{k: r.get(k) for k in ("asset_id", "public_id", "width", "height")}
+                                      for r in achadas]})
+                continue
             achadas = sorted(capas_por_sku.get(v["sku"], []), key=ordem)
             if not achadas:
                 erros.append(f"{a['pai_sku']}: falta capa da cor '{v.get('cor')}' — nenhuma foto "
