@@ -21,6 +21,13 @@ class TestFornecedor(unittest.TestCase):
         self.assertEqual(fornecedor_do_sku("MMP_123"), "Passerini")
         self.assertEqual(fornecedor_do_sku("MDA_9"), "Terra Casa Decor")
         self.assertIsNone(fornecedor_do_sku("KOU_1"))
+        self.assertEqual(fornecedor_do_sku("BEL-4006-PAI"), "Bellagio")
+
+    def test_bellagio_nem_zanotti_no_titulo(self):
+        tit = "Tigela de Melamina Funda 800ml para Servir"
+        self.assertEqual(codigos(validar_ficha("BEL-4006-PAI", tit, "Bellagio", "Bowl Sopa Cereal", DESC)), [])
+        for t in (tit + " Bellagio", tit + " Zanotti"):
+            self.assertIn("TITULO_CITA_MARCA", codigos(validar_ficha("BEL-4006-PAI", t, "Bellagio", "Bowl", DESC)))
 
 
 class TestFicha(unittest.TestCase):

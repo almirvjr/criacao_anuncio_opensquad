@@ -28,10 +28,13 @@ import unicodedata
 FORNECEDOR_POR_PREFIXO = {
     "VIE": "Viel", "PAR": "Paramount", "BRI": "Brinox", "EMB": "Embalixo",
     "MMP": "Passerini", "SEC": "Secalux", "MDA": "Terra Casa Decor",
+    # BEL = marca Bellagio; quem vende e a Zanotti e Zanotti Presentes (Almir 24/10/2026)
+    "BEL": "Bellagio",
 }
 MARCA_PROPRIA = "Terra Casa Decor"
-# Submarcas conhecidas do fornecedor (tambem nao entram no titulo). Coza = linha de plastico da Brinox.
-SUBMARCAS = {"Brinox": "Coza"}
+# Outros nomes ligados a marca (tambem nao entram no titulo). Coza = linha de plastico da Brinox;
+# Zanotti = empresa que vende a Bellagio.
+SUBMARCAS = {"Brinox": "Coza", "Bellagio": "Zanotti"}
 TETO = 30
 TETO_TITULO_BLOCO = 60
 STOP = {"de", "da", "do", "das", "dos", "com", "e", "para", "pra", "em", "a", "o", "as", "os", "c", "p"}
