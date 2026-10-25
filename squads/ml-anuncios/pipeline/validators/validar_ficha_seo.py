@@ -167,6 +167,10 @@ def outros_titulos_do_copy(doc):
         for t in doc.get(chave) or []:
             if isinstance(t, dict) and t.get("texto"):
                 out.append(t["texto"])
+    # titulo do ML de cada variacao (variacao que nao e de cor, hub 25/10/2026): mesma regra de marca e linha
+    for x in (doc.get("por_variacao") or {}).values():
+        if isinstance(x, dict) and x.get("titulo_ml"):
+            out.append(x["titulo_ml"])
     return out
 
 

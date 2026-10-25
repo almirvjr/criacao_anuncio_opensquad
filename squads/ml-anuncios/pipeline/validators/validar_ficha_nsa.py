@@ -59,7 +59,13 @@ def main():
         print(f"nao abriu ({type(e).__name__})")
         sys.exit(2)
     attrs = doc.get("attributes") or {}
-    problemas = [f"VALOR_INVENTADO {c}: '{v}' — use 'não se aplica' ou o valor real" for c, v in valores_inventados(attrs)]
+    # valor que muda de uma variacao para outra (altura, capacidade...) mora em por_variacao.<sku>.attributes (hub,
+    # 25/10/2026): conta como destino quando TODAS as variacoes tem o valor
+    por_var = [((x or {}).get("attributes") or {}) for x in (doc.get("por_variacao") or {}).values() if isinstance(x, dict)]
+    problemas = [f"VALOR_INVENTADO {c}: '{v}' — use 'não se aplica' ou o valor real"
+                 for d in [attrs, *por_var] for c, v in valores_inventados(d)]
+    comuns = set.intersection(*[{k for k, v in d.items() if str(v or "").strip()} for d in por_var]) if por_var else set()
+    attrs = {**{k: "por variacao" for k in comuns}, **attrs}
     problemas += [f"CAMPO_SEM_DESTINO {c}: preencha, marque 'não se aplica' ou liste em campos_pendentes"
                   for c in campos_sem_destino(attrs, campos, doc.get("campos_pendentes"))]
     if problemas:

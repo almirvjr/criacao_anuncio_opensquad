@@ -15,6 +15,7 @@ from esteira.normalizer import normalize  # noqa: E402
 import tiny_to_esteira as tte  # noqa: E402
 from esteira_auto import precheck  # noqa: E402
 from esteira_auto import precos as precos_mod  # noqa: E402
+from esteira_auto import variacoes as variacoes_mod  # noqa: E402
 
 
 def _cor(grade):
@@ -68,7 +69,13 @@ def montar_entrada(lote, cubagem=precheck.CUBAGEM, ler_cubagem=tte.carregar_cuba
         lido = pedido.get("magalu") or {}
         magalu = {"candidatas": lido.get("candidatas") or [], "fixa": bool(lido.get("fixa")),
                   "decisoes": pedido.get("decisoes_magalu") or []}
+    # grade do Olist de cada SKU (cor, tamanho...) e por onde a familia varia (hub, 25/10/2026): variacao que nao e
+    # de cor pede titulo do ML por variacao e o campo de variacao certo no Magalu
+    grades = {f.get("sku"): dict(f.get("grade") or {}) for f in (pedido.get("olist") or {}).get("variacoes") or []}
     for a in out["anuncios"]:
+        for v in a.get("variacoes") or []:
+            v["grade"] = grades.get(v.get("sku"), {})
+        a["eixo_variacao"] = variacoes_mod.eixo([v["grade"] for v in a.get("variacoes") or []])
         a["preco_provisorio"] = False
         a["decisoes_almir"] = decisoes
         a["recado_almir"] = recado

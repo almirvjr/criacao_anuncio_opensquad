@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from esteira_auto import campos as campos_mod, chamar_claude, coletar_concorrentes, lote as L, precheck, travas  # noqa: E402
-from esteira_auto import fila as F, pedido as pedido_mod  # noqa: E402
+from esteira_auto import fila as F, pedido as pedido_mod, variacoes as variacoes_mod  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parents[2]
 LOTES = RAIZ / "squads" / "ml-anuncios" / "output" / "lotes"
@@ -103,11 +103,12 @@ def _etapa(etapa, lote, pais, chamar, conferir, agora, avisar):
 
 def rodar_lote(lote, chamar=chamar_claude.chamar, conferir=travas.conferir,
                ler_planilha=precheck.ler_planilha, abrir_tela=None, agora=datetime.now, avisar=print,
-               buscar_campos=None, coletar=None, ler_pedido=None, entregar=None):
+               buscar_campos=None, coletar=None, ler_pedido=None, entregar=None, baixar_fotos=None):
     abrir_tela = abrir_tela or _abrir_tela
     buscar_campos = buscar_campos or campos_mod.buscar_campos
     coletar = coletar or coletar_concorrentes.coletar
     ler_pedido = ler_pedido or pedido_mod.montar_entrada
+    baixar_fotos = baixar_fotos or variacoes_mod.baixar_fotos
     while True:
         etapa = L.proxima(lote)
         if etapa is None:
@@ -177,6 +178,11 @@ def rodar_lote(lote, chamar=chamar_claude.chamar, conferir=travas.conferir,
         if not _etapa(etapa, lote, pais, chamar, conferir, agora, avisar):
             return 1
         L.marcar_feita(lote, etapa, agora())
+        if etapa == "capas":
+            # copia pequena das fotos no lote: o texto le nelas as medidas, a capacidade e a forma (25/10/2026)
+            falhou = baixar_fotos(lote)
+            if falhou:
+                L.anotar(lote, f"nao consegui copiar as fotos de {', '.join(falhou)}; o texto fica sem ler as medidas nelas", agora())
         if etapa == "categoria":
             # campos da ficha que o comprador ve (regra do "não se aplica"); falhar so anota
             falhou = buscar_campos(lote)

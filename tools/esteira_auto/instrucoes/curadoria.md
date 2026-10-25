@@ -8,6 +8,7 @@ Onde o step disser `squads/ml-anuncios/output/`, use a pasta do lote no lugar. N
 Produtos deste lote: {PAIS}
 
 Regras:
+- FATO FISICO DO NOSSO PRODUTO (Almir, 25/10/2026): forma, medidas, capacidade, material e cor saem SO das nossas fotos ({LOTE}/capas/fotos/<sku>/), do Olist ou do fornecedor. O que um concorrente ou o catalogo do ML diz da peca DELE nunca vira fato da nossa (a tigela BEL-4006-PAI saiu "redonda" assim, e ela e oval). Sem fonte nossa: escreva que falta, nunca deduza.
 - DECISOES DO ALMIR (hub): o campo `decisoes_almir` de cada anuncio em {LOTE}/anuncios-entrada.json (campo + valor; `sku` vazio = vale para a familia toda) ja foi decidido por ele e vale sobre qualquer fonte (dossie, catalogo, concorrente, opiniao). Use o valor, nao registre como pendencia, divergencia ou pergunta. Fonte que discorda: ignore.
 - RECADO DO ALMIR (hub): se o campo `recado_almir` de um anuncio em {LOTE}/anuncios-entrada.json nao estiver vazio, e o Almir dizendo o que saiu errado da outra vez (pedido refeito do zero). Ele vale acima de qualquer fonte e do que voce acharia sozinho: siga o recado nesta etapa no que couber a ela e nao repita o erro que ele aponta. Recado que nao cabe nesta etapa: ignore aqui.
 - Nao publique nada. Nao chame o webhook, nao rode disparar_publicacao.py nem completar_anuncio.py.

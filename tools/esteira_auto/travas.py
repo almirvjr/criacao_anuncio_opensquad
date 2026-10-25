@@ -6,6 +6,8 @@ from pathlib import Path
 
 import yaml
 
+from esteira_auto import variacoes as variacoes_mod
+
 RAIZ = Path(__file__).resolve().parents[2]
 VAL = RAIZ / "squads" / "ml-anuncios" / "pipeline" / "validators"
 
@@ -196,7 +198,8 @@ def conferir(etapa, lote, pais, rodar=subprocess.run):
                     break
             else:
                 motivo = (_titulos_longos(anuncio) or _decisoes_almir(lote, p, anuncio, campos)
-                          or _ficha_magalu(lote, p, anuncio) or _atributos_reais(anuncio))
+                          or _ficha_magalu(lote, p, anuncio) or _atributos_reais(anuncio)
+                          or variacoes_mod.conferir(lote, p, anuncio))
                 if motivo:
                     ruins[p] = motivo
         elif etapa == "revisao":

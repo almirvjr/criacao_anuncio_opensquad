@@ -65,6 +65,20 @@ def test_montar_entrada_usa_cubagem_e_normalizer(tmp_path):
     assert [v["cor"] for v in a["variacoes"]] == ["Branco", "Preto"]
     assert a["variacoes"][0]["peso_bruto_kg"] == 1.1 and a["peso_bruto_kg"] == 1.1  # cubagem manda
     assert a["preco_provisorio"] is False and e["origem"] == "pedido 7 do hub"
+    # grade do Olist e eixo da variacao (25/10/2026): aqui muda a cor
+    assert a["variacoes"][1]["grade"] == {"cor": "Preto"} and a["eixo_variacao"] == "cor"
+
+
+def test_familia_que_muda_de_tamanho_sai_com_eixo_tamanho(tmp_path):
+    ped = dict(PEDIDO, olist=dict(PEDIDO["olist"], variacoes=[
+        _ficha("BEL-4006-0761-M-PE", "7893095607611", grade={"cor": "Peixes", "tamanho": "M"}),
+        _ficha("BEL-4006-0762-G-PE", "7893095607628", grade={"cor": "Peixes", "tamanho": "G"})]),
+        produto=dict(PEDIDO["produto"], sku_pai="BEL-4006-PAI"))
+    ped["olist"]["pai"] = _ficha("BEL-4006-PAI")
+    lt = _lote_pedido(tmp_path, ped)
+    P.montar_entrada(lt, ler_cubagem=lambda c: {})
+    a = json.loads((lt / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]
+    assert a["eixo_variacao"] == "tamanho"
 
 
 def test_decisoes_do_almir_entram_no_anuncio(tmp_path):
