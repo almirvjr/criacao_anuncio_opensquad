@@ -19,6 +19,8 @@ import yaml
 
 TRANSF = "c_pad,w_1200,h_1200,b_white,q_auto"
 PEQUENA = "c_pad,w_900,h_900,b_white,q_75"
+NUVEM = "https://res.cloudinary.com/wa5lvi98/image/upload/"
+MAX_BYTES = 5_000_000
 TETO_ML = 60
 FONTE_PROIBIDA = re.compile(r"concorr|cat[aá]logo|\bmlb|anuncio do ml|anúncio do ml|outro vendedor", re.I)
 
@@ -48,12 +50,21 @@ def baixar_fotos(lote, abrir=urllib.request.urlopen):
             pasta = lote / "capas" / "fotos" / sku
             pasta.mkdir(parents=True, exist_ok=True)
             for i, url in enumerate(v.get("picture_ids") or [], 1):
+                # so foto do nosso Cloudinary, com teto de tamanho e que abra como JPG (nao vira "baixador" de qualquer endereco)
+                url = str(url)
+                if not url.startswith(NUVEM + TRANSF + "/"):
+                    falhou.append(sku)
+                    break
                 try:
-                    with abrir(str(url).replace(TRANSF, PEQUENA), timeout=30) as r:
-                        (pasta / f"{i:02d}.jpg").write_bytes(r.read())
+                    with abrir(url.replace(TRANSF, PEQUENA, 1), timeout=30) as r:
+                        dados = r.read(MAX_BYTES + 1)
                 except Exception:  # noqa: BLE001
                     falhou.append(sku)
                     break
+                if len(dados) > MAX_BYTES or not dados.startswith(b"ÿØ"):
+                    falhou.append(sku)
+                    break
+                (pasta / f"{i:02d}.jpg").write_bytes(dados)
     return sorted(set(falhou))
 
 

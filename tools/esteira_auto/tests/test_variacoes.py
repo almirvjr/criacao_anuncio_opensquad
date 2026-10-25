@@ -125,7 +125,17 @@ def test_baixar_fotos_copia_pequena(tmp_path):
         def __init__(self, u): pedidas.append(u)
         def __enter__(self): return self
         def __exit__(self, *a): return False
-        def read(self): return b"jpg"
+        def read(self, n=-1): return b"ÿØjpg"
     assert V.baixar_fotos(tmp_path, abrir=lambda u, timeout: R(u)) == []
-    assert (tmp_path / "capas" / "fotos" / M / "02.jpg").read_bytes() == b"jpg"
+    assert (tmp_path / "capas" / "fotos" / M / "02.jpg").read_bytes() == b"ÿØjpg"
     assert "c_pad,w_900,h_900" in pedidas[0]
+
+
+def test_baixar_fotos_so_do_nosso_cloudinary(tmp_path):
+    (tmp_path / "capas").mkdir()
+    for nome, url in (("A", "file:///C:/Windows/win.ini"), ("B", "http://169.254.169.254/x.jpg")):
+        (tmp_path / "capas" / f"capas-{nome}.yaml").write_text(yaml.safe_dump(
+            {"picture_ids_por_variacao": [{"sku_variacao": nome + "-1", "picture_ids": [url]}]}), encoding="utf-8")
+    chamou = []
+    assert V.baixar_fotos(tmp_path, abrir=lambda u, timeout: chamou.append(u)) == ["A-1", "B-1"]
+    assert chamou == []
