@@ -125,9 +125,9 @@ def test_baixar_fotos_copia_pequena(tmp_path):
         def __init__(self, u): pedidas.append(u)
         def __enter__(self): return self
         def __exit__(self, *a): return False
-        def read(self, n=-1): return b"ÿØjpg"
+        def read(self, n=-1): return bytes([0xFF, 0xD8]) + b"jpg"
     assert V.baixar_fotos(tmp_path, abrir=lambda u, timeout: R(u)) == []
-    assert (tmp_path / "capas" / "fotos" / M / "02.jpg").read_bytes() == b"ÿØjpg"
+    assert (tmp_path / "capas" / "fotos" / M / "02.jpg").read_bytes() == bytes([0xFF, 0xD8]) + b"jpg"
     assert "c_pad,w_900,h_900" in pedidas[0]
 
 

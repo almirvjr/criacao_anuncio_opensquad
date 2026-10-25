@@ -61,7 +61,7 @@ def baixar_fotos(lote, abrir=urllib.request.urlopen):
                 except Exception:  # noqa: BLE001
                     falhou.append(sku)
                     break
-                if len(dados) > MAX_BYTES or not dados.startswith(b"ÿØ"):
+                if len(dados) > MAX_BYTES or not dados.startswith(bytes([0xFF, 0xD8])):
                     falhou.append(sku)
                     break
                 (pasta / f"{i:02d}.jpg").write_bytes(dados)
