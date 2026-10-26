@@ -166,6 +166,25 @@ def conferir(lote, pai, anuncio):
             titulos.setdefault(_norm(t), []).append(s)
         erros += [f"titulo do ML igual em {', '.join(v)}" for v in titulos.values() if len(v) > 1]
 
+    # Modelo real (o da ficha do produto, que vai para todos os canais) = so o modelo/linha do fabricante. Tipo do
+    # produto, forma, material e cor sao outros campos e, no ML, palavra de busca (Almir 25/10/2026: a tigela saiu com
+    # Modelo "Tigela Oval Linha Oceano")
+    reais = a.get("atributos_reais") if isinstance(a.get("atributos_reais"), dict) else {}
+    modelo = str(reais.get("MODEL") or "").strip()
+    if modelo:
+        def _tok(v):
+            return {t for t in re.split(r"[^a-z0-9]+", _norm(v)) if len(t) > 2}
+        tipo = next((x.get("texto") for x in a.get("titles") or [] if isinstance(x, dict) and x.get("recomendado")), "") or ""
+        proibidas = (_tok(tipo.split()[0]) if tipo.split() else set()) | _tok(attrs.get("SHAPE"))
+        for k in ("MATERIAL", "MATERIALS", "MAIN_MATERIAL"):
+            proibidas |= _tok(reais.get(k) or attrs.get(k))
+        for v in ent.get("variacoes") or []:
+            proibidas |= _tok(v.get("cor"))
+        achou = sorted(_tok(modelo) & (proibidas - {"nao", "aplica"}))
+        if achou:
+            erros.append(f"Modelo real '{modelo}' tem tipo/forma/material/cor ({', '.join(achou)}): o Modelo real e so o "
+                         "modelo ou a linha do fabricante (ex.: 'Cozy 10570', 'Linha Oceano'); o resto ja tem campo proprio")
+
     # titulos do ML: sem a cor (o ML poe sozinho no fim) e medida junta, sem espaco (sobra espaco para palavra de busca)
     titulos_ml = [str(t).strip() for t in [a.get("titulo_final"), *[x.get("texto") for x in a.get("titles") or []
                                                                      if isinstance(x, dict) and x.get("recomendado")],

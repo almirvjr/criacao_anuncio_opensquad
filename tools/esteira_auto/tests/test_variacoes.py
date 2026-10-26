@@ -124,6 +124,18 @@ def test_titulo_do_ml_sem_a_cor_e_com_medida_junta(tmp_path):
     assert V.MEDIDA_COM_ESPACO.search("Lixeira 5 maneiras de usar") is None
 
 
+def test_modelo_real_e_so_o_modelo_do_fabricante(tmp_path):
+    a = _certo()
+    a["titles"] = [{"texto": "Tigela Oval Melamina Saladeira de Servir", "recomendado": True}]
+    a["attributes"]["MATERIALS"] = "Melamina"
+    a["atributos_reais"] = {"MODEL": "Tigela Oval Linha Oceano"}
+    m = V.conferir(tmp_path, "BEL-4006-PAI", _lote(tmp_path, a))
+    assert "Modelo real 'Tigela Oval Linha Oceano' tem tipo/forma/material/cor (oval, tigela)" in m
+    a["atributos_reais"] = {"MODEL": "Linha Oceano"}
+    (tmp_path / "anuncio.yaml").write_text(yaml.safe_dump(a, allow_unicode=True), encoding="utf-8")
+    assert V.conferir(tmp_path, "BEL-4006-PAI", tmp_path / "anuncio.yaml") is None
+
+
 def test_tamanho_junto_quando_a_categoria_aceita(tmp_path):
     a = _certo()
     for x in a["por_variacao"].values():
