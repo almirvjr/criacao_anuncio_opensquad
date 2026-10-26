@@ -36,10 +36,10 @@ def _certo():
             G: {"comprimento_cm": 42, "largura_cm": 29, "altura_cm": 8, "capacidade": "4,5 L", "forma": "Oval", "fonte": "foto 04 e foto 09"},
         },
         "por_variacao": {
-            M: {"titulo_ml": "Tigela Oval Melamina Peixes Saladeira 38,5 x 26 cm",
+            M: {"titulo_ml": "Tigela Oval Melamina Saladeira de Servir 38,5x26cm",
                 "attributes": {"HEIGHT": "7,5 cm", "VOLUME_CAPACITY": "3,5 L"},
                 "magalu": [{"nome": "Capacidade", "valor": "3,5 L"}]},
-            G: {"titulo_ml": "Tigela Oval Melamina Peixes Saladeira 42 x 29 cm",
+            G: {"titulo_ml": "Tigela Oval Melamina Saladeira de Servir 42x29cm",
                 "attributes": {"HEIGHT": "8 cm", "VOLUME_CAPACITY": "4,5 L"},
                 "magalu": [{"nome": "Capacidade", "valor": "4,5 L"}]},
         },
@@ -67,7 +67,7 @@ def test_o_que_aconteceu_com_a_tigela_reprova(tmp_path):
     m = V.conferir(tmp_path, "BEL-4006-PAI", _lote(tmp_path, a))
     assert "SHAPE 'Redonda' diferente da forma nas fotos" in m
     assert f"{M}: a fonte das medidas" in m
-    assert "titulo do ML igual" in m and "faltou 42, 29" in m
+    assert "titulo do ML igual" in m and "medida dele, junta: 42x29cm" in m
     assert "Magalu: 'Capacidade' igual" in m
 
 
@@ -110,8 +110,35 @@ def test_titulo_da_variacao_passa_pela_regra_da_marca():
     sys.path.insert(0, str(VAL))
     import validar_ficha_seo as S
     a = _certo()
-    a["por_variacao"][M]["titulo_ml"] = "Tigela Bellagio 38,5 x 26 cm"
-    assert "Tigela Bellagio 38,5 x 26 cm" in S.outros_titulos_do_copy(a)
+    a["por_variacao"][M]["titulo_ml"] = "Tigela Bellagio 38,5x26cm"
+    assert "Tigela Bellagio 38,5x26cm" in S.outros_titulos_do_copy(a)
+
+
+def test_titulo_do_ml_sem_a_cor_e_com_medida_junta(tmp_path):
+    a = _certo()
+    a["titles"] = [{"texto": "Tigela Melamina Peixes Saladeira 25,7 Cm", "recomendado": True}]
+    a["por_variacao"][M]["titulo_ml"] = "Tigela Oval Melamina Saladeira 38,5 x 26 cm"
+    m = V.conferir(tmp_path, "BEL-4006-PAI", _lote(tmp_path, a))
+    assert "titulo do ML com a cor (peixes)" in m and "Peixes Saladeira 25,7 Cm" in m
+    assert m.count("medida separada por espaco") == 2
+    assert V.MEDIDA_COM_ESPACO.search("Lixeira 5 maneiras de usar") is None
+
+
+def test_tamanho_junto_quando_a_categoria_aceita(tmp_path):
+    a = _certo()
+    for x in a["por_variacao"].values():
+        del x["titulo_ml"]
+    arq = _lote(tmp_path, a)
+    (tmp_path / "categorizacao").mkdir()
+    campos = tmp_path / "categorizacao" / "campos-BEL-4006-PAI.json"
+    campos.write_text(json.dumps([{"id": "HEIGHT"}]), encoding="utf-8")  # so aceita a cor: separa
+    assert "so aceita a cor como variacao" in V.conferir(tmp_path, "BEL-4006-PAI", arq)
+    campos.write_text(json.dumps([{"id": "SIZE", "variacao": True}]), encoding="utf-8")  # aceita tamanho: juntos
+    assert "campo de variacao da categoria (SIZE)" in V.conferir(tmp_path, "BEL-4006-PAI", arq)
+    a["por_variacao"][M]["attributes"]["SIZE"] = "38,5x26cm"
+    a["por_variacao"][G]["attributes"]["SIZE"] = "42x29cm"
+    arq.write_text(yaml.safe_dump(a, allow_unicode=True), encoding="utf-8")
+    assert V.conferir(tmp_path, "BEL-4006-PAI", arq) is None
 
 
 def test_baixar_fotos_copia_pequena(tmp_path):

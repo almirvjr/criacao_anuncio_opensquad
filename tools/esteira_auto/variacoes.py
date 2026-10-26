@@ -22,6 +22,7 @@ PEQUENA = "c_pad,w_900,h_900,b_white,q_75"
 NUVEM = "https://res.cloudinary.com/wa5lvi98/image/upload/"
 MAX_BYTES = 5_000_000
 TETO_ML = 60
+MEDIDA_COM_ESPACO = re.compile(r"\d\s+x\s*\d|\d\s*x\s+\d|\d\s+(cm|mm|m|l|ml|kg|g)\b", re.I)
 FONTE_PROIBIDA = re.compile(r"concorr|cat[aá]logo|\bmlb|anuncio do ml|anúncio do ml|outro vendedor", re.I)
 
 
@@ -128,22 +129,55 @@ def conferir(lote, pai, anuncio):
         dup = sorted(set(((x or {}).get("attributes") or {})) & set(attrs))
         if dup:
             erros.append(f"{s}: {', '.join(dup)} esta na familia e na variacao (valor que muda por variacao fica SO em por_variacao)")
-    if ent.get("eixo_variacao") and ent.get("eixo_variacao") != "cor":
+    # variacao que nao e cor (Almir 25/10/2026). O ML monta o titulo = nome da familia + o valor da variacao. Se a
+    # categoria aceita um campo de variacao para esse eixo (ex.: SIZE), as variacoes ficam JUNTAS: mesmo titulo, e o
+    # valor de cada uma nesse campo (diferente entre elas). Se nao aceita (so cor), cada uma vira anuncio separado com
+    # titulo proprio trazendo a medida dela.
+    campos = lote / "categorizacao" / f"campos-{pai}.json"
+    campos_var = [c.get("id") for c in (json.loads(campos.read_text(encoding="utf-8")) if campos.is_file() else [])
+                  if c.get("variacao") and c.get("id") not in ("COLOR", "MAIN_COLOR")]
+    separados = any(str((por_var.get(s) or {}).get("titulo_ml") or "").strip() for s in skus)
+    if ent.get("eixo_variacao") and ent.get("eixo_variacao") != "cor" and not separados:
+        if not campos_var:
+            erros.append("a categoria do ML so aceita a cor como variacao: cada variacao vira anuncio separado, com "
+                         f"por_variacao.<sku>.titulo_ml trazendo a medida dela")
+        else:
+            usados = [k for k in campos_var
+                      if len({_norm(((por_var.get(s) or {}).get("attributes") or {}).get(k)) for s in skus}) == len(skus)
+                      and all(((por_var.get(s) or {}).get("attributes") or {}).get(k) for s in skus)]
+            if not usados:
+                erros.append(f"variacoes juntas no ML: preencha em por_variacao.<sku>.attributes o campo de variacao da "
+                             f"categoria ({', '.join(campos_var)}) com um valor diferente em cada SKU (medida no formato 38,5x26cm)")
+    if ent.get("eixo_variacao") and ent.get("eixo_variacao") != "cor" and separados:
         titulos = {}
         for s in skus:
             t = str(((por_var.get(s) or {}).get("titulo_ml")) or "").strip()
             if not t:
-                erros.append(f"{s}: falta por_variacao.{s}.titulo_ml (as variacoes nao mudam de cor: cada anuncio do ML precisa de titulo proprio)")
+                erros.append(f"{s}: falta por_variacao.{s}.titulo_ml (variacoes em anuncios separados: todas com titulo proprio)")
                 continue
             if len(t) > TETO_ML:
                 erros.append(f"{s}: titulo do ML com {len(t)} letras (maximo {TETO_ML})")
             m = medidas.get(s) or {}
             nums = [_num(m.get(k)) for k in ("comprimento_cm", "largura_cm")] if _num(m.get("comprimento_cm")) else [_num(m.get("diametro_cm"))]
-            falta = [_fmt(n) for n in nums if n and _fmt(n) not in t.replace(".", ",")]
-            if falta:
-                erros.append(f"{s}: o titulo do ML tem que trazer a medida dele ({' x '.join(_fmt(n) for n in nums if n)} cm); faltou {', '.join(falta)}")
+            nums = [n for n in nums if n]
+            esperado = "x".join(_fmt(n) for n in nums) + "cm"
+            if nums and _norm(esperado) not in _norm(t).replace(".", ","):
+                erros.append(f"{s}: o titulo do ML tem que trazer a medida dele, junta: {esperado}")
             titulos.setdefault(_norm(t), []).append(s)
         erros += [f"titulo do ML igual em {', '.join(v)}" for v in titulos.values() if len(v) > 1]
+
+    # titulos do ML: sem a cor (o ML poe sozinho no fim) e medida junta, sem espaco (sobra espaco para palavra de busca)
+    titulos_ml = [str(t).strip() for t in [a.get("titulo_final"), *[x.get("texto") for x in a.get("titles") or []
+                                                                     if isinstance(x, dict) and x.get("recomendado")],
+                                          *[(por_var.get(s) or {}).get("titulo_ml") for s in skus]] if t and str(t).strip()]
+    cores = {_norm(v.get("cor")) for v in ent.get("variacoes") or [] if str(v.get("cor") or "").strip()}
+    for t in titulos_ml:
+        palavras = f" {re.sub(r'[^a-z0-9]+', ' ', _norm(t))} "
+        com_cor = sorted(c for c in cores if f" {re.sub(r'[^a-z0-9]+', ' ', c).strip()} " in palavras)
+        if com_cor:
+            erros.append(f"titulo do ML com a cor ({', '.join(com_cor)}): o ML poe a cor sozinho no fim; tire: '{t}'")
+        if MEDIDA_COM_ESPACO.search(t):
+            erros.append(f"titulo do ML com medida separada por espaco: escreva junto (38,5x26cm, 5L, 25,7cm): '{t}'")
 
     # 3) Magalu: o campo que a categoria usa para separar as variacoes, preenchido e diferente em cada SKU
     fm = a.get("ficha_magalu") if isinstance(a.get("ficha_magalu"), dict) else None

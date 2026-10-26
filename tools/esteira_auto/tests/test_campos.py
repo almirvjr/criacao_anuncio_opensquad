@@ -67,3 +67,17 @@ def test_codigo_de_categoria_estranho_nao_vira_pedido_com_o_acesso_da_loja(tmp_p
     falhou = campos.buscar_campos(tmp_path, ler=lambda cat: pedidos.append(cat) or API)
     assert pedidos == [] and sorted(falhou) == ["../../fora", "P"]
     assert not (tmp_path / "fora.json").exists() and not list(tmp_path.parent.glob("campos-*.json"))
+
+
+API_VARIACAO = [
+    {"id": "BRAND", "name": "Marca", "value_type": "string", "tags": {}},
+    {"id": "COLOR", "name": "Cor", "value_type": "list", "tags": {"allow_variations": True}},
+    {"id": "SIZE", "name": "Tamanho", "value_type": "string", "tags": {"allow_variations": True}},
+]
+
+
+def test_campo_que_a_categoria_aceita_como_variacao_vem_marcado():
+    # 25/10/2026: tamanho que a categoria aceita como variacao fica junto no mesmo anuncio (o ML poe no titulo)
+    vis = {c["id"]: c for c in campos.visiveis(API_VARIACAO, "variacoes")}
+    assert set(vis) == {"BRAND", "SIZE"}  # com variacao, a cor vem de cada cor
+    assert vis["SIZE"].get("variacao") is True and "variacao" not in vis["BRAND"]

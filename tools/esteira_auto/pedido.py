@@ -117,7 +117,8 @@ def resultado(lote, ler_precos=precos_mod.ler_para_lote):
         cat = cats.get(pai)
         lista = lote / "categorizacao" / f"campos-{pai}.json"
         if cat is not None and lista.is_file():  # campos da categoria do ML (com os ocultos) para a tela do hub
-            cat = {**cat, "campos": [{"id": c.get("id"), "nome": c.get("nome"), "oculto": bool(c.get("oculto"))}
+            cat = {**cat, "campos": [{"id": c.get("id"), "nome": c.get("nome"), "oculto": bool(c.get("oculto")),
+                                      "variacao": bool(c.get("variacao"))}
                                      for c in json.loads(lista.read_text(encoding="utf-8"))]}
         produtos.append({"pai_sku": pai, "categoria": cat, "anuncio": anuncio, "canais": canais,
                          "parecer": _yaml(lote / "revisao" / f"parecer-{pai}.yaml"),

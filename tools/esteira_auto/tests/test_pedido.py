@@ -143,10 +143,12 @@ def test_resultado_leva_os_campos_do_ml_com_os_ocultos(tmp_path):
         {"categorias": [{"pai_sku": "BRI-coza18-PAI", "category_id": "MLB1"}]}), encoding="utf-8")
     (lt / "categorizacao" / "campos-BRI-coza18-PAI.json").write_text(json.dumps([
         {"id": "BRAND", "nome": "Marca", "tipo": "string", "values": []},
-        {"id": "IS_KIT", "nome": "É kit", "tipo": "boolean", "values": ["Sim", "Não"], "oculto": True}]), encoding="utf-8")
+        {"id": "IS_KIT", "nome": "É kit", "tipo": "boolean", "values": ["Sim", "Não"], "oculto": True},
+        {"id": "SIZE", "nome": "Tamanho", "tipo": "string", "values": [], "variacao": True}]), encoding="utf-8")
     p = P.resultado(lt, ler_precos=lambda lote: {})["produtos"][0]
-    assert p["categoria"]["campos"] == [{"id": "BRAND", "nome": "Marca", "oculto": False},
-                                        {"id": "IS_KIT", "nome": "É kit", "oculto": True}]
+    assert p["categoria"]["campos"] == [{"id": "BRAND", "nome": "Marca", "oculto": False, "variacao": False},
+                                        {"id": "IS_KIT", "nome": "É kit", "oculto": True, "variacao": False},
+                                        {"id": "SIZE", "nome": "Tamanho", "oculto": False, "variacao": True}]
 
 
 def test_resultado_sem_planilha_segue_sem_preco(tmp_path):

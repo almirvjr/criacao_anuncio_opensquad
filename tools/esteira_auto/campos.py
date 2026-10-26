@@ -50,6 +50,8 @@ def visiveis(atributos, modo):
              "values": [v.get("name") for v in a.get("values") or [] if v.get("name")]}
         if tags.get("hidden"):
             c["oculto"] = True
+        if tags.get("allow_variations"):
+            c["variacao"] = True  # a categoria aceita este campo para separar as variacoes no mesmo anuncio (25/10/2026)
         out.append(c)
     return out
 
