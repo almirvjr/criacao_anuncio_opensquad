@@ -178,3 +178,13 @@ def test_baixar_fotos_so_do_nosso_cloudinary(tmp_path):
     chamou = []
     assert V.baixar_fotos(tmp_path, abrir=lambda u, timeout: chamou.append(u)) == ["A-1", "B-1"]
     assert chamou == []
+
+
+def test_descricao_sem_recado_interno(tmp_path):
+    a = _certo()
+    a["description"] = {"bloco_3": "Nao informamos se vai ao micro-ondas: e uma escolha nossa, para nao prometer o que nao conferimos."}
+    m = V.conferir(tmp_path, "BEL-4006-PAI", _lote(tmp_path, a))
+    assert "descricao com recado interno" in m and "escolha nossa" in m
+    a["description"] = {"bloco_3": "Pode ir a lava-loucas e ao freezer, mas nao vai ao micro-ondas."}
+    (tmp_path / "anuncio.yaml").write_text(yaml.safe_dump(a, allow_unicode=True), encoding="utf-8")
+    assert V.conferir(tmp_path, "BEL-4006-PAI", tmp_path / "anuncio.yaml") is None

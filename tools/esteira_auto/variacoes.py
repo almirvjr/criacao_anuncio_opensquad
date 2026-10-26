@@ -23,6 +23,7 @@ NUVEM = "https://res.cloudinary.com/wa5lvi98/image/upload/"
 MAX_BYTES = 5_000_000
 TETO_ML = 60
 MEDIDA_COM_ESPACO = re.compile(r"\d\s+x\s*\d|\d\s*x\s+\d|\d\s+(cm|mm|m|l|ml|kg|g)\b", re.I)
+RECADO_INTERNO = re.compile(r"n[aã]o informamos|escolha nossa|n[aã]o conferimos|nenhuma fonte|sem fonte|n[aã]o encontrad[oa] em", re.I)
 FONTE_PROIBIDA = re.compile(r"concorr|cat[aá]logo|\bmlb|anuncio do ml|anúncio do ml|outro vendedor", re.I)
 
 
@@ -184,6 +185,14 @@ def conferir(lote, pai, anuncio):
         if achou:
             erros.append(f"Modelo real '{modelo}' tem tipo/forma/material/cor ({', '.join(achou)}): o Modelo real e so o "
                          "modelo ou a linha do fabricante (ex.: 'Cozy 10570', 'Linha Oceano'); o resto ja tem campo proprio")
+
+    # descricao e para o cliente: recado interno da esteira (o que nao achou, por que nao afirma) nunca entra
+    # (Almir 25/10/2026: a tigela saiu com "Não informamos se vai ao micro-ondas [...] é uma escolha nossa")
+    desc = "\n".join(str(v) for k, v in (a.get("description") or {}).items() if str(k).startswith("bloco"))
+    interno = RECADO_INTERNO.findall(desc)
+    if interno:
+        erros.append(f"descricao com recado interno para o cliente ({', '.join(sorted(set(x.lower() for x in interno)))}): "
+                     "o que nao tem fonte fica de fora do texto, sem explicar ao cliente")
 
     # titulos do ML: sem a cor (o ML poe sozinho no fim) e medida junta, sem espaco (sobra espaco para palavra de busca)
     titulos_ml = [str(t).strip() for t in [a.get("titulo_final"), *[x.get("texto") for x in a.get("titles") or []
