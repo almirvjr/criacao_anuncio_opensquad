@@ -35,11 +35,21 @@ def test_texto_roda_as_tres_travas(tmp_path):
     assert vistos == ["validar_claims.py", "validar_ficha_seo.py", "validar_ficha_nsa.py"]
 
 
-def test_capas_lista_quem_falta(tmp_path):
-    falso = lambda cmd, **kw: subprocess.CompletedProcess(cmd, 1, "CAPAS INCOMPLETAS - 1:\n  - B: falta capa da cor 'Preto'", "")
+def test_capas_sem_foto_nao_para_e_anota(tmp_path):
+    # Almir 26/10/2026: a esteira nao exige foto; a trava e so na hora de publicar no canal
+    saida = "B: \n\nCAPAS INCOMPLETAS - 1:\n  - B: falta capa da cor 'Preto'"
+    falso = lambda cmd, **kw: subprocess.CompletedProcess(cmd, 1, saida, "")
     (tmp_path / "capas").mkdir(); (tmp_path / "capas" / "_busca.json").write_text("{}")
-    r = travas.conferir("capas", tmp_path, ["A", "B"], rodar=falso)
-    assert list(r) == ["B"] and "Preto" in r["B"]
+    assert travas.conferir("capas", tmp_path, ["A", "B"], rodar=falso) == {}
+    caderno = (tmp_path / "andamento.txt").read_text(encoding="utf-8")
+    assert "B: falta capa da cor 'Preto'" in caderno and "segue sem" in caderno
+    assert "B: B:" not in caderno
+
+
+def test_capas_programa_quebrado_ainda_reprova(tmp_path):
+    falso = lambda cmd, **kw: subprocess.CompletedProcess(cmd, 1, "Traceback: deu ruim", "")
+    (tmp_path / "capas").mkdir(); (tmp_path / "capas" / "_busca.json").write_text("{}")
+    assert travas.conferir("capas", tmp_path, ["A"], rodar=falso) == {"A": "Traceback: deu ruim"}
 
 
 def test_ficha_nsa_recebe_a_lista_de_campos_quando_existe(tmp_path):

@@ -2,11 +2,12 @@
 import json
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import yaml
 
-from esteira_auto import variacoes as variacoes_mod
+from esteira_auto import lote as L, variacoes as variacoes_mod
 
 RAIZ = Path(__file__).resolve().parents[2]
 VAL = RAIZ / "squads" / "ml-anuncios" / "pipeline" / "validators"
@@ -162,13 +163,15 @@ def conferir(etapa, lote, pais, rodar=subprocess.run):
         if not busca.is_file():
             return {p: "a busca das capas no Cloudinary nao foi gravada" for p in pais}
         cod, saida = _py("capas.py", busca, lote / "anuncios-entrada.json", lote / "capas", rodar=rodar)
-        if cod != 0:
-            for p in pais:
-                linhas = [l.strip(" -") for l in saida.splitlines() if l.strip(" -").startswith(p + ":")]
-                if linhas:
-                    ruins[p] = " | ".join(linhas)
-            if not ruins:
-                ruins = {p: saida or "a conferencia das capas falhou" for p in pais}
+        if cod != 0 and "CAPAS INCOMPLETAS" in saida:
+            # foto faltando nao para a esteira (Almir 26/10/2026): a trava e na hora de publicar no canal.
+            # So anota; a parte de cima do relatorio e o resumo, nao o motivo.
+            for l in saida.split("CAPAS INCOMPLETAS", 1)[1].splitlines()[1:]:
+                if l.strip(" -"):
+                    L.anotar(lote, f"foto: {l.strip(' -')} (segue sem; para publicar, use 'Atualizar fotos' no hub)",
+                             datetime.now())
+        elif cod != 0:
+            ruins = {p: saida or "a conferencia das capas falhou" for p in pais}
         return ruins
     if etapa == "curadoria":
         f = lote / "curadoria" / "dossies.json"

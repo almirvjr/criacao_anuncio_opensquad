@@ -72,9 +72,14 @@ def montar_entrada(lote, cubagem=precheck.CUBAGEM, ler_cubagem=tte.carregar_cuba
     # grade do Olist de cada SKU (cor, tamanho...) e por onde a familia varia (hub, 25/10/2026): variacao que nao e
     # de cor pede titulo do ML por variacao e o campo de variacao certo no Magalu
     grades = {f.get("sku"): dict(f.get("grade") or {}) for f in (pedido.get("olist") or {}).get("variacoes") or []}
+    # kit cujos itens TODOS tem ficha aprovada no hub (mig 231, Almir 26/10/2026): medidas, capacidade, material e
+    # titulo de cada item vem de la. Sem as fotos dos itens.
+    kits = {k.get("sku_kit"): k.get("itens") for k in pedido.get("itens_kit") or [] if k.get("completo") and k.get("itens")}
     for a in out["anuncios"]:
         for v in a.get("variacoes") or []:
             v["grade"] = grades.get(v.get("sku"), {})
+            if v.get("sku") in kits:
+                v["itens_kit"] = kits[v["sku"]]
         a["eixo_variacao"] = variacoes_mod.eixo([v["grade"] for v in a.get("variacoes") or []])
         a["preco_provisorio"] = False
         a["decisoes_almir"] = decisoes

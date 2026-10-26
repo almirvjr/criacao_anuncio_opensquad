@@ -5,6 +5,7 @@ Cloudinary (esteira sem fotos, 07/10/2026).
 
 O Almir sobe a capa na pasta do fornecedor e etiqueta com o SKU DA COR + 'capa-anuncio'.
 As outras fotos com a etiqueta do SKU vao depois da capa (Almir 09/10/2026), ate 10.
+Sem 'capa-anuncio', a foto 'foto-cadastro' do SKU vira a capa (Almir 26/10/2026); sem as duas = falta.
 Fotos que vem do ChatGPT pelo hub (conector hub-fotos-chatgpt, 24/10/2026) chegam numeradas: 'anuncio-01'..'anuncio-10'
 (01 = capa). Se o SKU tem foto numerada, valem SO as numeradas, nessa ordem (a foto de cadastro fica fora); numero
 repetido = a mais nova.
@@ -21,6 +22,7 @@ import sys
 
 NUVEM = "wa5lvi98"
 TAG_CAPA = "capa-anuncio"
+TAG_CADASTRO = "foto-cadastro"
 SKU_SEGURO = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 TRANSF = "c_pad,w_1200,h_1200,b_white,q_auto"
 PREFIXO = f"https://res.cloudinary.com/{NUVEM}/image/upload/"
@@ -76,19 +78,28 @@ def montar(resources, anuncios):
                                       for r in achadas]})
                 continue
             achadas = sorted(capas_por_sku.get(v["sku"], []), key=ordem)
+            de_cadastro = False
             if not achadas:
-                erros.append(f"{a['pai_sku']}: falta capa da cor '{v.get('cor')}' — nenhuma foto "
+                # sem 'capa-anuncio': a foto de cadastro vira a capa (Almir 26/10/2026, pedido 57 do hub)
+                achadas = sorted((r for r in extras_por_sku.get(v["sku"], []) if TAG_CADASTRO in (r.get("tags") or [])),
+                                 key=ordem)
+                de_cadastro = bool(achadas)
+            if not achadas:
+                qual = f"da cor '{v['cor']}'" if v.get("cor") else "do produto"
+                erros.append(f"{a['pai_sku']}: falta capa {qual} — nenhuma foto "
                              f"com as etiquetas '{TAG_CAPA}' + '{v['sku']}' (conferir se o SKU da "
                              f"etiqueta esta igual ao Tiny).")
                 continue
             if len(achadas) > MAX_FOTOS:
                 erros.append(f"{a['pai_sku']}: cor '{v.get('cor')}' tem {len(achadas)} fotos, "
                              f"mais de {MAX_FOTOS}. Usando as {MAX_FOTOS} mais antigas.")
-            achadas = (achadas + sorted(extras_por_sku.get(v["sku"], []), key=ordem))[:MAX_FOTOS]
+            achadas = (achadas + [r for r in sorted(extras_por_sku.get(v["sku"], []), key=ordem)
+                                  if r not in achadas])[:MAX_FOTOS]
             pv.append({"sku_variacao": v["sku"], "cor": v.get("cor"),
                        "picture_ids": [url_ml(r["secure_url"]) for r in achadas],
                        "origem": [{k: r.get(k) for k in ("asset_id", "public_id", "width", "height")}
-                                  for r in achadas]})
+                                  for r in achadas],
+                       **({"capa": "cadastro"} if de_cadastro else {})})
         saida[a["pai_sku"]] = {"pai_sku": a["pai_sku"], "picture_ids_por_variacao": pv}
     return saida, erros
 
@@ -113,6 +124,7 @@ def main():
         with open(os.path.join(pasta, f"capas-{pai}.yaml"), "w", encoding="utf-8") as fh:
             yaml.safe_dump(doc, fh, allow_unicode=True, sort_keys=False)
         print(f"{pai}: " + ", ".join(f"{p['cor']}={len(p['picture_ids'])}"
+                                     + (" (capa = foto de cadastro)" if p.get("capa") == "cadastro" else "")
                                      for p in doc["picture_ids_por_variacao"]))
     if erros:
         print(f"\nCAPAS INCOMPLETAS - {len(erros)}:")

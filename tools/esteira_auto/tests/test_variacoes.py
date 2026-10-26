@@ -188,3 +188,16 @@ def test_descricao_sem_recado_interno(tmp_path):
     a["description"] = {"bloco_3": "Pode ir a lava-loucas e ao freezer, mas nao vai ao micro-ondas."}
     (tmp_path / "anuncio.yaml").write_text(yaml.safe_dump(a, allow_unicode=True), encoding="utf-8")
     assert V.conferir(tmp_path, "BEL-4006-PAI", tmp_path / "anuncio.yaml") is None
+
+
+def test_kit_com_itens_aprovados_nao_cobra_medida_da_foto(tmp_path):
+    # Almir 26/10/2026, pedido 60: a medida do kit vem da ficha aprovada de cada item (mig 231), nao da foto do kit
+    a = _certo()
+    del a["medidas_por_variacao"]
+    arq = _lote(tmp_path, a, eixo="cor", variacao_magalu=("Cor",))
+    ent = json.loads((tmp_path / "anuncios-entrada.json").read_text(encoding="utf-8"))
+    for v in ent["anuncios"][0]["variacoes"]:
+        v["itens_kit"] = [{"sku": "ITEM", "quantidade": 1, "medidas": {"altura_cm": 7.5}}]
+    (tmp_path / "anuncios-entrada.json").write_text(json.dumps(ent), encoding="utf-8")
+    m = V.conferir(tmp_path, "BEL-4006-PAI", arq) or ""
+    assert "medidas_por_variacao" not in m and "medidas incompletas" not in m

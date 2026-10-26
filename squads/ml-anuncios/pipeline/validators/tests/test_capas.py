@@ -109,6 +109,25 @@ class TestFotosExtras(unittest.TestCase):
         _, erros = montar(rs, [anuncio("P", ["S-1"])])
         self.assertTrue(any("falta capa" in e for e in erros))
 
+    def test_sem_capa_usa_a_foto_de_cadastro(self):
+        # pedido 57 do hub (Almir 26/10/2026): sem 'capa-anuncio', a foto de cadastro vira a capa
+        sku = "BEL-4012-PE-CJ02"
+        rs = [res("outra", [sku], criado="2026-10-01T00:00:00+00:00"), res("cad", [sku, "foto-cadastro"])]
+        capas, erros = montar(rs, [{"pai_sku": sku, "variacoes": [{"sku": sku, "cor": None}]}])
+        self.assertEqual(erros, [])
+        pv = capas[sku]["picture_ids_por_variacao"][0]
+        self.assertEqual([o["public_id"] for o in pv["origem"]], ["cad", "outra"])
+        self.assertEqual(pv["capa"], "cadastro")
+
+    def test_capa_vence_a_foto_de_cadastro(self):
+        sku = "BRI-coza18-PT"
+        rs = [res("cad", [sku, "foto-cadastro"], criado="2026-10-01T00:00:00+00:00"), res("capa", [sku, "capa-anuncio"])]
+        capas, erros = montar(rs, [anuncio("BRI-coza18-PAI", [sku])])
+        self.assertEqual(erros, [])
+        pv = capas["BRI-coza18-PAI"]["picture_ids_por_variacao"][0]
+        self.assertEqual([o["public_id"] for o in pv["origem"]], ["capa", "cad"])
+        self.assertNotIn("capa", pv)
+
     def test_extras_cortadas_em_10_sem_erro(self):
         rs = [res("capa", ["S-1", "capa-anuncio"])] + [
             res(f"x{i:02d}", ["S-1"], criado=f"2026-10-07T10:{i:02d}:00+00:00") for i in range(12)]

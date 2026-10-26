@@ -335,3 +335,15 @@ def test_magalu_entra_no_anuncio_e_a_ficha_volta_no_resultado(tmp_path):
     lt2 = _lote_pedido(tmp_path / "b", dict(PEDIDO, canais=["ml"], magalu={"candidatas": [CAND]}))
     P.montar_entrada(lt2, ler_cubagem=lambda c: {})
     assert "magalu" not in json.loads((lt2 / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]
+
+
+def test_kit_com_itens_aprovados_leva_os_dados_dos_itens(tmp_path):
+    # Almir 26/10/2026, pedido 60: jogo de 2 tigelas = tigela M + G, as duas com ficha aprovada no hub (mig 231)
+    itens = [{"sku": "BEL-4006-0761-M-PE", "quantidade": 1, "medidas": {"altura_cm": 7.5}, "atributos": {}}]
+    ped = dict(PEDIDO, itens_kit=[{"sku_kit": "BRI-coza18-10570_0007-BR", "completo": True, "faltam": [], "itens": itens},
+                                  {"sku_kit": "BRI-coza18-10570_0008-PT", "completo": False, "faltam": ["X"], "itens": None}])
+    lt = _lote_pedido(tmp_path, ped)
+    P.montar_entrada(lt, ler_cubagem=lambda c: {})
+    vs = {v["sku"]: v for v in json.loads((lt / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]["variacoes"]}
+    assert vs["BRI-coza18-10570_0007-BR"]["itens_kit"] == itens
+    assert "itens_kit" not in vs["BRI-coza18-10570_0008-PT"]

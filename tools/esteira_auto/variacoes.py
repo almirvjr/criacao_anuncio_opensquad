@@ -102,7 +102,9 @@ def conferir(lote, pai, anuncio):
 
     # 1) medidas de cada variacao, lidas nas nossas fotos (ou Olist/fornecedor), nunca de concorrente
     medidas = a.get("medidas_por_variacao") if isinstance(a.get("medidas_por_variacao"), dict) else {}
-    com_foto = [s for s in skus if any((lote / "capas" / "fotos" / s).glob("*.jpg"))]
+    # kit com itens de ficha aprovada (mig 231): a medida vem da ficha de cada item, nao da foto do kit
+    de_kit = {v.get("sku") for v in ent.get("variacoes") or [] if v.get("itens_kit")}
+    com_foto = [s for s in skus if s not in de_kit and any((lote / "capas" / "fotos" / s).glob("*.jpg"))]
     for s in com_foto:
         m = medidas.get(s)
         if not isinstance(m, dict):
