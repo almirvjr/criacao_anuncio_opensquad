@@ -209,10 +209,11 @@ def conferir(lote, pai, anuncio):
         if MEDIDA_COM_ESPACO.search(t):
             erros.append(f"titulo do ML com medida separada por espaco: escreva junto (38,5x26cm, 5L, 25,7cm): '{t}'")
 
-    # 3) Magalu: o campo que a categoria usa para separar as variacoes, preenchido e diferente em cada SKU
+    # 3) Magalu: o campo que a categoria usa para separar as variacoes, preenchido e diferente em cada SKU. Vale tambem
+    #    para 1 SKU (27/10/2026: porta-bolo avulso, sem cor na grade, foi para o Magalu sem a Cor e o robo recusou)
     fm = a.get("ficha_magalu") if isinstance(a.get("ficha_magalu"), dict) else None
     cand = next((c for c in (ent.get("magalu") or {}).get("candidatas") or [] if fm and str(c.get("id")) == str(fm.get("categoria_id"))), None)
-    if cand and len(skus) > 1:
+    if cand and skus:
         for nome in cand.get("variacao") or []:
             vals = {}
             for s in skus:

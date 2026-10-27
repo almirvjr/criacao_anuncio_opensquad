@@ -201,3 +201,20 @@ def test_kit_com_itens_aprovados_nao_cobra_medida_da_foto(tmp_path):
     (tmp_path / "anuncios-entrada.json").write_text(json.dumps(ent), encoding="utf-8")
     m = V.conferir(tmp_path, "BEL-4006-PAI", arq) or ""
     assert "medidas_por_variacao" not in m and "medidas incompletas" not in m
+
+
+def test_produto_de_um_sku_sem_cor_na_grade_cobra_a_cor_do_magalu(tmp_path):
+    # Almir 27/10/2026, porta-bolo BEL-4008-0955-LI: avulso sem grade no Olist, categoria Boleira separa por Cor;
+    # a esteira nao cobrava (so olhava com 2+ SKUs) e o robo do Magalu recusou na hora de publicar
+    s = "BEL-4008-0955-LI"
+    ent = {"anuncios": [{"pai_sku": s, "eixo_variacao": None, "variacoes": [{"sku": s, "cor": None}],
+                         "magalu": {"candidatas": [{"id": "boleira", "nome": "Boleira", "variacao": ["Cor"]}]}}]}
+    (tmp_path / "anuncios-entrada.json").write_text(json.dumps(ent), encoding="utf-8")
+    a = {"attributes": {"BRAND": "Bellagio"}, "ficha_magalu": {"categoria_id": "boleira", "campos": []}}
+    arq = tmp_path / "anuncio.yaml"
+    arq.write_text(yaml.safe_dump(a, allow_unicode=True), encoding="utf-8")
+    m = V.conferir(tmp_path, s, arq) or ""
+    assert f"{s}: falta o 'Cor' do Magalu em por_variacao.{s}.magalu" in m
+    a["por_variacao"] = {s: {"magalu": [{"nome": "Cor", "valor": "Limão Siciliano"}]}}
+    arq.write_text(yaml.safe_dump(a, allow_unicode=True), encoding="utf-8")
+    assert V.conferir(tmp_path, s, arq) is None
