@@ -16,6 +16,15 @@ A 1a palavra da Linha e o nome da linha do fornecedor (que sai do titulo); a 1a 
 Material e o material de verdade (pode coincidir com o titulo). Cada bloco da descricao
 abre com uma linha de titulo curta.
 
+02/11/2026 (Almir) -- REGRA DA MARCA: Marca = EXATAMENTE 'Terra Casa Decor' quando o SKU comeca com BEL, MDA ou
+VIE, OU o produto e kit/conjunto (SKU do pai ou de variacao com regex -(KT|CJ)[0-9A-Z]). Nesse caso o nome do
+fornecedor (BEL Bellagio/Zanotti, MDA Mundiart, VIE Viel; kit de outro fornecedor: Paramount, Brinox/Coza, Embalixo,
+Passerini, Secalux) nao pode aparecer em NENHUM lugar: titulos, descricao e valores da ficha (attributes,
+por_variacao.*.attributes, ficha_magalu), palavra inteira, sem acento e sem maiuscula. A descricao PODE citar
+Terra Casa Decor. Outros produtos: marca livre (fornecedor ou Terra Casa Decor). O titulo nunca cita marca nem loja
+(vale para todos). A regra que o hub manda (`marca_regra` do anuncio) so acrescenta nomes proibidos.
+Codigos: MARCA_TEM_QUE_SER_PROPRIA, FORNECEDOR_CITADO.
+
 Uso:  python validar_ficha_seo.py <anuncio-{pai_sku}.yaml>
 Saida: 0 = OK (avisos podem aparecer) | 1 = BLOQUEADO.
 """
@@ -64,12 +73,46 @@ def _titulo_do_bloco(bloco):
     return t
 
 
+REGRA_KIT = re.compile(r"-(KT|CJ)[0-9A-Z]", re.I)
+PREFIXOS_MARCA_PROPRIA = {"BEL", "MDA", "VIE"}
+NOMES_POR_PREFIXO = {"BEL": ["Bellagio", "Zanotti"], "MDA": ["Mundiart"], "VIE": ["Viel"], "PAR": ["Paramount"],
+                     "BRI": ["Brinox", "Coza"], "EMB": ["Embalixo"], "MMP": ["Passerini"], "SEC": ["Secalux"]}
+
+
+def _prefixo(sku):
+    return re.split(r"[-_]", str(sku or ""))[0].upper()
+
+
+def regra_marca(pai_sku, skus=(), extras=()):
+    """Devolve (aplica, motivo, proibidas). Regra de 02/11/2026: BEL/MDA/VIE ou kit = marca propria."""
+    todos = [s for s in [pai_sku, *skus] if s]
+    prefixos = {_prefixo(s) for s in todos}
+    motivo = next((p for p in ("BEL", "MDA", "VIE") if p in prefixos), None)
+    if motivo is None and any(REGRA_KIT.search(str(s)) for s in todos):
+        motivo = "kit"
+    if motivo is None:
+        return False, None, []
+    nomes = []
+    for p in prefixos:
+        nomes += NOMES_POR_PREFIXO.get(p, [])
+    nomes += [n for n in extras if n]
+    vistos, out = set(), []
+    for n in nomes:
+        if norm(n) not in vistos and norm(n) != norm(MARCA_PROPRIA):
+            vistos.add(norm(n))
+            out.append(n)
+    return True, motivo, out
+
+
+def _tem_palavra(nome, texto):
+    return re.search(r"(?<![a-z0-9])" + re.escape(norm(nome)) + r"(?![a-z0-9])", norm(texto)) is not None
+
+
 def validar_ficha(pai_sku, titulo, marca, modelo, descricao, material=None, linha=None,
-                  outros_titulos=(), blocos=None):
+                  outros_titulos=(), blocos=None, skus=(), valores=None, proibidas_extra=()):
     err = []
     E = lambda c, m: err.append((c, m))  # noqa: E731
     fornecedor = fornecedor_do_sku(pai_sku)
-    mundiart = fornecedor == MARCA_PROPRIA
     marca, modelo = (marca or "").strip(), (modelo or "").strip()
     loja = norm(MARCA_PROPRIA)
 
@@ -98,12 +141,19 @@ def validar_ficha(pai_sku, titulo, marca, modelo, descricao, material=None, linh
               f"descricao, nunca no titulo; vale tambem para submarca do fornecedor): '{t}'.")
 
     marca_propria = norm(marca) == loja
-    if mundiart:
+    aplica, motivo, proibidas = regra_marca(pai_sku, skus, proibidas_extra)
+    if aplica:
         if marca and not marca_propria:
-            E("MARCA_MUNDIART", f"Mundiart: Marca tem que ser exatamente '{MARCA_PROPRIA}', veio '{marca}'.")
-        if loja not in norm(descricao):
-            E("DESCRICAO_SEM_MARCA_PROPRIA",
-              "Mundiart: a descricao precisa apresentar o produto como da marca Terra Casa Decor.")
+            E("MARCA_TEM_QUE_SER_PROPRIA",
+              f"Regra do Almir 02/11/2026 ({motivo}): Marca tem que ser exatamente '{MARCA_PROPRIA}', veio '{marca}'.")
+        onde = {"titulo": [titulo, *outros_titulos], "descricao": [descricao], "marca/modelo/material/linha": [marca, modelo, material, linha]}
+        for k, v in (valores or {}).items():
+            onde[k] = [v]
+        for nome in proibidas:
+            locais = sorted({k for k, textos in onde.items() if any(_tem_palavra(nome, t) for t in textos if t)})
+            if locais:
+                E("FORNECEDOR_CITADO",
+                  f"Regra da marca ({motivo}): '{nome}' nao pode aparecer em lugar nenhum; achei em: {', '.join(locais)}.")
     else:
         if fornecedor and marca and not marca_propria and norm(marca) != norm(fornecedor):
             E("MARCA_FORA_DO_PADRAO",
@@ -185,6 +235,38 @@ def descricao_do_copy(doc):
                        if str(k).startswith("bloco") and isinstance(v, str))
 
 
+def skus_do_copy(doc):
+    """SKUs que o yaml tem: pai, chaves de por_variacao, variacoes (lista de dicts ou de textos)."""
+    out = [doc.get("pai_sku"), doc.get("sku")]
+    out += list((doc.get("por_variacao") or {}).keys())
+    for v in doc.get("variacoes") or []:
+        out.append(v.get("sku") if isinstance(v, dict) else v)
+    return [str(s) for s in out if s]
+
+
+def _folhas(x):
+    if isinstance(x, dict):
+        for v in x.values():
+            yield from _folhas(v)
+    elif isinstance(x, (list, tuple)):
+        for v in x:
+            yield from _folhas(v)
+    elif x is not None and not isinstance(x, bool):
+        yield str(x)
+
+
+def valores_da_ficha(doc):
+    """Todos os valores de atributo: attributes, por_variacao.*.attributes/magalu e ficha_magalu."""
+    out = {"attributes": " | ".join(_folhas(doc.get("attributes")))}
+    pv = " | ".join(_folhas([(x or {}).get("attributes") for x in (doc.get("por_variacao") or {}).values()
+                             if isinstance(x, dict)] +
+                            [(x or {}).get("magalu") for x in (doc.get("por_variacao") or {}).values()
+                             if isinstance(x, dict)]))
+    out["por_variacao"] = pv
+    out["ficha_magalu"] = " | ".join(_folhas(doc.get("ficha_magalu")))
+    return {k: v for k, v in out.items() if v}
+
+
 def main():
     import yaml
     ap = argparse.ArgumentParser(description="Regra de Marca/Modelo da ficha (07/10/2026).")
@@ -199,7 +281,9 @@ def main():
     pai = doc.get("pai_sku") or doc.get("sku")
     erros = validar_ficha(pai, titulo_do_copy(doc), attrs.get("BRAND"), attrs.get("MODEL"),
                           descricao_do_copy(doc), material=attrs.get("MATERIAL") or attrs.get("MAIN_MATERIAL"), linha=attrs.get("LINE"),
-                          outros_titulos=outros_titulos_do_copy(doc), blocos=blocos_do_copy(doc))
+                          outros_titulos=outros_titulos_do_copy(doc), blocos=blocos_do_copy(doc),
+                          skus=skus_do_copy(doc), valores=valores_da_ficha(doc),
+                          proibidas_extra=(doc.get("marca_regra") or {}).get("proibidas") or ())
     for c, m in erros:
         if c.startswith("WARN"):
             print(f"  [aviso] {c}: {m}")

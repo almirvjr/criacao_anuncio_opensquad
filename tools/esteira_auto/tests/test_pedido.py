@@ -96,6 +96,18 @@ def test_decisoes_do_almir_entram_no_anuncio(tmp_path):
     assert a2["decisoes_almir"] == [] and a2["recado_almir"] == ""
 
 
+def test_marca_regra_do_hub_entra_no_anuncio(tmp_path):
+    regra = {"marca": "Terra Casa Decor", "motivo": "kit", "proibidas": ["Brinox", "Coza"]}
+    lt = _lote_pedido(tmp_path, dict(PEDIDO, marca_regra=regra))
+    P.montar_entrada(lt, ler_cubagem=lambda c: {})
+    a = json.loads((lt / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]
+    assert a["marca_regra"] == regra
+    lt2 = _lote_pedido(tmp_path / "b")  # pedido sem a chave: null
+    P.montar_entrada(lt2, ler_cubagem=lambda c: {})
+    a2 = json.loads((lt2 / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]
+    assert a2["marca_regra"] is None
+
+
 def test_recado_do_almir_entra_no_anuncio(tmp_path):
     lt = _lote_pedido(tmp_path, dict(PEDIDO, recado="  é prato de louça, não descartável \n"))
     P.montar_entrada(lt, ler_cubagem=lambda c: {})

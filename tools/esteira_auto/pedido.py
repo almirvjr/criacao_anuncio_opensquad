@@ -83,6 +83,8 @@ def montar_entrada(lote, cubagem=precheck.CUBAGEM, ler_cubagem=tte.carregar_cuba
         a["eixo_variacao"] = variacoes_mod.eixo([v["grade"] for v in a.get("variacoes") or []])
         a["preco_provisorio"] = False
         a["decisoes_almir"] = decisoes
+        # regra da marca (hub, Almir 02/11/2026): null, ou {"marca": "Terra Casa Decor", "motivo", "proibidas": [...]}
+        a["marca_regra"] = pedido.get("marca_regra")
         a["recado_almir"] = recado
         if magalu is not None:
             a["magalu"] = magalu
