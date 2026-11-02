@@ -6,7 +6,7 @@ Marca (revista 08/10): SO o nome do fornecedor (padrao) ou SO "Terra Casa Decor"
 (o Almir troca na mao quando quiser) -- sem palavra-chave na sequencia. Modelo leva
 palavras-chave de busca que NAO estao no titulo (~30 caracteres). Mundiart (MDA) e
 marca propria: Marca = "Terra Casa Decor" e a descricao apresenta o produto como
-Terra Casa Decor. Descricao so cita a loja quando a Marca e a propria. O titulo
+Terra Casa Decor. A descricao pode citar a loja Terra Casa Decor em qualquer produto (Almir 02/11/2026). O titulo
 nunca cita a loja.
 
 23/10/2026 (hub): nenhum titulo (os do ML e os longos dos outros canais) cita a Marca
@@ -158,9 +158,6 @@ def validar_ficha(pai_sku, titulo, marca, modelo, descricao, material=None, linh
         if fornecedor and marca and not marca_propria and norm(marca) != norm(fornecedor):
             E("MARCA_FORA_DO_PADRAO",
               f"Marca tem que ser so '{fornecedor}' ou so '{MARCA_PROPRIA}', veio '{marca}'.")
-        if loja in norm(descricao) and not marca_propria:
-            E("DESCRICAO_CITA_LOJA",
-              "A descricao so cita 'Terra Casa Decor' quando a Marca e a propria.")
         if marca_propria and fornecedor and tokens(fornecedor) & tokens(descricao):
             E("FORNECEDOR_NA_DESCRICAO",
               f"A Marca e '{MARCA_PROPRIA}', mas a descricao ainda cita '{fornecedor}'. Trocar ou tirar.")

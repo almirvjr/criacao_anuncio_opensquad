@@ -80,9 +80,11 @@ class TestFicha(unittest.TestCase):
         e = validar_ficha("KOU_1", TIT, "Kou Algo", "Quarto", DESC)
         self.assertIn("FORNECEDOR_DESCONHECIDO", codigos(e))
 
-    def test_loja_na_descricao_com_marca_do_fornecedor_bloqueia(self):
+    def test_loja_na_descricao_liberada_mesmo_com_marca_do_fornecedor(self):
+        # Almir 02/11/2026: a descricao pode citar a Terra Casa Decor em qualquer produto
         e = validar_ficha("PAR-1066-PAI", TIT, "Paramount", "Quarto", DESC + " Terra Casa Decor.")
-        self.assertIn("DESCRICAO_CITA_LOJA", codigos(e))
+        self.assertNotIn("DESCRICAO_CITA_LOJA", codigos(e))
+        self.assertEqual([c for c in codigos(e) if not c.startswith("WARN")], [])
 
     def test_loja_no_titulo_sempre_bloqueia(self):
         e = validar_ficha("MDA_9", "Quadro Terra Casa Decor Sala", "Terra Casa Decor", "Arte Moderna",
