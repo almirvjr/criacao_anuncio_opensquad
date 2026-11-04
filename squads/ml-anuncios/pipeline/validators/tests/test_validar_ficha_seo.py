@@ -272,3 +272,25 @@ class TestMainYaml(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TestMarcaDoOlist(unittest.TestCase):
+    """Almir 04/11/2026: fora da regra (BEL/MDA/VIE/kit), a Marca e a que vem do Olist."""
+    TIT = "Jarra de Vidro 1,5 Litro com Tampa para Suco e Agua"
+
+    def test_fora_da_regra_vale_a_do_olist(self):
+        self.assertEqual(codigos(validar_ficha("ROJ-2002-807849-CR", self.TIT, "Lyor", "Gelada Refresco Mesa", DESC,
+                                               marca_olist="Lyor")), [])
+        self.assertIn("MARCA_DIFERENTE_DO_OLIST", codigos(validar_ficha(
+            "ROJ-2002-807849-CR", self.TIT, "Rojemac", "Gelada Refresco Mesa", DESC, marca_olist="Lyor")))
+
+    def test_regra_da_marca_propria_vence_o_olist(self):
+        # kit ROJ: Terra Casa Decor, mesmo que o Olist diga outra coisa
+        self.assertIn("MARCA_TEM_QUE_SER_PROPRIA", codigos(validar_ficha(
+            "ROJ-2001-28311-KT04-BR", self.TIT, "Lyor", "Gelada Refresco Mesa", DESC, marca_olist="Lyor")))
+        self.assertEqual(codigos(validar_ficha("ROJ-2001-28311-KT04-BR", self.TIT, "Terra Casa Decor", "Gelada Refresco Mesa",
+                                               DESC, marca_olist="Lyor")), [])
+
+    def test_olist_sem_marca_fica_como_antes(self):
+        self.assertEqual(codigos(validar_ficha("ROJ-2002-807849-CR", self.TIT, "Rojemac", "Gelada Refresco Mesa", DESC)), [])
+        self.assertIn("MARCA_FORA_DO_PADRAO", codigos(validar_ficha(
+            "ROJ-2002-807849-CR", self.TIT, "Qualquer", "Gelada Refresco Mesa", DESC, marca_olist="  ")))

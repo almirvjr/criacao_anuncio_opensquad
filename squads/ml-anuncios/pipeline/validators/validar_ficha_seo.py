@@ -25,6 +25,10 @@ Terra Casa Decor. Outros produtos: marca livre (fornecedor ou Terra Casa Decor).
 (vale para todos). A regra que o hub manda (`marca_regra` do anuncio) so acrescenta nomes proibidos.
 Codigos: MARCA_TEM_QUE_SER_PROPRIA, FORNECEDOR_CITADO.
 
+04/11/2026 (Almir) -- FORA DA REGRA ACIMA, a Marca e a do Olist (campo `marca` do anuncio em anuncios-entrada.json,
+ao lado da pasta copywriting/). Olist sem marca = como antes (so o fornecedor ou so Terra Casa Decor).
+Codigo: MARCA_DIFERENTE_DO_OLIST.
+
 Uso:  python validar_ficha_seo.py <anuncio-{pai_sku}.yaml>
 Saida: 0 = OK (avisos podem aparecer) | 1 = BLOQUEADO.
 """
@@ -39,6 +43,8 @@ FORNECEDOR_POR_PREFIXO = {
     "MMP": "Passerini", "SEC": "Secalux", "MDA": "Terra Casa Decor",
     # BEL = marca Bellagio; quem vende e a Zanotti e Zanotti Presentes (Almir 24/10/2026)
     "BEL": "Bellagio",
+    # ROJ = Rojemac (Almir 04/11/2026); a marca de cada produto vem do Olist (ex. Lyor)
+    "ROJ": "Rojemac",
 }
 MARCA_PROPRIA = "Terra Casa Decor"
 # Outros nomes ligados a marca (tambem nao entram no titulo). Coza = linha de plastico da Brinox;
@@ -76,7 +82,8 @@ def _titulo_do_bloco(bloco):
 REGRA_KIT = re.compile(r"-(KT|CJ)[0-9A-Z]", re.I)
 PREFIXOS_MARCA_PROPRIA = {"BEL", "MDA", "VIE"}
 NOMES_POR_PREFIXO = {"BEL": ["Bellagio", "Zanotti"], "MDA": ["Mundiart"], "VIE": ["Viel"], "PAR": ["Paramount"],
-                     "BRI": ["Brinox", "Coza"], "EMB": ["Embalixo"], "MMP": ["Passerini"], "SEC": ["Secalux"]}
+                     "BRI": ["Brinox", "Coza"], "EMB": ["Embalixo"], "MMP": ["Passerini"], "SEC": ["Secalux"],
+                     "ROJ": ["Rojemac"]}
 
 
 def _prefixo(sku):
@@ -109,7 +116,7 @@ def _tem_palavra(nome, texto):
 
 
 def validar_ficha(pai_sku, titulo, marca, modelo, descricao, material=None, linha=None,
-                  outros_titulos=(), blocos=None, skus=(), valores=None, proibidas_extra=()):
+                  outros_titulos=(), blocos=None, skus=(), valores=None, proibidas_extra=(), marca_olist=None):
     err = []
     E = lambda c, m: err.append((c, m))  # noqa: E731
     fornecedor = fornecedor_do_sku(pai_sku)
@@ -154,6 +161,13 @@ def validar_ficha(pai_sku, titulo, marca, modelo, descricao, material=None, linh
             if locais:
                 E("FORNECEDOR_CITADO",
                   f"Regra da marca ({motivo}): '{nome}' nao pode aparecer em lugar nenhum; achei em: {', '.join(locais)}.")
+    elif (marca_olist or "").strip():
+        if marca and norm(marca) != norm(marca_olist):
+            E("MARCA_DIFERENTE_DO_OLIST",
+              f"Regra do Almir 04/11/2026: fora da regra da marca propria, a Marca e a do Olist ('{marca_olist.strip()}'), veio '{marca}'.")
+        if marca_propria and fornecedor and tokens(fornecedor) & tokens(descricao):
+            E("FORNECEDOR_NA_DESCRICAO",
+              f"A Marca e '{MARCA_PROPRIA}', mas a descricao ainda cita '{fornecedor}'. Trocar ou tirar.")
     else:
         if fornecedor and marca and not marca_propria and norm(marca) != norm(fornecedor):
             E("MARCA_FORA_DO_PADRAO",
@@ -264,6 +278,20 @@ def valores_da_ficha(doc):
     return {k: v for k, v in out.items() if v}
 
 
+def marca_do_olist(copy_path, pai):
+    """Marca do Olist do anuncio (anuncios-entrada.json do lote, ao lado de copywriting/). Sem arquivo/marca = None."""
+    import json
+    entrada = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(copy_path))), "anuncios-entrada.json")
+    try:
+        with open(entrada, encoding="utf-8") as fh:
+            ents = json.load(fh).get("anuncios") or []
+    except (OSError, ValueError):
+        return None
+    a = next((x for x in ents if x.get("pai_sku") == pai), None)
+    m = (a or {}).get("marca")
+    return str(m).strip() if m and str(m).strip() else None
+
+
 def main():
     import yaml
     ap = argparse.ArgumentParser(description="Regra de Marca/Modelo da ficha (07/10/2026).")
@@ -280,7 +308,8 @@ def main():
                           descricao_do_copy(doc), material=attrs.get("MATERIAL") or attrs.get("MAIN_MATERIAL"), linha=attrs.get("LINE"),
                           outros_titulos=outros_titulos_do_copy(doc), blocos=blocos_do_copy(doc),
                           skus=skus_do_copy(doc), valores=valores_da_ficha(doc),
-                          proibidas_extra=(doc.get("marca_regra") or {}).get("proibidas") or ())
+                          proibidas_extra=(doc.get("marca_regra") or {}).get("proibidas") or (),
+                          marca_olist=marca_do_olist(args.copy, pai))
     for c, m in erros:
         if c.startswith("WARN"):
             print(f"  [aviso] {c}: {m}")
