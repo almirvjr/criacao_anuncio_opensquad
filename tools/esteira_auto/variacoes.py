@@ -174,7 +174,11 @@ def conferir(lote, pai, anuncio):
     # Modelo "Tigela Oval Linha Oceano")
     reais = a.get("atributos_reais") if isinstance(a.get("atributos_reais"), dict) else {}
     modelo = str(reais.get("MODEL") or "").strip()
-    if modelo:
+    # Modelo que o Almir decidiu na ficha vale acima desta regra (04/11/2026: "Kit de Tigela Bowl Estampada" do
+    # BEL-4001-KT06-PAI parava ou passava conforme a 1a palavra do titulo que a IA escolhia; pedidos 627 x 947)
+    decidido = {_norm(d.get("valor")) for d in ent.get("decisoes_almir") or []
+                if str(d.get("campo") or "").upper() == "MODEL" and d.get("valor")}
+    if modelo and _norm(modelo) not in decidido:
         def _tok(v):
             return {t for t in re.split(r"[^a-z0-9]+", _norm(v)) if len(t) > 2}
         tipo = next((x.get("texto") for x in a.get("titles") or [] if isinstance(x, dict) and x.get("recomendado")), "") or ""
@@ -221,8 +225,13 @@ def conferir(lote, pai, anuncio):
                 v = str((linha or {}).get("valor") or "").strip()
                 if not v and _norm(nome) == "cor":
                     v = next((str(x.get("cor") or "") for x in ent.get("variacoes") or [] if x.get("sku") == s), "")
-                if not v:
+                if not v and _norm(nome) == "cor":
+                    # a Cor o hub nao cobra na aprovacao (vem da grade): sem ela o robo do Magalu recusa (27/10/2026)
                     erros.append(f"{s}: falta o '{nome}' do Magalu em por_variacao.{s}.magalu (e o campo que separa as variacoes nessa categoria)")
+                    continue
+                if not v:
+                    # outro campo sem valor de fonte propria NAO para o produto (04/11/2026, pedido 579): a ficha do hub
+                    # mostra o campo vazio em cada cor e nao aprova o Magalu sem ele (mig 263); o Almir preenche la
                     continue
                 vals.setdefault(_norm(v), []).append(s)
             erros += [f"Magalu: '{nome}' igual em {', '.join(v)} (o Magalu nao separa as variacoes)" for v in vals.values() if len(v) > 1]

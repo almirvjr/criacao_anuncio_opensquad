@@ -78,8 +78,10 @@ def test_titulos_longos_conferidos_pelo_tamanho_de_verdade(tmp_path):
     bom = [{"texto": "x" * 100, "length": 100, "recomendado": True}, {"texto": "y" * 85, "recomendado": False}]
     _anuncio(tmp_path, bom)
     assert travas.conferir("texto", tmp_path, ["A"], rodar=_ok) == {}
+    # tamanho fora de 85-100 nao para mais o produto (04/11/2026, pedido 627): vira aviso no caderno, contado pelo texto
     _anuncio(tmp_path, [bom[0], {"texto": "y" * 101, "length": 99, "recomendado": False}])  # length mente
-    assert "101" in travas.conferir("texto", tmp_path, ["A"], rodar=_ok)["A"]
+    assert travas.conferir("texto", tmp_path, ["A"], rodar=_ok) == {}
+    assert travas.titulos_longos_fora(tmp_path / "copywriting" / "anuncio-A.yaml") == [101]
     _anuncio(tmp_path, [dict(bom[0]), dict(bom[1], recomendado=True)])
     assert "recomendado" in travas.conferir("texto", tmp_path, ["A"], rodar=_ok)["A"]
     _anuncio(tmp_path, [bom[0]])
@@ -198,3 +200,19 @@ def test_decisao_do_almir_em_modelo_vale_contra_o_valor_real(tmp_path):
     an.write_text(yaml.safe_dump({"status_copy": "ok", "attributes": {"MODEL": "Prato Raso Jantar"},
                                   "atributos_reais": {"MODEL": "Cozy"}}, allow_unicode=True), encoding="utf-8")
     assert "MODEL = Cozy 10570" in travas._decisoes_almir(tmp_path, "A", an, tmp_path / "campos-A.json")
+
+
+def test_pedido_947_materials_e_campo_de_busca(tmp_path):
+    """Reprova no codigo antigo: 'MATERIALS: so Modelo, Linha e Material levam valor real separado' (categoria Bowl)."""
+    (tmp_path / "copywriting").mkdir(exist_ok=True)
+    arq = tmp_path / "copywriting" / "anuncio-A.yaml"
+    arq.write_text(yaml.safe_dump({"attributes": {"MATERIALS": "Melamina Resistente"},
+                                   "atributos_reais": {"MATERIALS": "Melamina"}}, allow_unicode=True), encoding="utf-8")
+    assert travas._atributos_reais(arq) is None
+    # sem o valor real de MATERIALS tambem passa (pedidos 491, 579, 627 e 629 eram assim e nao podem passar a parar)
+    arq.write_text(yaml.safe_dump({"attributes": {"MATERIALS": "Melamina Resistente"}, "atributos_reais": {}},
+                                  allow_unicode=True), encoding="utf-8")
+    assert travas._atributos_reais(arq) is None
+    # outro campo fora da lista continua barrando
+    arq.write_text(yaml.safe_dump({"attributes": {}, "atributos_reais": {"COLOR": "Azul"}}, allow_unicode=True), encoding="utf-8")
+    assert "COLOR" in (travas._atributos_reais(arq) or "")

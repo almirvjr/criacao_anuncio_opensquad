@@ -31,12 +31,20 @@ def _titulos_longos(anuncio):
         return "faltam os titulos longos (titulos_longos, 85-100 letras, para os outros canais)"
     if not 2 <= len(longos) <= 3:
         return f"titulos longos: sao {len(longos)}, tem que ser de 2 a 3"
-    fora = [len(t.get("texto") or "") for t in longos if not 85 <= len(t.get("texto") or "") <= 100]
-    if fora:
-        return f"titulos longos com {', '.join(map(str, fora))} letras (tem que ser 85-100)"
+    # tamanho fora de 85-100 NAO para o produto (04/11/2026, pedido 627 parou por 83 letras): o titulo vai para a ficha
+    # do hub, que avisa abaixo de 85 e nao deixa aprovar acima de 100; o Almir ajusta la. Conferir: titulos_longos_fora().
     if sum(1 for t in longos if t.get("recomendado") is True) != 1:
         return "titulos longos: marque exatamente 1 como recomendado"
     return None
+
+
+def titulos_longos_fora(anuncio):
+    """Tamanhos dos titulos longos fora de 85-100 (so aviso no caderno; nao reprova)."""
+    if not Path(anuncio).is_file():
+        return []
+    a = yaml.safe_load(Path(anuncio).read_text(encoding="utf-8")) or {}
+    longos = a.get("titulos_longos") if isinstance(a.get("titulos_longos"), list) else []
+    return [len(x.get("texto") or "") for x in longos if isinstance(x, dict) and not 85 <= len(x.get("texto") or "") <= 100]
 
 
 def _decisoes_almir(lote, pai, anuncio, campos):
@@ -172,6 +180,8 @@ def pendentes_magalu(lote, pai):
 
 
 BUSCA = ("MODEL", "LINE", "MATERIAL", "MAIN_MATERIAL")  # campos que no ML levam palavra de busca (step-05, passo 5)
+# aceitos em atributos_reais sem ser cobrados: MATERIALS (categoria Bowl; pedidos 90 e 947 pararam por ter o valor real dele)
+REAL_ACEITO = BUSCA + ("MATERIALS",)
 
 
 def _atributos_reais(anuncio):
@@ -187,7 +197,7 @@ def _atributos_reais(anuncio):
     if not isinstance(reais, dict):
         return "atributos_reais tem que ser um bloco campo: valor real"
     norm = lambda v: " ".join(str(v or "").split()).casefold()
-    erros = [f"{k}: so Modelo, Linha e Material levam valor real separado" for k in reais if k not in BUSCA]
+    erros = [f"{k}: so Modelo, Linha e Material levam valor real separado" for k in reais if k not in REAL_ACEITO]
     for k in BUSCA:
         v = norm(attrs.get(k))
         if not v or v in ("não se aplica", "nao se aplica"):

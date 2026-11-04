@@ -218,3 +218,29 @@ def test_produto_de_um_sku_sem_cor_na_grade_cobra_a_cor_do_magalu(tmp_path):
     a["por_variacao"] = {s: {"magalu": [{"nome": "Cor", "valor": "Limão Siciliano"}]}}
     arq.write_text(yaml.safe_dump(a, allow_unicode=True), encoding="utf-8")
     assert V.conferir(tmp_path, s, arq) is None
+
+
+def test_pedido_579_campo_do_magalu_que_nao_e_cor_vazio_nao_para(tmp_path):
+    """Reprova no codigo antigo: 'falta o Capacidade do Magalu'. Agora a ficha do hub cobra (mig 263)."""
+    s = "BEL-4001-0808-PE-KT04"
+    ent = {"anuncios": [{"pai_sku": "P", "eixo_variacao": "cor", "variacoes": [{"sku": s, "cor": "Peixes"}],
+                         "magalu": {"candidatas": [{"id": "bowl", "nome": "Bowl", "variacao": ["Capacidade", "Cor"]}]}}]}
+    (tmp_path / "anuncios-entrada.json").write_text(json.dumps(ent), encoding="utf-8")
+    a = {"attributes": {"BRAND": "Terra Casa Decor"}, "ficha_magalu": {"categoria_id": "bowl", "campos": []}}
+    arq = tmp_path / "anuncio.yaml"
+    arq.write_text(yaml.safe_dump(a, allow_unicode=True), encoding="utf-8")
+    assert V.conferir(tmp_path, "P", arq) is None
+
+
+def test_pedido_627_modelo_decidido_pelo_almir_vale_acima_da_regra(tmp_path):
+    """Reprova no codigo antigo: o Modelo decidido pelo Almir ('Kit de Tigela Bowl Estampada') parava quando o titulo
+    da IA comecava com 'Kit' (pedido 627) e passava quando comecava com 'Jogo' (pedido 947)."""
+    a = _certo()
+    a["titles"] = [{"texto": "Kit 6 Tigelas Bowl Melamina 18cm Cumbuca Redonda Sobremesa", "recomendado": True}]
+    a["atributos_reais"] = {"MODEL": "Kit de Tigela Bowl Estampada"}
+    arq = _lote(tmp_path, a)
+    assert "Modelo real" in (V.conferir(tmp_path, "BEL-4006-PAI", arq) or "")  # sem decisao: a regra vale
+    ent = json.loads((tmp_path / "anuncios-entrada.json").read_text(encoding="utf-8"))
+    ent["anuncios"][0]["decisoes_almir"] = [{"campo": "MODEL", "valor": "Kit de Tigela Bowl Estampada", "sku": M}]
+    (tmp_path / "anuncios-entrada.json").write_text(json.dumps(ent), encoding="utf-8")
+    assert "Modelo real" not in (V.conferir(tmp_path, "BEL-4006-PAI", arq) or "")

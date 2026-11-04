@@ -184,6 +184,10 @@ def rodar_lote(lote, chamar=chamar_claude.chamar, conferir=travas.conferir,
             for p in pais:
                 for nome in travas.pendentes_magalu(lote, p):
                     L.anotar(lote, f"pendente para o Almir: {nome} do Magalu ({p}), preencher na ficha do hub", agora())
+                fora = travas.titulos_longos_fora(Path(lote) / "copywriting" / f"anuncio-{p}.yaml")
+                if fora:
+                    L.anotar(lote, f"aviso para o Almir: titulo do Magalu de {p} com {', '.join(map(str, fora))} letras "
+                                   "(o ideal e 85 a 100); ajuste na ficha do hub", agora())
         if etapa == "capas":
             # copia pequena das fotos no lote: o texto le nelas as medidas, a capacidade e a forma (25/10/2026)
             falhou = baixar_fotos(lote)
