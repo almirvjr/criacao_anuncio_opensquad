@@ -178,6 +178,11 @@ def rodar_lote(lote, chamar=chamar_claude.chamar, conferir=travas.conferir,
         if not _etapa(etapa, lote, pais, chamar, conferir, agora, avisar):
             return 1
         L.marcar_feita(lote, etapa, agora())
+        if etapa == "revisao" and "pedido_id" in L.ler(lote):
+            # campo obrigatorio do Magalu sem valor de fonte propria: nao para o produto, vai para o Almir (04/11/2026)
+            for p in pais:
+                for nome in travas.pendentes_magalu(lote, p):
+                    L.anotar(lote, f"pendente para o Almir: {nome} do Magalu ({p}), preencher na ficha do hub", agora())
         if etapa == "capas":
             # copia pequena das fotos no lote: o texto le nelas as medidas, a capacidade e a forma (25/10/2026)
             falhou = baixar_fotos(lote)

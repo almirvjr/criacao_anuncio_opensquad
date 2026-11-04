@@ -16,6 +16,7 @@ import tiny_to_esteira as tte  # noqa: E402
 from esteira_auto import precheck  # noqa: E402
 from esteira_auto import precos as precos_mod  # noqa: E402
 from esteira_auto import variacoes as variacoes_mod  # noqa: E402
+from esteira_auto.travas import PENDENTE_MAGALU, pendentes_magalu  # noqa: E402
 
 
 def _cor(grade):
@@ -103,6 +104,25 @@ def _yaml(p):
     return (yaml.safe_load(p.read_text(encoding="utf-8")) or {}) if p.is_file() else None
 
 
+def _marcar_pendentes(ficha, pendentes):
+    """{categoria_id, campos: [{nome, valor|motivo}]}: obrigatorio sem valor em nivel nenhum sai com o motivo
+    "PENDENTE: ..." (o hub mostra em vermelho e nao aprova o Magalu com ele vazio). Campo que nem veio entra."""
+    if not pendentes:
+        return ficha
+    norm = lambda v: " ".join(str(v or "").split()).casefold()
+    campos = [dict(x) for x in ficha.get("campos") or [] if isinstance(x, dict)]
+    for nome in pendentes:
+        x = next((c for c in campos if norm(c.get("nome")) == norm(nome)), None)
+        if x is None:
+            campos.append({"nome": nome, "motivo": PENDENTE_MAGALU})
+            continue
+        antes = str(x.get("motivo") or "").strip()
+        x.pop("valor", None)
+        if not antes.startswith("PENDENTE:"):
+            x["motivo"] = PENDENTE_MAGALU + (f" ({antes})" if antes else "")
+    return {**ficha, "campos": campos}
+
+
 def resultado(lote, ler_precos=precos_mod.ler_para_lote):
     """O que a esteira produziu, por produto (cru; o hub espalha para a ficha mestra). Preco do Olist nunca;
     `precos` = proposta da planilha de precificacao do hub por canal e SKU (o Almir confere na aprovacao)."""
@@ -120,7 +140,7 @@ def resultado(lote, ler_precos=precos_mod.ler_para_lote):
         anuncio.pop("preco", None)
         canais = {}
         if a.get("magalu") is not None and isinstance(anuncio.get("ficha_magalu"), dict):
-            canais["magalu"] = anuncio.pop("ficha_magalu")  # {categoria_id, campos: [{nome, valor|motivo}]}
+            canais["magalu"] = _marcar_pendentes(anuncio.pop("ficha_magalu"), pendentes_magalu(lote, pai))
         cat = cats.get(pai)
         lista = lote / "categorizacao" / f"campos-{pai}.json"
         if cat is not None and lista.is_file():  # campos da categoria do ML (com os ocultos) para a tela do hub

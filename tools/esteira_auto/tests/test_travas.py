@@ -142,7 +142,8 @@ def test_ficha_magalu_todo_campo_com_valor_ou_motivo(tmp_path):
     dois = dict(boa, campos=boa["campos"][:2] + [{"nome": "Peso do Produto", "valor": "1 kg", "motivo": "x"}])
     assert "precisa de valor OU de motivo" in _magalu(tmp_path, dois)
     marca = dict(boa, campos=[{"nome": "Marca", "motivo": "nao sei"}] + boa["campos"][1:])
-    assert "obrigatorio no Magalu" in _magalu(tmp_path, marca)
+    assert _magalu(tmp_path, marca) is None  # obrigatorio sem valor: pendencia para o Almir, nao reprova (04/11)
+    assert travas.pendentes_magalu(tmp_path, "A") == ["Marca"]
     ench = dict(boa, campos=[{"nome": "Marca", "valor": "N/A"}] + boa["campos"][1:])
     assert "enchimento" in _magalu(tmp_path, ench)
     extra = dict(boa, campos=boa["campos"] + [{"nome": "Forma", "valor": "Redonda"}])
