@@ -2,6 +2,8 @@
 andamento.txt e o mesmo em portugues, para o Almir e para o Claude lerem depois."""
 import json
 import os
+import shutil
+from datetime import datetime, timedelta
 from pathlib import Path
 
 ETAPAS = ["entrada", "capas", "curadoria", "categoria", "pesquisa", "texto", "revisao", "tela"]
@@ -112,3 +114,68 @@ def lote_aberto(raiz_lotes, de_pedido=False, vaga=None):
                 continue
             return p
     return None
+
+
+# ── Reaproveitar etapas caras de um lote anterior do mesmo produto (peca 4, 04/11/2026) ──────────────────────────
+# Pedido parado e pedido de novo virava lote do zero (~13-28 min). Reaproveita so o que nao depende das decisoes do
+# Almir: a categoria (categorizacao/*) e a COLETA de concorrentes da pesquisa (o brief e refeito: traz os fatos).
+# Entrada, capas, curadoria, texto e revisao sempre de novo.
+DIAS_REAPROVEITAR = 7
+
+
+def skus_do_pedido(pedido):
+    vs = pedido.get("variacoes") or ((pedido.get("olist") or {}).get("variacoes")) or []
+    return {str(v.get("sku")) for v in vs if v.get("sku")}
+
+
+def achar_reaproveitavel(raiz_lotes, pedido, agora, dias=DIAS_REAPROVEITAR):
+    """Lote de pedido mais recente (ate `dias`) do mesmo pai que ja escolheu a categoria e cujos SKUs contem os do
+    pedido novo. Pedido com recado do Almir ("Refazer do zero") nunca reaproveita."""
+    raiz = Path(raiz_lotes)
+    pai, skus = pedido["produto"]["sku_pai"], skus_do_pedido(pedido)
+    if not raiz.is_dir() or not skus or str(pedido.get("recado") or "").strip():
+        return None
+    for p in sorted((x for x in raiz.iterdir() if (x / "andamento.json").is_file()), key=lambda x: x.name, reverse=True):
+        try:
+            d = ler(p)
+            if d.get("sku_pai") != pai or "pedido_id" not in d or "categoria" not in d.get("feitas", []):
+                continue
+            if agora - datetime.strptime(d["criado_em"], "%Y-%m-%d %H:%M") > timedelta(days=dias):
+                continue
+            velho = json.loads((p / "pedido.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError, KeyError):
+            continue
+        if skus <= skus_do_pedido(velho) and (p / "categorizacao" / "categorias.yaml").is_file():
+            return p
+    return None
+
+
+def reaproveitar(lote, velho, agora):
+    """Copia a categoria (e a coleta de concorrentes, se o lote velho tem) e anota no caderno. Devolve o que veio."""
+    lote, velho = Path(lote), Path(velho)
+    pai = ler(lote)["sku_pai"]
+    shutil.copytree(velho / "categorizacao", lote / "categorizacao", dirs_exist_ok=True)
+    veio = ["categoria"]
+    coleta = velho / "inteligencia" / "_coleta" / f"coleta-{pai}.json"
+    if coleta.is_file():
+        dados = json.loads(coleta.read_text(encoding="utf-8"))
+        (lote / "inteligencia" / "_coleta").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(coleta, lote / "inteligencia" / "_coleta" / coleta.name)
+        raw = lote / "inteligencia" / "_raw"
+        raw.mkdir(parents=True, exist_ok=True)
+        for k in dados.get("concorrentes") or []:  # o _raw de cada concorrente: a trava do brief confere a citacao nele
+            f = velho / "inteligencia" / "_raw" / f"{k.get('id')}.json"
+            if f.is_file():
+                shutil.copy2(f, raw / f.name)
+        veio.append("coleta")
+    d = ler(lote)
+    d["feitas"].append("categoria")
+    d["reaproveitado"] = {"de": velho.name, "etapas": veio}
+    _salvar(lote, d)
+    nomes = {"categoria": "categoria", "coleta": "coleta de concorrentes"}
+    anotar(lote, f"reaproveitei do lote {velho.name}: {', '.join(nomes[v] for v in veio)}", agora)
+    return veio
+
+
+def coleta_reaproveitada(lote):
+    return "coleta" in (ler(lote).get("reaproveitado") or {}).get("etapas", [])

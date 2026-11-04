@@ -1,6 +1,7 @@
 """Maestro da esteira de anuncios: conduz um lote da planilha ate a tela, sem conversa.
 Spec: docs/superpowers/specs/2026-10-09-botao-criar-anuncios-design.md"""
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -152,7 +153,7 @@ def rodar_lote(lote, chamar=chamar_claude.chamar, conferir=travas.conferir,
                 L.anotar(lote, "tela fechada com anuncio pendente: clique de novo para reabrir", agora())
                 return 2
         pais = _pais(lote)
-        if pais and etapa == "pesquisa":
+        if pais and etapa == "pesquisa" and not L.coleta_reaproveitada(lote):
             # concorrentes pela API (com o acesso da loja) + opinioes por Chrome de verdade. Sem opiniao o texto sai
             # fraco (pedido 9, 22/10: PC dormiu no meio, 0 opinioes, e a esteira pagou o texto assim mesmo):
             # falhou = tenta de novo na proxima volta; na 3a vez para o produto com o motivo.
@@ -342,20 +343,20 @@ def _escolher_vaga(lotes, vagas):
     return None, None
 
 
-def main_fila(lotes=LOTES, fila=None, rodar=None, agora=datetime.now, vagas=vaga_mod.PADRAO):
+def main_fila(lotes=LOTES, fila=None, rodar=None, agora=datetime.now, vagas=vaga_mod.PADRAO, reaproveitar=True):
     vaga, trava = _escolher_vaga(lotes, vagas)
     if trava is None:
         print("Outra rodada da fila esta trabalhando.")
         return 0
     vaga_mod.ATUAL = vaga  # Chrome e navegador do claude -p desta vaga (global do processo)
     try:
-        return _main_fila(lotes, fila, rodar, agora, vaga, so_terminar=vaga > vagas)
+        return _main_fila(lotes, fila, rodar, agora, vaga, so_terminar=vaga > vagas, reaproveitar=reaproveitar)
     finally:
         vaga_mod.ATUAL = 1
         trava.close()
 
 
-def _main_fila(lotes, fila, rodar, agora, vaga=1, so_terminar=False):
+def _main_fila(lotes, fila, rodar, agora, vaga=1, so_terminar=False, reaproveitar=True):
     """Tarefa agendada do PC: faz UM pedido da fila do hub por vez (retoma o que ficou aberto).
     Parou no meio = devolve ao hub com o motivo (o Almir pede de novo pelo site); nao repete etapa paga sozinho.
     So a entrega do fim e tentada de novo na proxima volta."""
@@ -380,6 +381,9 @@ def _main_fila(lotes, fila, rodar, agora, vaga=1, so_terminar=False):
         try:
             if novo:
                 L.anotar(lote, f"esteira trabalhando nisto ({fila.maquina}, vaga {vaga})", agora())
+                velho = L.achar_reaproveitavel(lotes, pedido, agora()) if reaproveitar else None
+                if velho is not None and velho != Path(lote):
+                    L.reaproveitar(lote, velho, agora())
             cod = rodar(lote, entregar=_entregador(fila, pid))
             L.ESPELHO = None
             if cod in (0, 4):
@@ -408,7 +412,8 @@ def _main_fila(lotes, fila, rodar, agora, vaga=1, so_terminar=False):
 if __name__ == "__main__":
     _manter_acordado(True)
     try:
-        cod = main_fila(vagas=vaga_mod.ler_vagas(sys.argv)) if "--fila" in sys.argv else main()
+        sem = "--sem-reaproveitar" in sys.argv or os.environ.get("ESTEIRA_SEM_REAPROVEITAR") == "1"
+        cod = main_fila(vagas=vaga_mod.ler_vagas(sys.argv), reaproveitar=not sem) if "--fila" in sys.argv else main()
     finally:
         _manter_acordado(False)
     sys.exit(cod)
