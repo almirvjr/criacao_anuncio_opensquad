@@ -4,6 +4,7 @@ Mesmo formato de anuncios-entrada.json do caminho da planilha (normalizer + cuba
 Preco do Olist nunca entra (o R$ 10 e so para nao ficar zerado)."""
 import json
 import os
+import re
 from pathlib import Path
 
 import yaml
@@ -104,6 +105,49 @@ def _yaml(p):
     return (yaml.safe_load(p.read_text(encoding="utf-8")) or {}) if p.is_file() else None
 
 
+LIMITE_RESULTADO = 512 * 1024  # esteira.gravar_resultado recusa acima disso
+_URL = re.compile(r"https?://\S+")
+
+
+def _txt(v, teto=1000):
+    """So texto, sem endereco (permalink de concorrente nao vai para o hub)."""
+    if isinstance(v, dict):
+        v = v.get("texto") or v.get("frase") or v.get("campo") or v.get("descricao") or ""
+    t = " ".join(_URL.sub("", str(v or "")).split())
+    return t[:teto]
+
+
+def _lista(xs, teto=20):
+    return [t for t in (_txt(x) for x in (xs or [])[:teto] if x is not None) if t] if isinstance(xs, list) else []
+
+
+def brief_resumo(lote, pai):
+    """Diagnostico do brief (inteligencia/brief-<pai>.yaml) para o hub montar o resumo do ChatGPT (peca 5, 04/11/2026).
+    Sem evidencias nem enderecos de concorrente. Sem brief = None."""
+    b = _yaml(Path(lote) / "inteligencia" / f"brief-{pai}.yaml")
+    if not isinstance(b, dict):
+        return None
+    dg = b.get("diagnostico") if isinstance(b.get("diagnostico"), dict) else {}
+    ans = []
+    for x in (dg.get("ansiedades") or [])[:20]:
+        if isinstance(x, dict):
+            # o step-04 ja chamou a resposta de resposta_na_copy, como_responder e como_combater
+            resp = x.get("resposta_na_copy") or x.get("como_responder") or x.get("como_combater")
+            ans.append({"texto": _txt(x.get("texto")), "resposta_na_copy": _txt(resp) or None})
+        elif x:
+            ans.append({"texto": _txt(x), "resposta_na_copy": None})
+    escada = [{k: _txt(x.get(k)) for k in ("feature", "logico", "emocional")}
+              for x in (b.get("escada_e_dai") or [])[:20] if isinstance(x, dict)]
+    return {"diagnostico": {"dor_interna_mais_forte": _txt(dg.get("dor_interna_mais_forte")) or None,
+                            "only_factor": _txt(dg.get("only_factor")) or None,
+                            "ansiedades": ans,
+                            "linguagem_real_cliente": _lista(dg.get("linguagem_real_cliente"), 40),
+                            "persona": _txt(dg.get("persona")) or None},
+            "escada_e_dai": escada,
+            "limitacoes": _lista(b.get("limitacoes")),
+            "pendencias": _lista(b.get("pendencias"))}
+
+
 def _marcar_pendentes(ficha, pendentes):
     """{categoria_id, campos: [{nome, valor|motivo}]}: obrigatorio sem valor em nivel nenhum sai com o motivo
     "PENDENTE: ..." (o hub mostra em vermelho e nao aprova o Magalu com ele vazio). Campo que nem veio entra."""
@@ -147,7 +191,9 @@ def resultado(lote, ler_precos=precos_mod.ler_para_lote):
             cat = {**cat, "campos": [{"id": c.get("id"), "nome": c.get("nome"), "oculto": bool(c.get("oculto")),
                                       "variacao": bool(c.get("variacao"))}
                                      for c in json.loads(lista.read_text(encoding="utf-8"))]}
+        brief = brief_resumo(lote, pai)
         produtos.append({"pai_sku": pai, "categoria": cat, "anuncio": anuncio, "canais": canais,
+                         **({"brief": brief} if brief is not None else {}),
                          "parecer": _yaml(lote / "revisao" / f"parecer-{pai}.yaml"),
                          "capas": _yaml(lote / "capas" / f"capas-{pai}.yaml"),
                          "precos": precos_mod.do_produto(tabela, [v.get("sku") for v in a.get("variacoes", [])]),
@@ -156,4 +202,8 @@ def resultado(lote, ler_precos=precos_mod.ler_para_lote):
                          "pacote": {"peso_bruto_kg": a.get("peso_bruto_kg"), "dim_embalagem_cm": a.get("dim_embalagem_cm")},
                          "variacoes": [{"sku": v.get("sku"), "cor": v.get("cor"), "ean": v.get("ean")}
                                        for v in a.get("variacoes", [])]})
-    return {"lote": lote.name, "produtos": produtos, "parados": d.get("parados", {})}
+    out = {"lote": lote.name, "produtos": produtos, "parados": d.get("parados", {})}
+    if len(json.dumps(out, ensure_ascii=False).encode("utf-8")) > LIMITE_RESULTADO:
+        for pr in produtos:  # o brief e o que sobra: nunca deixar ele derrubar a entrega
+            pr.pop("brief", None)
+    return out
