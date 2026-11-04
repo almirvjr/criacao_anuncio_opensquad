@@ -223,7 +223,7 @@ def test_pedido_novo_espelha_o_andamento_no_banco(tmp_path):
         L.anotar(lote, "pronto: conferindo as fotos", T())
         return 0
     assert M.main_fila(tmp_path / "lotes", fila=f, rodar=rodar, agora=T) == 0
-    assert f.anotados == ["esteira trabalhando nisto (PC-TESTE)", "pronto: conferindo as fotos"]
+    assert f.anotados == ["esteira trabalhando nisto (PC-TESTE, vaga 1)", "pronto: conferindo as fotos"]
     assert L.ESPELHO is None
 
 
@@ -285,7 +285,8 @@ def test_uma_rodada_por_vez_mesmo_com_trava_velha(tmp_path):
     lotes = tmp_path / "lotes"
     trava = M._pegar_trava(lotes)
     assert trava is not None and M._pegar_trava(lotes) is None
-    assert M.main_fila(lotes, fila=FilaFalsa(PEDIDO), rodar=lambda *a, **k: 1 / 0) == 0  # nem pegou o pedido
+    # com --vagas 1 (volta-atras das rodadas em paralelo) fica como antes: nem pegou o pedido
+    assert M.main_fila(lotes, fila=FilaFalsa(PEDIDO), rodar=lambda *a, **k: 1 / 0, vagas=1) == 0
     os.utime(lotes / ".fila.trava", (0, 0))  # 1970: PC suspenso horas com a rodada viva
     assert M._pegar_trava(lotes) is None  # a rodada antiga ainda existe: nao toma
     trava.close()

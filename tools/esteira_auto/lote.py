@@ -43,15 +43,16 @@ def criar_lote(planilha, raiz_lotes, agora):
     return lote
 
 
-def criar_lote_do_pedido(pedido, raiz_lotes, agora):
-    """Pedido da fila do hub -> lote proprio. pedido.json guarda o que o banco mandou (leitura do Olist)."""
+def criar_lote_do_pedido(pedido, raiz_lotes, agora, vaga=1):
+    """Pedido da fila do hub -> lote proprio. pedido.json guarda o que o banco mandou (leitura do Olist).
+    `vaga` = qual rodada da fila e dona do lote (so ela retoma)."""
     pid, pai = pedido["pedido_id"], pedido["produto"]["sku_pai"]
     lote = Path(raiz_lotes) / f"{agora:%Y-%m-%d-%H%M%S}-pedido{pid}"
     lote.mkdir(parents=True, exist_ok=False)
     (lote / "pedido.json").write_text(json.dumps(pedido, ensure_ascii=False, indent=1), encoding="utf-8")
     _salvar(lote, {"pedido_id": pid, "sku_pai": pai, "criado_em": f"{agora:%Y-%m-%d %H:%M}",
-                   "etapas": ETAPAS_PEDIDO, "feitas": [], "parados": {}, "concluido": False})
-    anotar(lote, f"lote criado para o pedido {pid} do hub ({pai})", agora)
+                   "etapas": ETAPAS_PEDIDO, "feitas": [], "parados": {}, "concluido": False, "vaga": vaga})
+    anotar(lote, f"lote criado para o pedido {pid} do hub ({pai}), vaga {vaga}", agora)
     return lote
 
 
@@ -93,13 +94,21 @@ def proxima(lote):
     return next((e for e in d.get("etapas", ETAPAS) if e not in d["feitas"]), None)
 
 
-def lote_aberto(raiz_lotes, de_pedido=False):
-    """1o lote nao concluido do tipo pedido (fila do hub) ou planilha (botao): um nunca retoma o do outro."""
+def vaga_do_lote(d):
+    """Lote de pedido sem `vaga` (antes das rodadas em paralelo, 04/11/2026) = vaga 1."""
+    return d.get("vaga") or 1
+
+
+def lote_aberto(raiz_lotes, de_pedido=False, vaga=None):
+    """1o lote nao concluido do tipo pedido (fila do hub) ou planilha (botao): um nunca retoma o do outro.
+    Com `vaga`: so lote de pedido daquela vaga (a outra rodada pode estar trabalhando no dela)."""
     raiz = Path(raiz_lotes)
     if not raiz.is_dir():
         return None
     for p in sorted(x for x in raiz.iterdir() if (x / "andamento.json").is_file()):
         d = ler(p)
         if not d.get("concluido") and ("pedido_id" in d) == de_pedido:
+            if vaga is not None and de_pedido and vaga_do_lote(d) != vaga:
+                continue
             return p
     return None

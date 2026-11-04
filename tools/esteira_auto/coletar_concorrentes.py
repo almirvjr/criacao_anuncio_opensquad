@@ -22,10 +22,13 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from esteira_auto import vaga as vaga_mod  # noqa: E402
+
 TOOLS = Path(__file__).resolve().parents[1]
 RAIZ = TOOLS.parent
-PERFIL = RAIZ / "_opensquad" / "_perfil_opinioes"
-PORTA = 9336
+# porta e perfil do Chrome = da vaga da rodada (vaga 1: 9336 e _perfil_opinioes, como sempre; vaga 2: 9337 e
+# _perfil_opinioes_2). Dois Chromes no mesmo perfil ou porta = o 2o nao abre (rodadas em paralelo, 04/11/2026).
 CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 # o que vem do ML ou do Claude so vira endereco se tiver o formato esperado
 FICHA_OK = re.compile(r"^MLB\d+$")
@@ -224,9 +227,10 @@ ID_NA_PAGINA = re.compile(r"/(?:p|up)/(MLBU?\d+)|/(MLB)-(\d+)")
 def _abrir_chrome():
     import subprocess
     import time
-    PERFIL.mkdir(parents=True, exist_ok=True)
-    proc = subprocess.Popen([CHROME, f"--remote-debugging-port={PORTA}", "--remote-debugging-address=127.0.0.1",
-                             f"--user-data-dir={PERFIL}", "--no-first-run", "--window-size=1300,900", "about:blank"])
+    perfil, porta = vaga_mod.perfil_opinioes(), vaga_mod.porta_chrome()
+    perfil.mkdir(parents=True, exist_ok=True)
+    proc = subprocess.Popen([CHROME, f"--remote-debugging-port={porta}", "--remote-debugging-address=127.0.0.1",
+                             f"--user-data-dir={perfil}", "--no-first-run", "--window-size=1300,900", "about:blank"])
     time.sleep(4)
     return proc
 
@@ -245,7 +249,7 @@ def _busca_chrome(termos):
     cartoes = []
     try:
         with sync_playwright() as pw:
-            nav = pw.chromium.connect_over_cdp(f"http://127.0.0.1:{PORTA}")
+            nav = pw.chromium.connect_over_cdp(f"http://127.0.0.1:{vaga_mod.porta_chrome()}")
             pg = nav.contexts[0].new_page()
             for termo in termos:
                 slug = "-".join(_sem_acento(termo).split())
@@ -304,7 +308,7 @@ def _opinioes_chrome(ids, paginas=None):
     out = {}
     try:
         with sync_playwright() as pw:
-            nav = pw.chromium.connect_over_cdp(f"http://127.0.0.1:{PORTA}")
+            nav = pw.chromium.connect_over_cdp(f"http://127.0.0.1:{vaga_mod.porta_chrome()}")
             pg = nav.contexts[0].new_page()
             for cid in ids:
                 lista = {}

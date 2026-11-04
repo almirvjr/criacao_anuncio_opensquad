@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from esteira_auto import campos as campos_mod, chamar_claude, coletar_concorrentes, lote as L, precheck, travas  # noqa: E402
-from esteira_auto import fila as F, pedido as pedido_mod, variacoes as variacoes_mod  # noqa: E402
+from esteira_auto import fila as F, pedido as pedido_mod, vaga as vaga_mod, variacoes as variacoes_mod  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parents[2]
 LOTES = RAIZ / "squads" / "ml-anuncios" / "output" / "lotes"
@@ -303,12 +303,12 @@ def _motivo(lote):
     return " | ".join(partes) or " | ".join(linhas[-3:])
 
 
-def _pegar_trava(lotes):
-    """Uma rodada da fila por vez neste PC. A tarefa agendada dispara de 5 em 5 min e o lote leva ~15 min.
+def _pegar_trava(lotes, vaga=1):
+    """Uma rodada da fila por VAGA neste PC. A tarefa agendada dispara de 5 em 5 min e o lote leva ~15 min.
     Trava = arquivo aberto e trancado pelo Windows: fica presa enquanto o processo existir (PC suspenso horas
     inclusive) e solta sozinha quando ele morre. Antes era pela idade (90 min): PC suspenso mais que isso
     = rodada nova no mesmo lote enquanto a antiga acordava. Devolve o arquivo aberto (fechar = soltar) ou None."""
-    p = Path(lotes) / ".fila.trava"
+    p = Path(lotes) / vaga_mod.nome_trava(vaga)  # vaga 1 = ".fila.trava", o mesmo nome de antes
     p.parent.mkdir(parents=True, exist_ok=True)
     f = open(p, "a+b")
     try:
@@ -325,18 +325,32 @@ def _pegar_trava(lotes):
     return f
 
 
-def main_fila(lotes=LOTES, fila=None, rodar=None, agora=datetime.now):
-    trava = _pegar_trava(lotes)
+def _escolher_vaga(lotes, vagas):
+    """Primeira vaga livre (1, 2...). Vaga acima de `vagas` (desligada com --vagas 1) so entra para terminar o lote
+    que ela ja tinha comecado; pedido novo nela, nunca. Devolve (vaga, trava) ou (None, None)."""
+    for v in range(1, vaga_mod.MAXIMO + 1):
+        if v > vagas and L.lote_aberto(lotes, de_pedido=True, vaga=v) is None:
+            continue
+        trava = _pegar_trava(lotes, v)
+        if trava is not None:
+            return v, trava
+    return None, None
+
+
+def main_fila(lotes=LOTES, fila=None, rodar=None, agora=datetime.now, vagas=vaga_mod.PADRAO):
+    vaga, trava = _escolher_vaga(lotes, vagas)
     if trava is None:
         print("Outra rodada da fila esta trabalhando.")
         return 0
+    vaga_mod.ATUAL = vaga  # Chrome e navegador do claude -p desta vaga (global do processo)
     try:
-        return _main_fila(lotes, fila, rodar, agora)
+        return _main_fila(lotes, fila, rodar, agora, vaga, so_terminar=vaga > vagas)
     finally:
+        vaga_mod.ATUAL = 1
         trava.close()
 
 
-def _main_fila(lotes, fila, rodar, agora):
+def _main_fila(lotes, fila, rodar, agora, vaga=1, so_terminar=False):
     """Tarefa agendada do PC: faz UM pedido da fila do hub por vez (retoma o que ficou aberto).
     Parou no meio = devolve ao hub com o motivo (o Almir pede de novo pelo site); nao repete etapa paga sozinho.
     So a entrega do fim e tentada de novo na proxima volta."""
@@ -344,20 +358,23 @@ def _main_fila(lotes, fila, rodar, agora):
     try:
         fila = fila or F.Fila()
         _avisar_erros_pendentes(fila, lotes)
-        lote = L.lote_aberto(lotes, de_pedido=True)
+        lote = L.lote_aberto(lotes, de_pedido=True, vaga=vaga)
         novo = lote is None
+        if novo and so_terminar:
+            print("Nenhum pedido na fila do hub.")  # vaga desligada e o lote dela ja acabou
+            return 0
         if novo:
             pedido = fila.pegar()
             if not pedido:
                 print("Nenhum pedido na fila do hub.")
                 return 0
-            lote = L.criar_lote_do_pedido(pedido, lotes, agora())
+            lote = L.criar_lote_do_pedido(pedido, lotes, agora(), vaga)
             print(f"Pedido {pedido['pedido_id']}: {pedido['produto']['sku_pai']}")
         pid = L.ler(lote)["pedido_id"]
         L.ESPELHO = _espelho(fila, pid, lote)
         try:
             if novo:
-                L.anotar(lote, f"esteira trabalhando nisto ({fila.maquina})", agora())
+                L.anotar(lote, f"esteira trabalhando nisto ({fila.maquina}, vaga {vaga})", agora())
             cod = rodar(lote, entregar=_entregador(fila, pid))
             L.ESPELHO = None
             if cod in (0, 4):
@@ -386,7 +403,7 @@ def _main_fila(lotes, fila, rodar, agora):
 if __name__ == "__main__":
     _manter_acordado(True)
     try:
-        cod = main_fila() if "--fila" in sys.argv else main()
+        cod = main_fila(vagas=vaga_mod.ler_vagas(sys.argv)) if "--fila" in sys.argv else main()
     finally:
         _manter_acordado(False)
     sys.exit(cod)

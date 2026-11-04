@@ -6,7 +6,11 @@ e o 2o envio sao negados, assim como ler o .env, python -c, curl e o MCP do n8n.
 Nunca devolve texto cru de erro (pode carregar segredo)."""
 import json
 import subprocess
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from esteira_auto import vaga as vaga_mod  # noqa: E402
 
 # Liberar o minimo, em vez de listar o proibido (revisoes de 09/10/2026):
 # - sem "Read/Glob/Grep" gerais: no modo dontAsk o Claude so le DENTRO do projeto; fora (outros
@@ -34,6 +38,7 @@ NEGADAS = [
     "Bash(*disparar_publicacao*)", "Bash(*completar_anuncio*)", "Bash(*.env*)", "Bash(*..*)",
     "Bash(python -c*)", "Bash(curl*)", "mcp__n8n", "mcp__mercadolibre",
     "Read(**/.mcp.json)", "Read(**/.env*)", "Read(_opensquad/_browser_profile/**)",
+    *[f"Read({vaga_mod.perfil_navegador_rel(v)}/**)" for v in range(2, vaga_mod.MAXIMO + 1)],
     "Read(.playwright-mcp/**)", "Read(.git/**)", "Read(.claude/**)",
     *[f"Read(**/.{a}{b}{c})" for a in "eE" for b in "nN" for c in "vV"],
     "mcp__playwright__browser_evaluate", "mcp__playwright__browser_run_code",
@@ -49,9 +54,12 @@ def montar_comando(instrucao):
 
 
 def chamar(instrucao, raiz, timeout_s=2400, rodar=subprocess.run):
+    # vaga 2: o navegador do MCP playwright abre no perfil da vaga (o persistente so aceita um navegador por vez).
+    # Vaga 1 nao passa `env` (igual antes).
+    extra = {} if (env := vaga_mod.env_claude()) is None else {"env": env}
     try:
         r = rodar(montar_comando(instrucao), cwd=str(Path(raiz)), capture_output=True,
-                  text=True, encoding="utf-8", errors="replace", timeout=timeout_s)
+                  text=True, encoding="utf-8", errors="replace", timeout=timeout_s, **extra)
     except subprocess.TimeoutExpired:
         return False, f"passou do tempo ({timeout_s // 60} min)"
     except FileNotFoundError:
