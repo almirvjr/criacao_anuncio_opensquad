@@ -16,7 +16,7 @@ Regras:
 - So grave arquivos dentro da pasta do lote. Programa (.py) nao se cria nem se altera.
 - Se o maestro mandou motivo de reprovacao abaixo, corrija exatamente isso.
 
-Motivo da reprovacao anterior (vazio = primeira tentativa): {MOTIVO}
+{SEM_OPINIOES}Motivo da reprovacao anterior (vazio = primeira tentativa): {MOTIVO}
 
 Saida esperada nesta etapa: {LOTE}/inteligencia/brief-<pai>.yaml de cada produto e {LOTE}/inteligencia/briefs.yaml
 

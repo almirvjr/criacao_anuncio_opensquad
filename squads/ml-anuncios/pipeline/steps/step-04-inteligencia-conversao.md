@@ -85,7 +85,7 @@ Load these files before executing:
     ```
     python squads/ml-anuncios/pipeline/validators/validar_brief.py squads/ml-anuncios/output/inteligencia/brief-{pai_sku}.yaml --sem-fotos
     ```
-    Ele (auto-descobre o `_raw/`) confere estrutura + `limitacoes[]` + âncoras de review. **O step-04 só está concluído quando ele sai com código 0.** Se reprovar, corrigir o brief e rodar de novo. O `validar_claims` não roda mais aqui: sem foto, a limitação só pode ser conferida no texto, então ele roda no step-05 com a copy da Renata.
+    Ele (auto-descobre o `_raw/`) confere estrutura + `limitacoes[]` + âncoras de review. **O step-04 só está concluído quando ele sai com código 0.** Se reprovar, corrigir o brief e rodar de novo. **Modo sem opiniões (esteira, 04/11/2026):** quando o maestro avisa que a coleta não leu as opiniões (3 tentativas), o brief segue sem elas: `confianca: baixa`, nenhuma citação que não exista no `_raw/`, e a falta declarada em `limitacoes_pesquisa` ("sem opiniões de concorrentes…"; não em `limitacoes`); a trava roda com `--sem-opinioes`. O `validar_claims` não roda mais aqui: sem foto, a limitação só pode ser conferida no texto, então ele roda no step-05 com a copy da Renata.
 
 ## Output Format (resumo do lote)
 

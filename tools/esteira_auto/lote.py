@@ -73,6 +73,25 @@ def parar_pai(lote, pai, motivo, agora):
     anotar(lote, f"PAROU {pai}: {motivo}", agora)
 
 
+def sem_opinioes(lote):
+    """Produtos que seguem sem as opinioes dos concorrentes (a coleta falhou nas 3 tentativas, 04/11/2026)."""
+    try:
+        return set(ler(lote).get("sem_opinioes") or [])
+    except (OSError, ValueError):
+        return set()
+
+
+def marcar_sem_opinioes(lote, pais, sem=True):
+    """Liga (ou desliga, sem=False) o modo sem opinioes dos produtos. Devolve os que mudaram."""
+    d = ler(lote)
+    atual = list(d.get("sem_opinioes") or [])
+    mudou = [p for p in pais if (p in atual) != sem]
+    if mudou:
+        d["sem_opinioes"] = atual + mudou if sem else [p for p in atual if p not in mudou]
+        _salvar(lote, d)
+    return mudou
+
+
 def contar_devolucao(lote, pai):
     """Quantas vezes o Almir ja devolveu este produto neste lote (conta e devolve o total)."""
     d = ler(lote)
@@ -157,7 +176,8 @@ def reaproveitar(lote, velho, agora):
     shutil.copytree(velho / "categorizacao", lote / "categorizacao", dirs_exist_ok=True)
     veio = ["categoria"]
     coleta = velho / "inteligencia" / "_coleta" / f"coleta-{pai}.json"
-    if coleta.is_file():
+    # coleta sem as opinioes (o lote velho seguiu sem elas) nao se reaproveita: o lote novo tenta ler de novo
+    if coleta.is_file() and pai not in sem_opinioes(velho):
         dados = json.loads(coleta.read_text(encoding="utf-8"))
         (lote / "inteligencia" / "_coleta").mkdir(parents=True, exist_ok=True)
         shutil.copy2(coleta, lote / "inteligencia" / "_coleta" / coleta.name)

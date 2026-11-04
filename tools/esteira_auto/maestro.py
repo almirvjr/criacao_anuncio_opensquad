@@ -40,8 +40,19 @@ def _rel(lote):
         return Path(lote).as_posix()
 
 
+def _aviso_sem_opinioes(lote, pais):
+    """Trecho da instrucao da pesquisa para os produtos que seguem sem as opinioes dos concorrentes (vazio = nenhum)."""
+    sem = [p for p in pais if p in L.sem_opinioes(lote)]
+    if not sem:
+        return ""
+    t = (Path(__file__).parent / "instrucoes" / "pesquisa-sem-opinioes.md").read_text(encoding="utf-8")
+    return t.replace("{SEM}", ", ".join(sem))
+
+
 def instrucao(etapa, lote, pais, motivo=None):
     t = (Path(__file__).parent / "instrucoes" / f"{etapa}.md").read_text(encoding="utf-8")
+    if "{SEM_OPINIOES}" in t:
+        t = t.replace("{SEM_OPINIOES}", _aviso_sem_opinioes(lote, pais))
     return (t.replace("{LOTE}", _rel(lote)).replace("{PAIS}", ", ".join(pais))
              .replace("{MOTIVO}", motivo or ""))
 
@@ -156,9 +167,11 @@ def rodar_lote(lote, chamar=chamar_claude.chamar, conferir=travas.conferir,
         if pais and etapa == "pesquisa" and not L.coleta_reaproveitada(lote):
             # concorrentes pela API (com o acesso da loja) + opinioes por Chrome de verdade. Sem opiniao o texto sai
             # fraco (pedido 9, 22/10: PC dormiu no meio, 0 opinioes, e a esteira pagou o texto assim mesmo):
-            # falhou = tenta de novo na proxima volta; na 3a vez para o produto com o motivo.
+            # falhou = tenta de novo na proxima volta; na 3a vez SEGUE sem as opinioes e avisa (conselho do Almir,
+            # 04/11/2026: concorrente e opcional; pedido 10, BRI-coza18-PAI, parou aqui com o Chrome fechado).
             avisar(f"{agora():%H:%M} juntando concorrentes e opinioes do ML…")
             falhou = [p for p in coletar(lote) if p in pais]
+            L.marcar_sem_opinioes(lote, [p for p in pais if p not in falhou], sem=False)  # leu agora: modo normal
             if falhou:
                 d = L.ler(lote)
                 n = d.get("coleta_tentativas", 0) + 1
@@ -168,10 +181,10 @@ def rodar_lote(lote, chamar=chamar_claude.chamar, conferir=travas.conferir,
                     L.anotar(lote, f"nao consegui ler concorrentes e opinioes do ML de {', '.join(falhou)} "
                                    f"(tentativa {n} de {TENTATIVAS_COLETA}): tento de novo na proxima volta", agora())
                     return 4
-                for p in falhou:
-                    L.parar_pai(lote, p, f"{TENTATIVAS_COLETA} tentativas sem conseguir ler as opinioes dos "
-                                         "concorrentes no ML (o Chrome da esteira abriu?)", agora())
-                pais = _pais(lote)
+                for p in L.marcar_sem_opinioes(lote, falhou):
+                    L.anotar(lote, f"segui sem as opiniões dos concorrentes de {p} ({TENTATIVAS_COLETA} tentativas "
+                                   "sem conseguir ler no ML): o texto sai sem a linguagem real do comprador; "
+                                   "peça de novo mais tarde se quiser", agora())
         if not pais:
             L.anotar(lote, "nenhum produto sobrou neste lote", agora())
             L.concluir(lote, agora())

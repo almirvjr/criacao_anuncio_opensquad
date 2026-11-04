@@ -238,11 +238,14 @@ def conferir(etapa, lote, pais, rodar=subprocess.run):
         cats = (yaml.safe_load(f.read_text(encoding="utf-8")) or {}).get("categorias") if f.is_file() else []
         ok = {c.get("pai_sku") for c in cats or [] if c.get("category_id")}
         return {p: "nao foi escolhida a categoria do ML" for p in pais if p not in ok}
+    sem_opinioes = L.sem_opinioes(lote)
     for p in pais:
         brief = lote / "inteligencia" / f"brief-{p}.yaml"
         anuncio = lote / "copywriting" / f"anuncio-{p}.yaml"
         if etapa == "pesquisa":
-            cod, s = _py("validar_brief.py", brief, "--sem-fotos", rodar=rodar)
+            # produto que seguiu sem as opinioes dos concorrentes: brief vale sem review, mas declara a limitacao
+            extra = ("--sem-opinioes",) if p in sem_opinioes else ()
+            cod, s = _py("validar_brief.py", brief, "--sem-fotos", *extra, rodar=rodar)
             if cod != 0:
                 ruins[p] = s or "a pesquisa foi reprovada"
         elif etapa == "texto":

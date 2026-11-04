@@ -15,8 +15,14 @@ O que ele exige (resumo):
   4. Toda evidencia citada (dor interna, ansiedades) tem que EXISTIR de fato no
      texto bruto dos concorrentes (`_raw/{mlb_id}.json`) — mata review inventada.
 
+  5. Modo --sem-opinioes (esteira, 04/11/2026): a coleta nao conseguiu ler as
+     opinioes dos concorrentes (3 tentativas) e a esteira seguiu sem elas. O
+     brief vale sem evidencia de review, MAS tem que declarar a limitacao em
+     `limitacoes_pesquisa` ("sem opinioes de concorrentes ...") e ter
+     `confianca: baixa`. Evidencia que vier continua tendo que existir no _raw.
+
 Uso:
-  python validar_brief.py <brief.yaml> [--raw-dir <pasta _raw>]
+  python validar_brief.py <brief.yaml> [--raw-dir <pasta _raw>] [--sem-opinioes]
   python validar_brief.py <brief.yaml>            # sem --raw-dir: ancora vira WARN
 
 Saida: codigo 0 = BRIEF OK | codigo 1 = BRIEF REJEITADO (lista de erros).
@@ -65,6 +71,8 @@ MECLABS_TOKENS_VALIDOS = {"+m", "+v", "+i", "-f", "-a"}
 MECLABS_TOKENS_PROIBIDOS = {"+f", "+a", "-m", "-v", "-i"}
 
 EVIDENCIA_MIN_CHARS = 12          # citacao curta demais = ancora fraca
+# Modo sem opinioes: o brief declara isto em `limitacoes_pesquisa` (o hub mostra ao Almir).
+FRASE_SEM_OPINIOES = "sem opinioes de concorrentes"
 
 
 def norm(s):
@@ -123,11 +131,15 @@ def evidencia_ancorada(quote, raw_blob):
     return all(norm(p) in raw_blob for p in pedacos)
 
 
-def validate_brief(brief, raw_dir=None, com_fotos=True):
+def validate_brief(brief, raw_dir=None, com_fotos=True, sem_opinioes=False):
     """Retorna lista de erros (code, msg). Lista vazia = brief valido.
     Avisos de ancora (raw_dir ausente) entram como ('WARN:...').
     com_fotos=False (esteira sem fotos, 07/10/2026): dispensa briefing_fotos e
-    cor_heroi; o resto da trava (diagnostico, limitacoes, ancora) continua igual."""
+    cor_heroi; o resto da trava (diagnostico, limitacoes, ancora) continua igual.
+    sem_opinioes=True (esteira seguiu sem as opinioes dos concorrentes): dor interna,
+    ansiedades e evidencias deixam de ser obrigatorias; exige `limitacoes_pesquisa`
+    com FRASE_SEM_OPINIOES e confianca baixa; evidencia citada (inclusive
+    linguagem_real_cliente) ainda tem que existir no _raw — sem _raw, reprova."""
     err = []
 
     def E(code, msg):
@@ -162,15 +174,29 @@ def validate_brief(brief, raw_dir=None, com_fotos=True):
                 if not isinstance(lim, dict) or not lim.get("texto"):
                     E("LIMITACAO_TEXTO", f"limitacoes[{i}] precisa de 'texto'.")
 
+    # --- modo sem opinioes: a limitacao tem que estar declarada no brief ---
+    if sem_opinioes:
+        lp = brief.get("limitacoes_pesquisa")
+        textos = [x.get("texto") if isinstance(x, dict) else x for x in lp] if isinstance(lp, list) else []
+        if not any(FRASE_SEM_OPINIOES in norm(t or "") for t in textos):
+            E("SEM_OPINIOES_NAO_DECLARADO",
+              "Modo sem opinioes: falta declarar em 'limitacoes_pesquisa' (lista) um item com "
+              f"'{FRASE_SEM_OPINIOES}' (o Almir ve isso no hub). Nao vai em 'limitacoes'.")
+        if str(brief.get("confianca") or "").strip().lower() != "baixa":
+            E("SEM_OPINIOES_CONFIANCA",
+              "Modo sem opinioes: 'confianca' tem que ser 'baixa' (nenhuma opiniao lida).")
+
     # --- diagnostico -----------------------------------------------------
     diag = brief.get("diagnostico") or {}
     evidencias_para_ancora = []
     if isinstance(diag, dict):
         dor = diag.get("dor_interna_mais_forte") or {}
-        if not dor.get("texto"):
+        if not isinstance(dor, dict):
+            dor = {"texto": dor}
+        if not dor.get("texto") and not sem_opinioes:
             E("DOR_INTERNA", "diagnostico.dor_interna_mais_forte.texto ausente.")
         evs = dor.get("evidencias") or []
-        if not evs:
+        if not evs and not sem_opinioes:
             E("DOR_SEM_EVIDENCIA",
               "dor_interna_mais_forte precisa de pelo menos 1 evidencia (review).")
         evidencias_para_ancora += [(("dor_interna"), e) for e in evs]
@@ -179,8 +205,13 @@ def validate_brief(brief, raw_dir=None, com_fotos=True):
         if not of.get("texto"):
             E("ONLY_FACTOR", "diagnostico.only_factor.texto ausente.")
 
+        if sem_opinioes:  # sem opiniao, frase "do comprador" so vale se existir no _raw
+            evidencias_para_ancora += [("linguagem_real_cliente", x if isinstance(x, str) else
+                                        (x or {}).get("frase") or (x or {}).get("texto") or "")
+                                       for x in (diag.get("linguagem_real_cliente") or [])]
+
         ansi = diag.get("ansiedades") or []
-        if not ansi:
+        if not ansi and not sem_opinioes:
             E("SEM_ANSIEDADES", "diagnostico.ansiedades vazio.")
         for i, a in enumerate(ansi):
             if not isinstance(a, dict):
@@ -189,6 +220,8 @@ def validate_brief(brief, raw_dir=None, com_fotos=True):
             if not a.get("texto"):
                 E("ANSIEDADE_TEXTO", f"ansiedades[{i}].texto ausente.")
             ev = a.get("evidencia")
+            if not ev and sem_opinioes:
+                continue
             if not ev:
                 E("ANSIEDADE_SEM_EVIDENCIA",
                   f"ansiedades[{i}] ('{a.get('texto','?')[:40]}') sem evidencia de review.")
@@ -267,7 +300,15 @@ def validate_brief(brief, raw_dir=None, com_fotos=True):
             E("SLOT_EXTRA", f"Slots fora da hierarquia 1-10 (+11 opcional): {sorted(extras)}.")
 
     # --- ANCORA: evidencias tem que existir no _raw ----------------------
-    if raw_dir and os.path.isdir(raw_dir):
+    tem_raw = bool(raw_dir and os.path.isdir(raw_dir))
+    if sem_opinioes and not evidencias_para_ancora:
+        pass  # sem opiniao e sem citacao: nada a ancorar (pode nao haver nem concorrente)
+    elif sem_opinioes and (not tem_raw or not glob.glob(os.path.join(raw_dir, "*.json"))):
+        for origem, quote in evidencias_para_ancora:
+            E("EVIDENCIA_SEM_FONTE",
+              f"{origem}: modo sem opinioes e sem texto de concorrente no _raw: a citacao nao tem "
+              f"de onde vir (inventada): '{quote}'.")
+    elif tem_raw:
         raw_blob, n = load_raw_blob(raw_dir)
         if n == 0:
             E("RAW_VAZIO", f"Pasta _raw '{raw_dir}' sem arquivos .json.")
@@ -300,6 +341,9 @@ def main():
     ap.add_argument("--raw-dir", help="Pasta _raw com os JSON brutos dos concorrentes")
     ap.add_argument("--sem-fotos", action="store_true",
                     help="Esteira sem fotos: nao exige roteiro das 10 fotos nem cor-heroi")
+    ap.add_argument("--sem-opinioes", action="store_true",
+                    help="Esteira seguiu sem as opinioes dos concorrentes: brief sem review vale, "
+                         "mas tem que declarar a limitacao em limitacoes_pesquisa")
     args = ap.parse_args()
 
     if not os.path.isfile(args.brief):
@@ -314,7 +358,8 @@ def main():
             raw_dir = cand
 
     brief = carregar_yaml(args.brief)
-    erros = validate_brief(brief, raw_dir=raw_dir, com_fotos=not args.sem_fotos)
+    erros = validate_brief(brief, raw_dir=raw_dir, com_fotos=not args.sem_fotos,
+                           sem_opinioes=args.sem_opinioes)
 
     hard = [e for e in erros if not e[0].startswith("WARN")]
     warns = [e for e in erros if e[0].startswith("WARN")]

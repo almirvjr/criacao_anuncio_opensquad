@@ -12,7 +12,7 @@ Caminho misto:
 
 Grava `inteligencia/_coleta/coleta-{pai}.json` no lote. So le; nao mexe em anuncio. Falha de rede ou nenhuma
 opiniao lida por falha do Chrome = pai devolvido em `falhou` (o maestro tenta de novo antes da pesquisa e, na 3a,
-para o produto: sem opiniao o texto sai fraco, 22/10). Nao guarda dado de pessoa: opiniao do ML ja vem sem autor; da
+segue sem as opinioes e avisa: modo sem opinioes, 04/11/2026; antes parava o produto). Nao guarda dado de pessoa: opiniao do ML ja vem sem autor; da
 pergunta fica so texto, resposta e data."""
 import json
 import re

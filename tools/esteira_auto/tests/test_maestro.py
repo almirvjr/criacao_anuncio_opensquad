@@ -215,19 +215,42 @@ def test_coleta_os_concorrentes_depois_dos_campos_e_antes_da_pesquisa(tmp_path):
     assert ordem.index("COLETA") < ordem.index("step-04-inteligencia-conversao.md")
 
 
-def test_coleta_falhou_tenta_de_novo_sem_pagar_o_texto_e_na_3a_para_o_produto(tmp_path):
+def test_coleta_falhou_tenta_de_novo_sem_pagar_o_texto_e_na_3a_segue_sem_opinioes(tmp_path):
+    """Pedido 10 (BRI-coza18-PAI) parou na 3a falha; conselho do Almir 04/11/2026: segue e avisa."""
     lt, lp = _lote(tmp_path)
-    passos = []
-    chamar = lambda i, raiz, **kw: (passos.append(re.search(r"step-\d+[a-z]?-[\w-]+\.md", i).group(0)) or (True, "pronto"))
+    passos, instr = [], []
+    def chamar(i, raiz, **kw):
+        passos.append(re.search(r"step-\d+[a-z]?-[\w-]+\.md", i).group(0))
+        instr.append(i)
+        return True, "pronto"
     rodar = lambda: M.rodar_lote(lt, chamar=chamar, conferir=lambda e, l, p: {}, ler_planilha=lp, abrir_tela=lambda l: 0,
                                  agora=T, avisar=lambda *a: None, buscar_campos=lambda l: [], coletar=lambda l: ["A"])
     assert rodar() == 4 and "step-04-inteligencia-conversao.md" not in passos
     assert rodar() == 4
-    assert rodar() == 0  # 3a: A para, B segue ate a tela
+    assert rodar() == 0  # 3a: A segue sem opinioes, B normal, ate a tela
     d = L.ler(lt)
-    assert "A" in d["parados"] and "opinioes" in d["parados"]["A"] and d["concluido"]
+    assert d["parados"] == {} and d["sem_opinioes"] == ["A"] and d["concluido"]
+    assert d["coleta_tentativas"] == M.TENTATIVAS_COLETA
     assert passos.count("step-04-inteligencia-conversao.md") == 1
-    assert "tentativa 1 de 3" in (lt / "andamento.txt").read_text(encoding="utf-8")
+    txt = (lt / "andamento.txt").read_text(encoding="utf-8")
+    assert "tentativa 1 de 3" in txt
+    assert "segui sem as opiniões dos concorrentes de A" in txt and "peça de novo mais tarde" in txt
+    assert "PAROU" not in txt
+    pesquisa = next(i for i in instr if "step-04-inteligencia-conversao.md" in i)
+    assert "MODO SEM OPINIOES para: A" in pesquisa and "--sem-opinioes" in pesquisa and "{SEM_OPINIOES}" not in pesquisa
+    texto = next(i for i in instr if "step-05" in i)
+    assert "MODO SEM OPINIOES" not in texto
+
+
+def test_pesquisa_normal_sem_o_trecho_sem_opinioes(tmp_path):
+    lt, lp = _lote(tmp_path)
+    instr = []
+    M.rodar_lote(lt, chamar=lambda i, raiz, **kw: (instr.append(i) or (True, "pronto")), conferir=lambda e, l, p: {},
+                 ler_planilha=lp, abrir_tela=lambda l: 0, agora=T, avisar=lambda *a: None,
+                 buscar_campos=lambda l: [], coletar=lambda l: [])
+    pesquisa = next(i for i in instr if "step-04-inteligencia-conversao.md" in i)
+    assert "MODO SEM OPINIOES" not in pesquisa and "{SEM_OPINIOES}" not in pesquisa
+    assert "sem_opinioes" not in L.ler(lt) or L.ler(lt)["sem_opinioes"] == []
 
 
 def test_coleta_ok_depois_de_falhar_segue(tmp_path):

@@ -145,7 +145,23 @@ def brief_resumo(lote, pai):
                             "persona": _txt(dg.get("persona")) or None},
             "escada_e_dai": escada,
             "limitacoes": _lista(b.get("limitacoes")),
+            "limitacoes_pesquisa": _lista(b.get("limitacoes_pesquisa")),
             "pendencias": _lista(b.get("pendencias"))}
+
+
+SEM_OPINIOES = "sem opiniões de concorrentes: o texto saiu sem a linguagem real do comprador (peça de novo mais tarde se quiser)"
+
+
+def _avisar_sem_opinioes(brief):
+    """Produto que seguiu sem as opinioes dos concorrentes: o aviso vai nas pendencias do brief para o Almir ver no hub,
+    mesmo que o brief tenha esquecido de declarar (a trava ja reprova isso; aqui e a garantia)."""
+    brief = dict(brief or {})
+    pend = list(brief.get("pendencias") or [])
+    if not any("sem opini" in str(x).casefold() for x in pend):
+        pend.insert(0, SEM_OPINIOES)
+    brief["pendencias"] = pend
+    brief.setdefault("limitacoes_pesquisa", [])
+    return brief
 
 
 def _marcar_pendentes(ficha, pendentes):
@@ -173,6 +189,7 @@ def resultado(lote, ler_precos=precos_mod.ler_para_lote):
     lote = Path(lote)
     tabela = ler_precos(lote)
     d = json.loads((lote / "andamento.json").read_text(encoding="utf-8"))
+    sem_opinioes = set(d.get("sem_opinioes") or [])
     entrada = json.loads((lote / "anuncios-entrada.json").read_text(encoding="utf-8"))
     cats = {c.get("pai_sku"): c for c in (_yaml(lote / "categorizacao" / "categorias.yaml") or {}).get("categorias", [])}
     produtos = []
@@ -192,6 +209,8 @@ def resultado(lote, ler_precos=precos_mod.ler_para_lote):
                                       "variacao": bool(c.get("variacao"))}
                                      for c in json.loads(lista.read_text(encoding="utf-8"))]}
         brief = brief_resumo(lote, pai)
+        if pai in sem_opinioes:
+            brief = _avisar_sem_opinioes(brief)
         produtos.append({"pai_sku": pai, "categoria": cat, "anuncio": anuncio, "canais": canais,
                          **({"brief": brief} if brief is not None else {}),
                          "parecer": _yaml(lote / "revisao" / f"parecer-{pai}.yaml"),
@@ -205,5 +224,5 @@ def resultado(lote, ler_precos=precos_mod.ler_para_lote):
     out = {"lote": lote.name, "produtos": produtos, "parados": d.get("parados", {})}
     if len(json.dumps(out, ensure_ascii=False).encode("utf-8")) > LIMITE_RESULTADO:
         for pr in produtos:  # o brief e o que sobra: nunca deixar ele derrubar a entrega
-            pr.pop("brief", None)
+            pr.pop("brief", None)  # o aviso do "sem opinioes" segue no caderno espelhado no hub
     return out
