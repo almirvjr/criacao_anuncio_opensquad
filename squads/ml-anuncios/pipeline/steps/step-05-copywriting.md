@@ -72,7 +72,7 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
 
 5b. **Ficha do Magalu (`ficha_magalu`)** — só quando o anúncio da entrada tem `magalu.candidatas` (hub, regra do Almir 24/10/2026: "todo campo preenchido ou em branco de propósito"):
    - `categoria_id`: o `id` de UMA das `candidatas` (a que descreve o produto; `fixa: true` = só há uma).
-   - `campos`: TODOS os campos da categoria escolhida (`candidatas[].campos[].nome`), cada um com **`valor`** = a informação real, no formato do `exemplo` do Magalu (ex.: Diâmetro "25,7 cm", Pode ir "ao Micro-ondas, à Lava-Louças"), **ou `motivo`** = por que fica em branco (nenhuma fonte trouxe o dado; nunca chute). Nunca os dois, nunca nenhum; campo `obrigatorio` sempre com valor; "Não se aplica" é valor válido quando o campo não faz sentido para o produto.
+   - `campos`: TODOS os campos da categoria escolhida (`candidatas[].campos[].nome`), cada um com **`valor`** = a informação real, no formato do `exemplo` do Magalu (ex.: Diâmetro "25,7 cm", Pode ir "ao Micro-ondas, à Lava-Louças"), **ou `motivo`** = por que fica em branco (nenhuma fonte trouxe o dado; nunca chute). Nunca os dois, nunca nenhum. Campo `obrigatorio`: valor de fonte própria; se muda de SKU para SKU, o valor vai em `por_variacao.<sku>.magalu` de cada SKU e no produto fica o motivo "muda por variacao: ver cada SKU"; sem fonte, `motivo` (vira pendência para o Almir preencher na ficha do hub; nunca chute); "Não se aplica" é valor válido quando o campo não faz sentido para o produto.
    - **Modelo, Linha e Material = só a informação real** (Modelo "Cozy 10570", Material "Polipropileno"). A palavra de busca nesses campos é só do ML (passo 5, `attributes`).
    - `magalu.decisoes` da entrada (categoria_id + campo + valor ou motivo) já foi decidido pelo Almir: use igual.
 
@@ -235,7 +235,7 @@ Rejeitar e refazer se ALGUMA for verdadeira:
 11. CAPS LOCK fora de siglas, emojis em qualquer lugar, HTML ou markdown na descrição.
 12. Bloco 1 sem âncora na dor_interna do brief (quando brief tem `diagnostico_neutro: false`).
 13. `titulos_longos` com menos de 2 ou mais de 3, algum fora de 85-100 caracteres, ou sem exatamente 1 `recomendado`.
-14. Entrada com `magalu.candidatas` e `ficha_magalu` faltando, com categoria fora das candidatas, ou com algum campo da categoria sem `valor` nem `motivo` (ou com os dois, ou obrigatório em branco).
+14. Entrada com `magalu.candidatas` e `ficha_magalu` faltando, com categoria fora das candidatas, ou com algum campo da categoria sem `valor` nem `motivo` (ou com os dois). Obrigatório sem valor no produto nem em todas as variações não reprova: vira pendência para o Almir.
 
 ## Quality Criteria
 
