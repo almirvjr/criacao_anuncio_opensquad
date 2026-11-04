@@ -134,10 +134,21 @@ def _analise_magalu(lote, pai, anuncio):
         elif not motivo:
             erros.append(f"{c.get('nome')}: precisa de valor OU de motivo (nunca os dois, nunca nenhum)")
     erros += [f"{x.get('nome')}: nao existe na categoria" for k, x in dados.items() if k not in da_categoria]
+    # valor de cada variacao por campo (para a decisao do Almir que mora nas variacoes: "Capacidade" que separa as
+    # variacoes do Bowl, pedido 629 de 04/11 - a esteira escreveu o valor decidido em cada SKU e a trava so olhava o produto)
+    vals_var = {}
+    for s in skus:
+        for y in ((por_var.get(s) or {}).get("magalu") or []):
+            if isinstance(y, dict):
+                vals_var.setdefault(norm(y.get("nome")), {})[s] = norm(y.get("valor"))
     for d in mg.get("decisoes") or []:
         if str(d.get("categoria_id")) != str(f.get("categoria_id")):
             continue
-        x = dados.get(norm(d.get("campo"))) or {}
+        k = norm(d.get("campo"))
+        x = dados.get(k) or {}
+        if d.get("valor") and norm(x.get("valor")) != norm(d.get("valor")) and skus \
+                and all(vals_var.get(k, {}).get(s) == norm(d.get("valor")) for s in skus):
+            continue  # decisao atendida em todas as variacoes
         if norm(x.get("valor")) != norm(d.get("valor")) or (not d.get("valor") and not x.get("motivo")):
             erros.append(f"{d.get('campo')}: contra a decisao do Almir ({d.get('valor') or 'em branco: ' + str(d.get('motivo'))})")
     if erros:

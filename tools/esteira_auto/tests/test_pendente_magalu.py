@@ -107,3 +107,19 @@ def test_caderno_avisa_a_pendencia_depois_da_revisao(tmp_path):
     txt = (lote / "andamento.txt").read_text(encoding="utf-8")
     assert f"pendente para o Almir: Tamanho do Magalu ({PAI})" in txt
     assert "PAROU" not in txt
+
+
+def test_pedido_629_decisao_do_almir_igual_em_todas_as_variacoes_passa(tmp_path):
+    """Reprova no codigo antigo ("Tamanho: contra a decisao do Almir"): a decisao vale no produto, a esteira escreveu
+    o mesmo valor em cada SKU (campo que separa as variacoes, Capacidade do Bowl no pedido 629)."""
+    dec = [{"campo": "Tamanho", "valor": "52x28,5cm", "motivo": None, "categoria_id": "0026"}]
+    lote = _lote(tmp_path, BASE + [{"nome": "Tamanho", "motivo": "muda por variacao: ver cada SKU"}],
+                 _var("52x28,5cm", "52x28,5cm"), decisoes=dec)
+    assert _ficha(lote) is None
+
+
+def test_decisao_do_almir_diferente_em_uma_variacao_reprova(tmp_path):
+    dec = [{"campo": "Tamanho", "valor": "52x28,5cm", "motivo": None, "categoria_id": "0026"}]
+    lote = _lote(tmp_path, BASE + [{"nome": "Tamanho", "motivo": "muda por variacao: ver cada SKU"}],
+                 _var("52x28,5cm", "43x21cm"), decisoes=dec)
+    assert "contra a decisao do Almir" in (_ficha(lote) or "")
