@@ -71,6 +71,24 @@ def test_o_que_aconteceu_com_a_tigela_reprova(tmp_path):
     assert "Magalu: 'Capacidade' igual" in m
 
 
+def test_forma_com_outro_nome_passa_e_forma_diferente_reprova(tmp_path):
+    # pedido 61: "Circular" na foto x "Redonda" no SHAPE e a mesma forma
+    casos = [("Circular", "Redonda"), ("redondo", "Circular"), ("Retângulo", "Retangular"), ("Oval", "Não se aplica")]
+    for i, (foto, shape) in enumerate(casos):
+        lote = tmp_path / str(i)
+        lote.mkdir()
+        a = _certo()
+        a["attributes"]["SHAPE"] = shape
+        for m in a["medidas_por_variacao"].values():
+            m["forma"] = foto
+        assert V.conferir(lote, "BEL-4006-PAI", _lote(lote, a)) is None, (foto, shape)
+    lote = tmp_path / "q"
+    lote.mkdir()
+    a = _certo()
+    a["attributes"]["SHAPE"] = "Quadrada"
+    assert "SHAPE 'Quadrada' diferente da forma nas fotos (Oval)" in V.conferir(lote, "BEL-4006-PAI", _lote(lote, a))
+
+
 def test_sem_medidas_com_foto_reprova_e_sem_foto_nao_cobra(tmp_path):
     a = _certo()
     del a["medidas_por_variacao"]

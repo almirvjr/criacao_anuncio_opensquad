@@ -12,6 +12,7 @@ de um anuncio de concorrente, quando a peca e oval e as medidas estavam nas foto
 """
 import json
 import re
+import unicodedata
 import urllib.request
 from pathlib import Path
 
@@ -85,6 +86,17 @@ def _norm(v):
     return " ".join(str(v or "").split()).casefold()
 
 
+# mesma forma com nomes diferentes (pedido 61: "Circular" na foto x "Redonda" no SHAPE reprovou a toa)
+SINONIMOS_FORMA = {"circ": "redo", "redo": "redo"}
+
+
+def _forma(v):
+    """Raiz da forma para comparar: sem acento, 4 letras, sinonimos juntos ("Circular" = "Redonda", "Retângulo" = "Retangular")."""
+    t = unicodedata.normalize("NFKD", _norm(v))
+    t = "".join(c for c in t if not unicodedata.combining(c))[:4]
+    return SINONIMOS_FORMA.get(t, t)
+
+
 def conferir(lote, pai, anuncio):
     """Motivo da reprovacao (texto) ou None."""
     lote, anuncio = Path(lote), Path(anuncio)
@@ -116,9 +128,9 @@ def conferir(lote, pai, anuncio):
         tem_plano = _num(m.get("diametro_cm")) or (_num(m.get("comprimento_cm")) and _num(m.get("largura_cm")))
         if not (tem_plano and _num(m.get("altura_cm"))):
             erros.append(f"{s}: medidas incompletas (altura + diametro, ou altura + comprimento e largura)")
-    formas = {_norm(m.get("forma"))[:4] for m in medidas.values() if isinstance(m, dict) and m.get("forma")}
+    formas = {_forma(m.get("forma")) for m in medidas.values() if isinstance(m, dict) and m.get("forma")}
     shape = _norm((a.get("attributes") or {}).get("SHAPE"))
-    if shape and shape != "nao se aplica" and formas and shape[:4] not in formas:
+    if shape and _forma(shape) != "nao " and formas and _forma(shape) not in formas:
         erros.append(f"SHAPE '{(a.get('attributes') or {}).get('SHAPE')}' diferente da forma nas fotos "
                      f"({', '.join(sorted({str(m.get('forma')) for m in medidas.values() if isinstance(m, dict) and m.get('forma')}))})")
 
