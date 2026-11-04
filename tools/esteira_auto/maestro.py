@@ -343,7 +343,20 @@ def _escolher_vaga(lotes, vagas):
     return None, None
 
 
-def main_fila(lotes=LOTES, fila=None, rodar=None, agora=datetime.now, vagas=vaga_mod.PADRAO, reaproveitar=True):
+def _precos_das_copias(lotes, fila, agora, completar=None):
+    """Preco sugerido da planilha nas copias do ML que chegaram sem (copias_preco.py). Nunca derruba a fila."""
+    try:
+        from esteira_auto import copias_preco
+        n = (completar or copias_preco.completar)(fila or F.Fila(), lotes, agora)
+        if n:
+            print(f"Preco sugerido gravado em {n} copia(s) do ML.")
+    except Exception:  # noqa: BLE001
+        print("Nao consegui completar o preco das copias do ML (tento na proxima volta).")
+
+
+def main_fila(lotes=LOTES, fila=None, rodar=None, agora=datetime.now, vagas=vaga_mod.PADRAO, reaproveitar=True,
+              completar_precos=None):
+    _precos_das_copias(lotes, fila, agora, completar_precos)
     vaga, trava = _escolher_vaga(lotes, vagas)
     if trava is None:
         print("Outra rodada da fila esta trabalhando.")

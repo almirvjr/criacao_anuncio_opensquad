@@ -77,5 +77,13 @@ class Fila:
         return bool(self._um("select esteira.gravar_resultado(%s, %s, %s::text::jsonb)",
                              (pedido_id, self.maquina, json.dumps(resultado, ensure_ascii=False))))
 
+    def copias_sem_preco(self):
+        r = self._um("select esteira.copias_sem_preco()", ())
+        return json.loads(r) if isinstance(r, str) else r
+
+    def gravar_precos_copia(self, pedido_id, precos):
+        return bool(self._um("select esteira.gravar_precos_copia(%s, %s, %s::text::jsonb)",
+                             (pedido_id, self.maquina, json.dumps(precos, ensure_ascii=False))))
+
     def terminar(self, pedido_id, erro=None):
         return bool(self._um("select esteira.terminar_pedido(%s, %s, %s)", (pedido_id, self.maquina, erro)))
