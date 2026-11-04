@@ -8,7 +8,7 @@ HERE = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..")))
 
 from validar_claims import (  # noqa: E402
-    validar_claims, derivar_termo_policiado, afirmado, declarado,
+    validar_claims, derivar_termo_policiado, afirmado, declarado, norm,
 )
 
 
@@ -201,3 +201,36 @@ class TestCopyDaRenata(unittest.TestCase):
         """Retrocompatibilidade: chamar sem copy_doc nao pode mudar nada."""
         blocks, warns = validar_claims(brief_base())
         self.assertEqual([], blocks)
+
+
+class TestLimitacaoEmFraseLonga(unittest.TestCase):
+    """Pedido 1311 (04/11/2026, BEL-4003-KT12-PAI): a limitacao veio como frase inteira e o termo cobrado virou
+    'informa se pode ir ao micro ondas ou ao forno nao prometer esse uso' -- nenhum texto natural declara isso."""
+    LIM = "O fornecedor nao informa se pode ir ao micro-ondas ou ao forno: nao prometer esse uso."
+
+    def test_termo_para_na_pontuacao_e_tira_verbo(self):
+        termo, eh_aus = derivar_termo_policiado(self.LIM)
+        self.assertTrue(eh_aus)
+        self.assertEqual(termo, "micro ondas ou ao forno")
+
+    def test_casos_antigos_nao_mudam(self):
+        self.assertEqual(derivar_termo_policiado("Modelo sem balde interno (usa saco comum)")[0], "balde interno")
+        self.assertEqual(derivar_termo_policiado("Nao vem com balde")[0], "balde")
+
+    def test_textos_naturais_declaram(self):
+        termo, _ = derivar_termo_policiado(self.LIM)
+        for txt in ("Sem indicação de uso em micro-ondas e forno: use para servir.",       # irmao 1305
+                    "Sem informação do fornecedor sobre uso no micro-ondas ou no forno.",   # irmao 1309
+                    "Não vai ao micro-ondas nem ao forno."):
+            self.assertTrue(declarado(termo, norm(txt)), txt)
+
+    def test_afirmar_continua_nao_declarando(self):
+        termo, _ = derivar_termo_policiado(self.LIM)
+        self.assertFalse(declarado(termo, norm("Pode ir ao micro-ondas e ao forno.")))
+
+    def test_copy_sem_foto_com_texto_natural_passa(self):
+        brief = {"limitacoes": [{"texto": self.LIM, "fonte": "dossie"}]}
+        copy = {"titulo_final": "Kit 12 Pratos Rasos Melamina",
+                "description": {"bloco_3": "Sem indicação de uso em micro-ondas e forno: use para servir."}}
+        blocks, _ = validar_claims(brief, copy_doc=copy, sem_fotos=True)
+        self.assertEqual([], [b for b in blocks if b[0] == "LIMITACAO_FORA_DA_COPY"], blocks)

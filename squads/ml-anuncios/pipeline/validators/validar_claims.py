@@ -38,6 +38,13 @@ import unicodedata
 NEGACOES = {"sem", "nao"}
 # janela (em palavras) antes do termo onde procuramos a negacao
 JANELA_NEGACAO = 3
+# termo com alternativas ("micro ondas ou ao forno"): cada uma conta sozinha, com janela maior, porque o texto
+# natural poe palavras entre a negacao e o termo ("sem informacao do fornecedor sobre uso no micro-ondas")
+JANELA_NEGACAO_ALTERNATIVA = 7
+CONECTORES_APOS_NEGACAO = {"vem", "com", "o", "a", "de", "tem", "possui", "acompanha", "e", "informa", "informam",
+                           "indica", "indicam", "diz", "dizem", "se", "pode", "podem", "ir", "vai", "ao", "aos", "para",
+                           "usar", "uso", "em", "no", "na"}
+VAZIAS_ALTERNATIVA = {"o", "a", "ao", "aos", "de", "do", "da", "no", "na", "em", "para"}
 
 # Features de alto risco comuns na categoria: se AFIRMADAS no overlay e NAO
 # presentes em dados_produto.caracteristicas nem cobertas por limitacoes -> WARN.
@@ -60,19 +67,24 @@ def norm(s):
 
 def derivar_termo_policiado(limitacao_texto):
     """De 'Modelo sem balde interno (usa saco comum)' -> ('balde interno', True).
-    Retorna (termo, eh_ausencia). eh_ausencia=True quando ha negacao explicita."""
-    n = norm(limitacao_texto)
-    toks = n.split()
-    for i, t in enumerate(toks):
-        if t in NEGACOES:
-            resto = toks[i + 1:]
-            # descarta conectores logo apos a negacao (ex.: "nao vem com")
-            while resto and resto[0] in {"vem", "com", "o", "a", "de", "tem", "possui", "acompanha"}:
-                resto = resto[1:]
-            termo = " ".join(resto).strip()
-            return (termo, True) if termo else ("", False)
+    Retorna (termo, eh_ausencia). eh_ausencia=True quando ha negacao explicita.
+    O termo para no fim da oracao (: ; . ! ? ou travessao) e perde o verbo do inicio: a limitacao
+    'O fornecedor nao informa se pode ir ao micro-ondas ou ao forno: nao prometer esse uso.' virava o termo
+    'informa se pode ir ao micro ondas ou ao forno nao prometer esse uso', que nenhum texto natural declara
+    (pedido 1311, BEL-4003-KT12-PAI, 04/11/2026)."""
+    for oracao in re.split(r"[:;.!?]|\s[-–—]\s", str(limitacao_texto or "")):
+        toks = norm(oracao).split()
+        for i, t in enumerate(toks):
+            if t in NEGACOES:
+                resto = toks[i + 1:]
+                # descarta conectores e verbos logo apos a negacao (ex.: "nao vem com", "nao informa se pode ir ao")
+                while resto and resto[0] in CONECTORES_APOS_NEGACAO:
+                    resto = resto[1:]
+                termo = " ".join(resto).strip()
+                if termo:
+                    return (termo, True)
     # sem negacao: nao da pra derivar termo de ausencia; usa palavra mais significativa
-    conteudo = [t for t in toks if len(t) >= 4]
+    conteudo = [t for t in norm(limitacao_texto).split() if len(t) >= 4]
     chave = max(conteudo, key=len) if conteudo else ""
     return (chave, False)
 
@@ -92,19 +104,34 @@ def afirmado(termo, overlay_norm):
     return False
 
 
+def _negado_em(termo_toks, toks, janela):
+    L = len(termo_toks)
+    for i in range(len(toks) - L + 1):
+        if toks[i:i + L] == termo_toks and any(w in NEGACOES for w in toks[max(0, i - janela):i]):
+            return True
+    return False
+
+
 def declarado(termo, overlay_norm):
-    """True se `termo` aparece NEGADO (disclosure) em `overlay_norm`."""
+    """True se `termo` aparece NEGADO (disclosure) em `overlay_norm`.
+    Termo com alternativas ("micro ondas ou ao forno", "porcelana nem vidro"): basta uma delas negada."""
     if not termo:
         return False
     toks = overlay_norm.split()
-    termo_toks = termo.split()
-    L = len(termo_toks)
-    for i in range(len(toks) - L + 1):
-        if toks[i:i + L] == termo_toks:
-            janela = toks[max(0, i - JANELA_NEGACAO):i]
-            if any(w in NEGACOES for w in janela):
-                return True
-    return False
+    if _negado_em(termo.split(), toks, JANELA_NEGACAO):
+        return True
+    partes, atual = [], []
+    for t in termo.split():
+        if t in {"ou", "e", "nem"}:
+            partes.append(atual)
+            atual = []
+        elif t not in VAZIAS_ALTERNATIVA:
+            atual.append(t)
+    partes.append(atual)
+    partes = [p for p in partes if p]
+    if len(partes) < 2:
+        return False
+    return any(_negado_em(p, toks, JANELA_NEGACAO_ALTERNATIVA) for p in partes)
 
 
 def coletar_overlays(brief):

@@ -198,7 +198,11 @@ def conferir(lote, pai, anuncio):
     interno = RECADO_INTERNO.findall(desc)
     if interno:
         erros.append(f"descricao com recado interno para o cliente ({', '.join(sorted(set(x.lower() for x in interno)))}): "
-                     "o que nao tem fonte fica de fora do texto, sem explicar ao cliente")
+                     "tire a explicacao da esteira (o que nao achou, por que nao afirma). As limitacoes do brief "
+                     "continuam obrigatorias no texto: escreva so o fato para o cliente, ex.: 'Sem indicacao de uso "
+                     "em micro-ondas e forno'")
+                     # (04/11/2026, pedido 1311: "fica de fora do texto" fez a 2a tentativa tirar a limitacao do brief
+                     # e a trava LIMITACAO_FORA_DA_COPY parou o produto)
 
     # titulos do ML: sem a cor (o ML poe sozinho no fim) e medida junta, sem espaco (sobra espaco para palavra de busca)
     titulos_ml = [str(t).strip() for t in [a.get("titulo_final"), *[x.get("texto") for x in a.get("titles") or []
