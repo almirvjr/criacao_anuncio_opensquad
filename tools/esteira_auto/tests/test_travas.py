@@ -216,3 +216,28 @@ def test_pedido_947_materials_e_campo_de_busca(tmp_path):
     # outro campo fora da lista continua barrando
     arq.write_text(yaml.safe_dump({"attributes": {}, "atributos_reais": {"COLOR": "Azul"}}, allow_unicode=True), encoding="utf-8")
     assert "COLOR" in (travas._atributos_reais(arq) or "")
+
+
+def _anuncio_attrs(tmp_path, attrs, **extra):
+    an = tmp_path / "anuncio-A.yaml"
+    an.write_text(yaml.safe_dump({"pai_sku": "A", "attributes": attrs, **extra}, allow_unicode=True), encoding="utf-8")
+    return an
+
+
+def test_cauda_curta_pedido_1323_devolve_para_completar(tmp_path):
+    # pedido 1323 (ROJ-2001-28311-KT04-BR, 05/11/2026): Modelo 22 letras e Material so "Melamina"
+    r = travas._cauda_curta(_anuncio_attrs(tmp_path, {"MODEL": "Jantar Almoço Refeição", "MATERIAL": "Melamina"}))
+    assert travas.so_completar(r)
+    assert "Modelo (MODEL)" in r and "22 letras" in r and "Material (MATERIAL)" in r
+
+
+def test_cauda_comprida_ou_nao_se_aplica_passa(tmp_path):
+    ok = {"MODEL": "Jogo Prato Jantar Almoço Refeição", "MATERIAL": "Melamina Branco Leve Resistente"}
+    assert travas._cauda_curta(_anuncio_attrs(tmp_path, ok)) is None
+    assert travas._cauda_curta(_anuncio_attrs(tmp_path, {"MODEL": ok["MODEL"], "MATERIAL": "Não se aplica"})) is None
+    assert travas._cauda_curta(_anuncio_attrs(tmp_path, {"MODEL": ok["MODEL"]})) is None  # categoria sem Material
+    assert travas._cauda_curta(_anuncio_attrs(tmp_path, {"MODEL": "Curto"}, status_copy="aprovado")) is None
+
+
+def test_motivo_de_verdade_nao_e_so_completar():
+    assert not travas.so_completar("texto inventou balde")

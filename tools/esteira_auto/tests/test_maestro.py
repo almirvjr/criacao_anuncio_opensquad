@@ -261,3 +261,15 @@ def test_coleta_ok_depois_de_falhar_segue(tmp_path):
                                  ler_planilha=lp, abrir_tela=lambda l: 0, agora=T, avisar=lambda *a: None,
                                  buscar_campos=lambda l: [], coletar=coletar)
     assert rodar() == 4 and rodar() == 0 and L.ler(lt)["parados"] == {}
+
+
+def test_modelo_curto_depois_da_nova_tentativa_segue_com_aviso(tmp_path):
+    # Almir 05/11/2026: a redatora completa; se ainda ficar curto, o produto nao para
+    lt, lp = _lote(tmp_path)
+    curto = M.travas.COMPLETAR + ": Modelo (MODEL) \"Com Estampa\" tem 11 letras. Complete em `attributes`."
+    conferir = lambda etapa, lote, pais: {"B": curto} if etapa == "texto" else {}
+    M.rodar_lote(lt, chamar=lambda instr, raiz, **kw: (True, "pronto"), conferir=conferir, ler_planilha=lp,
+                 abrir_tela=lambda l: 0, agora=T, avisar=lambda *a: None)
+    assert not L.ler(lt).get("parados")
+    texto = (lt / "andamento.txt").read_text(encoding="utf-8")
+    assert "tentando de novo" in texto and "aviso para o Almir: B saiu com Modelo (MODEL)" in texto

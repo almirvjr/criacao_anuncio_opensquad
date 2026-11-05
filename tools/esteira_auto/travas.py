@@ -210,6 +210,40 @@ def _atributos_reais(anuncio):
     return ("valor real de Modelo/Linha/Material: " + "; ".join(erros)) if erros else None
 
 
+PISO_BUSCA = 25  # Modelo/Material do ML: alvo ~30 letras; abaixo disto a redatora completa (Almir 05/11/2026)
+COMPLETAR = "completar palavras de busca"
+
+
+def so_completar(motivo):
+    """Motivo que so pede para completar Modelo/Material curtos: nao para o produto (Almir 05/11/2026)."""
+    return str(motivo or "").startswith(COMPLETAR)
+
+
+def _cauda_curta(anuncio):
+    """Modelo e Material do ML (palavras de busca, `attributes`) com menos de PISO_BUSCA letras. Em 38 anuncios
+    reais, 12 Modelos e 15 Materiais sairam curtos (ex.: so "Melamina", "Com Estampa") porque a trava so tinha teto."""
+    if not anuncio.is_file():
+        return None
+    a = yaml.safe_load(anuncio.read_text(encoding="utf-8")) or {}
+    if a.get("status_copy") in ("aprovado", "tirado"):
+        return None
+    attrs = a.get("attributes") or {}
+    curtos = []
+    for k, nome in (("MODEL", "Modelo"), ("MATERIAL", "Material"), ("MAIN_MATERIAL", "Material")):
+        v = " ".join(str(attrs.get(k) or "").split())
+        if not v or v.casefold() in ("não se aplica", "nao se aplica"):
+            continue
+        if len(v) < PISO_BUSCA:
+            curtos.append(f"{nome} ({k}) \"{v}\" tem {len(v)} letras")
+    if not curtos:
+        return None
+    return (f"{COMPLETAR}: " + "; ".join(curtos) + f". Complete em `attributes` ate ~30 letras (minimo {PISO_BUSCA}) "
+            "com palavras que o comprador digita e que NAO estao no titulo recomendado nem no outro campo: primeiro as "
+            "keywords_busca do brief que sobraram; se acabarem, outro nome do produto, o uso, a ocasiao ou o ambiente "
+            "(ex.: Jogo, Jantar, Almoco, Area Gourmet, Varanda, Resistente, Leve). Material: a 1a palavra continua o "
+            "material de verdade, nunca inventado. Nao mexa em `atributos_reais` nem no resto do anuncio.")
+
+
 def conferir(etapa, lote, pais, rodar=subprocess.run):
     lote = Path(lote)
     ruins = {}
@@ -260,7 +294,7 @@ def conferir(etapa, lote, pais, rodar=subprocess.run):
             else:
                 motivo = (_titulos_longos(anuncio) or _decisoes_almir(lote, p, anuncio, campos)
                           or _ficha_magalu(lote, p, anuncio) or _atributos_reais(anuncio)
-                          or variacoes_mod.conferir(lote, p, anuncio))
+                          or variacoes_mod.conferir(lote, p, anuncio) or _cauda_curta(anuncio))
                 if motivo:
                     ruins[p] = motivo
         elif etapa == "revisao":

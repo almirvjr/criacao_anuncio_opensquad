@@ -108,6 +108,11 @@ def _etapa(etapa, lote, pais, chamar, conferir, agora, avisar):
         ok, resumo = chamar(instrucao(etapa, lote, list(ruins), motivo), RAIZ)
         ruins = conferir(etapa, lote, list(ruins)) if ok else ruins
         for p, m in ruins.items():
+            if travas.so_completar(m):
+                # Modelo/Material ainda curtos depois de 1 nova tentativa: segue, o Almir completa na ficha (05/11/2026)
+                L.anotar(lote, f"aviso para o Almir: {p} saiu com {m.split(':', 1)[1].split('. ')[0].strip()}; "
+                               "complete na ficha do hub", agora())
+                continue
             L.parar_pai(lote, p, m, agora())
             avisar(f"  parou {p}: {m}")
     return True
