@@ -108,6 +108,37 @@ CAMPO_USO = {"IS_MICROWAVE_SAFE": ["micro-ondas"], "IS_DISHWASHER_SAFE": ["lava-
              "IS_FREEZER_SAFE": ["freezer"], "SAFE_USES": list(USOS)}
 
 
+def _usos_no_texto(valor):
+    n = _norm(valor).replace("-", " ")
+    return {u for u, chave in (("micro-ondas", "micro"), ("lava-loucas", "lava"), ("forno", "forno"),
+                               ("freezer", "freezer"), ("freezer", "congel")) if chave in n}
+
+
+def usos_informados(lote, pai):
+    """Usos que o Almir informou no hub (decisao da ficha, campo "Pode ir" do Magalu ou ficha da peca do kit em
+    `itens_kit.atributos`, mig 275): sao fato, nao pendencia (05/11/2026, kits ROJ-2001-28311 KT06/KT12)."""
+    entrada = Path(lote) / "anuncios-entrada.json"
+    if not entrada.is_file():
+        return set()
+    ent = next((x for x in json.loads(entrada.read_text(encoding="utf-8")).get("anuncios", [])
+                if x.get("pai_sku") == pai), None) or {}
+    pares = [(d.get("campo"), d.get("valor")) for d in ent.get("decisoes_almir") or []]
+    pares += [(d.get("campo"), d.get("valor")) for d in (ent.get("magalu") or {}).get("decisoes") or []]
+    for v in ent.get("variacoes") or []:
+        for item in v.get("itens_kit") or []:
+            pares += list((item.get("atributos") or {}).items())
+    sabidos = set()
+    for campo, valor in pares:
+        if valor in (None, "") or not campo:
+            continue
+        c = str(campo).strip()
+        if c.upper() in CAMPO_USO and c.upper() != "SAFE_USES":
+            sabidos.update(CAMPO_USO[c.upper()])
+        elif c.upper() == "SAFE_USES" or _norm(c).replace("_", " ") in ("pode ir", "usos seguros"):
+            sabidos |= _usos_no_texto(valor)
+    return sabidos
+
+
 def uso_sem_fonte(lote, pai, a):
     """Usos que nenhuma fonte nossa informou (pendencias do brief e do anuncio, campos pendentes do ML) -> regex do que
     no texto fala deles. Qualquer uso pendente tambem barra as frases que pendem para o "nao" sem dizer qual."""
@@ -128,6 +159,7 @@ def uso_sem_fonte(lote, pai, a):
             usos.add("forno")
         if "freezer" in n or "congel" in n:
             usos.add("freezer")
+    usos -= usos_informados(lote, pai)
     if not usos:
         return {}
     r = {u: re.compile(USOS[u], re.I) for u in usos}

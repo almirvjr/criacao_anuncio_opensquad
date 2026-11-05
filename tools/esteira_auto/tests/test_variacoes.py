@@ -299,3 +299,33 @@ def test_texto_sem_falar_do_uso_passa(tmp_path):
 def test_uso_com_fonte_pode_ser_dito(tmp_path):
     # sem pendencia de uso (o fornecedor informou): o texto pode falar
     assert _neutro(tmp_path, "Vai à lava-louças; não vai ao micro-ondas.", pendencias=("peso_produto",)) is None
+
+
+def test_uso_informado_pelo_almir_na_peca_do_kit_pode_ser_dito(tmp_path):
+    # kits ROJ-2001-28311 KT06/KT12 (mig 275): a ficha da peca diz lava-loucas e freezer, micro-ondas nao
+    a = _certo()
+    a["description"] = {"bloco_1": "Pode ir à lava-louças e ao freezer; não use no micro-ondas."}
+    arq = _lote(tmp_path, a)
+    ent = json.loads((tmp_path / "anuncios-entrada.json").read_text(encoding="utf-8"))
+    ent["anuncios"][0]["variacoes"][0]["itens_kit"] = [{"sku": "ROJ-2001-28311-BR", "atributos": {
+        "is_dishwasher_safe": "Sim", "safe_uses": "Lava-louças", "pode_ir": "Lava-louças e freezer; não vai ao micro-ondas"}}]
+    (tmp_path / "anuncios-entrada.json").write_text(json.dumps(ent), encoding="utf-8")
+    (tmp_path / "inteligencia").mkdir()
+    (tmp_path / "inteligencia" / "brief-BEL-4006-PAI.yaml").write_text(
+        yaml.safe_dump({"pendencias": ["uso_micro_ondas_lava_loucas", "freezer"]}), encoding="utf-8")
+    assert V.conferir(tmp_path, "BEL-4006-PAI", arq) is None
+    assert V.usos_informados(tmp_path, "BEL-4006-PAI") == {"lava-loucas", "freezer", "micro-ondas"}
+
+
+def test_uso_informado_so_em_parte_ainda_barra_o_resto(tmp_path):
+    a = _certo()
+    a["description"] = {"bloco_1": "Vai à lava-louças. Não vai ao forno."}
+    arq = _lote(tmp_path, a)
+    ent = json.loads((tmp_path / "anuncios-entrada.json").read_text(encoding="utf-8"))
+    ent["anuncios"][0]["decisoes_almir"] = [{"campo": "IS_DISHWASHER_SAFE", "valor": "Sim", "sku": None}]
+    (tmp_path / "anuncios-entrada.json").write_text(json.dumps(ent), encoding="utf-8")
+    (tmp_path / "inteligencia").mkdir()
+    (tmp_path / "inteligencia" / "brief-BEL-4006-PAI.yaml").write_text(
+        yaml.safe_dump({"pendencias": ["lava-loucas", "forno"]}), encoding="utf-8")
+    r = V.conferir(tmp_path, "BEL-4006-PAI", arq) or ""
+    assert "forno" in r and "lava-lou" not in r.split(":", 2)[-1].split(". O que")[0]
