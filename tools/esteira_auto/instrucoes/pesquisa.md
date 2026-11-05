@@ -20,4 +20,6 @@ Regras:
 
 Saida esperada nesta etapa: {LOTE}/inteligencia/brief-<pai>.yaml de cada produto e {LOTE}/inteligencia/briefs.yaml
 
+- O QUE NAO SABEMOS NAO E LIMITACAO (regra do Almir, 05/11/2026): `limitacoes` e ponto fraco REAL do produto, com fonte nossa (ex.: "nao acompanha tampa", "e melamina, nao porcelana"). Informacao que nenhuma fonte trouxe (ex.: se vai ao micro-ondas ou a lava-louças) vai SO em `pendencias`, nunca em `limitacoes` (nem como "o fornecedor nao informa" ou "nao indicamos"): la ela vira frase que pende para o "nao" no texto e no plugin de imagens. A trava `validar_brief.py` (LIMITACAO_E_FALTA_DE_INFORMACAO) reprova.
+
 Ao terminar, responda em uma linha: "pronto" ou "nao consegui: <motivo curto>".

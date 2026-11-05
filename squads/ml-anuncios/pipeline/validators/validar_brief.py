@@ -71,6 +71,10 @@ MECLABS_TOKENS_VALIDOS = {"+m", "+v", "+i", "-f", "-a"}
 MECLABS_TOKENS_PROIBIDOS = {"+f", "+a", "-m", "-v", "-i"}
 
 EVIDENCIA_MIN_CHARS = 12          # citacao curta demais = ancora fraca
+# limitacao que e so falta de informacao ("o fornecedor nao informa se vai ao micro-ondas"): vai em pendencias
+FALTA_INFO = re.compile(r"n[aã]o\s+informa|nenhuma\s+fonte|sem\s+fonte|pendente|n[aã]o\s+indicamos|"
+                        r"n[aã]o\s+(?:foi\s+)?(?:informad|confirmad|encontrad)", re.I)
+
 # Modo sem opinioes: o brief declara isto em `limitacoes_pesquisa` (o hub mostra ao Almir).
 FRASE_SEM_OPINIOES = "sem opinioes de concorrentes"
 
@@ -173,6 +177,12 @@ def validate_brief(brief, raw_dir=None, com_fotos=True, sem_opinioes=False):
             for i, lim in enumerate(lims):
                 if not isinstance(lim, dict) or not lim.get("texto"):
                     E("LIMITACAO_TEXTO", f"limitacoes[{i}] precisa de 'texto'.")
+                elif FALTA_INFO.search(f"{lim.get('texto')} {lim.get('fonte') or ''}"):
+                    # Almir 05/11/2026 (pedido 1323): "nao indicamos lava-loucas" virou "lave a mao" no texto e
+                    # "nao vai a lava-loucas" no plugin; melamina vai. O que nao sabemos nao pende para lado nenhum.
+                    E("LIMITACAO_E_FALTA_DE_INFORMACAO",
+                      f"limitacoes[{i}] ('{lim.get('texto')}') e informacao que falta, nao limitacao do produto: "
+                      "tire de 'limitacoes' e deixe so em 'pendencias' (o texto nao fala desse uso, nem sim nem nao).")
 
     # --- modo sem opinioes: a limitacao tem que estar declarada no brief ---
     if sem_opinioes:

@@ -262,3 +262,40 @@ def test_pedido_627_modelo_decidido_pelo_almir_vale_acima_da_regra(tmp_path):
     ent["anuncios"][0]["decisoes_almir"] = [{"campo": "MODEL", "valor": "Kit de Tigela Bowl Estampada", "sku": M}]
     (tmp_path / "anuncios-entrada.json").write_text(json.dumps(ent), encoding="utf-8")
     assert "Modelo real" not in (V.conferir(tmp_path, "BEL-4006-PAI", arq) or "")
+
+
+def _neutro(tmp_path, bloco, pendencias=("uso_micro_ondas_lava_loucas",), campos_pendentes=(), magalu=()):
+    a = _certo()
+    a["description"] = {"bloco_1": bloco}
+    a["campos_pendentes"] = list(campos_pendentes)
+    a["ficha_magalu"]["campos"] = list(magalu)
+    arq = _lote(tmp_path, a)
+    (tmp_path / "inteligencia").mkdir()
+    (tmp_path / "inteligencia" / "brief-BEL-4006-PAI.yaml").write_text(
+        yaml.safe_dump({"pendencias": list(pendencias)}), encoding="utf-8")
+    return V.conferir(tmp_path, "BEL-4006-PAI", arq)
+
+
+def test_uso_sem_fonte_nao_pende_para_o_nao(tmp_path):
+    # pedido 1323 (05/11/2026): "lave a mao" virou "nao vai a lava-loucas" no plugin
+    r = _neutro(tmp_path, "Sem indicação de uso no micro-ondas ou na lava-louças: use os pratos para servir e lave à mão.")
+    assert r and "nenhuma fonte nossa informa" in r and "lave à mão" in r
+
+
+def test_uso_sem_fonte_nao_pende_para_o_sim(tmp_path):
+    assert "pode ir" in _neutro(tmp_path, "Leve e prático: vai à lava-louças sem problema.", pendencias=(),
+                                campos_pendentes=["IS_DISHWASHER_SAFE"])
+
+
+def test_uso_sem_fonte_vale_na_ficha_do_magalu(tmp_path):
+    campo = {"nome": "Indicação de uso", "valor": "Para servir. Sem indicação de uso no freezer: lave à mão."}
+    assert "nenhuma fonte nossa informa" in (_neutro(tmp_path, "Prato leve.", magalu=[campo]) or "")
+
+
+def test_texto_sem_falar_do_uso_passa(tmp_path):
+    assert _neutro(tmp_path, "Pratos leves para o almoço e o jantar, com cara de louça.") is None
+
+
+def test_uso_com_fonte_pode_ser_dito(tmp_path):
+    # sem pendencia de uso (o fornecedor informou): o texto pode falar
+    assert _neutro(tmp_path, "Vai à lava-louças; não vai ao micro-ondas.", pendencias=("peso_produto",)) is None

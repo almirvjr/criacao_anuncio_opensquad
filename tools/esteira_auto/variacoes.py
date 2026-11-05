@@ -97,6 +97,44 @@ def _forma(v):
     return SINONIMOS_FORMA.get(t, t)
 
 
+USOS = {  # uso -> o que no texto fala dele (sim ou nao)
+    "micro-ondas": r"micro[\s-]?ondas",
+    "lava-loucas": r"lava[\s-]?lou[cç]as|m[aá]quina de lavar lou[cç]as|lav(?:e|ar|agem|ados?)\s+(?:[àa]|somente\s+[àa]|s[oó]\s+[àa])\s+m[aã]o",
+    "forno": r"\bforno\b",
+    "freezer": r"freezer|congelador",
+}
+PENDE = r"sem\s+indica[cç][aã]o\s+de\s+uso|n[aã]o\s+(?:[eé]\s+)?indicad[oa]s?|n[aã]o\s+indicamos|(?:s[oó]|apenas|somente)\s+para\s+servir"
+CAMPO_USO = {"IS_MICROWAVE_SAFE": ["micro-ondas"], "IS_DISHWASHER_SAFE": ["lava-loucas"], "IS_OVEN_SAFE": ["forno"],
+             "IS_FREEZER_SAFE": ["freezer"], "SAFE_USES": list(USOS)}
+
+
+def uso_sem_fonte(lote, pai, a):
+    """Usos que nenhuma fonte nossa informou (pendencias do brief e do anuncio, campos pendentes do ML) -> regex do que
+    no texto fala deles. Qualquer uso pendente tambem barra as frases que pendem para o "nao" sem dizer qual."""
+    brief = Path(lote) / "inteligencia" / f"brief-{pai}.yaml"
+    b = (yaml.safe_load(brief.read_text(encoding="utf-8")) or {}) if brief.is_file() else {}
+    pend = [str(x.get("texto") if isinstance(x, dict) else x) for x in
+            [*(b.get("pendencias") or []), *(a.get("pendencias") or [])]]
+    usos = set()
+    for k in a.get("campos_pendentes") or []:
+        usos.update(CAMPO_USO.get(str(k).split()[0].strip().upper(), []))
+    for t in pend:
+        n = _norm(t).replace("_", " ")
+        if "micro" in n:
+            usos.add("micro-ondas")
+        if "lava" in n:
+            usos.add("lava-loucas")
+        if "forno" in n:
+            usos.add("forno")
+        if "freezer" in n or "congel" in n:
+            usos.add("freezer")
+    if not usos:
+        return {}
+    r = {u: re.compile(USOS[u], re.I) for u in usos}
+    r["(frase que pende para o nao)"] = re.compile(PENDE, re.I)
+    return r
+
+
 def conferir(lote, pai, anuncio):
     """Motivo da reprovacao (texto) ou None."""
     lote, anuncio = Path(lote), Path(anuncio)
@@ -211,10 +249,22 @@ def conferir(lote, pai, anuncio):
     if interno:
         erros.append(f"descricao com recado interno para o cliente ({', '.join(sorted(set(x.lower() for x in interno)))}): "
                      "tire a explicacao da esteira (o que nao achou, por que nao afirma). As limitacoes do brief "
-                     "continuam obrigatorias no texto: escreva so o fato para o cliente, ex.: 'Sem indicacao de uso "
-                     "em micro-ondas e forno'")
+                     "continuam obrigatorias no texto: escreva so o fato para o cliente, ex.: 'Nao acompanha tampa'")
                      # (04/11/2026, pedido 1311: "fica de fora do texto" fez a 2a tentativa tirar a limitacao do brief
                      # e a trava LIMITACAO_FORA_DA_COPY parou o produto)
+
+    # uso que nenhuma fonte nossa informa (micro-ondas, lava-loucas, forno, freezer): o texto nao pende para lado
+    # nenhum (Almir 05/11/2026, pedido 1323: "lave a mao" virou "nao vai a lava-loucas" no plugin, e melamina vai)
+    neutro = uso_sem_fonte(lote, pai, a)
+    if neutro:
+        textos = [desc] + [str(c.get("valor")) for c in ((a.get("ficha_magalu") or {}).get("campos") or [])
+                           if isinstance(c, dict) and c.get("valor")]
+        achados = sorted({m.group(0).lower() for t in textos for rx in neutro.values() for m in rx.finditer(t)})
+        if achados:
+            erros.append(f"texto fala de uso que nenhuma fonte nossa informa ({', '.join(sorted(neutro))}): "
+                         f"{', '.join(achados)}. O que nao sabemos nao entra no texto nem na ficha do Magalu, nem para "
+                         "o sim nem para o nao (nada de 'lave a mao', 'sem indicacao de uso', 'so para servir', "
+                         "'pode ir'): tire a frase; o campo fica pendente para o Almir")
 
     # titulos do ML: sem a cor (o ML poe sozinho no fim) e medida junta, sem espaco (sobra espaco para palavra de busca)
     titulos_ml = [str(t).strip() for t in [a.get("titulo_final"), *[x.get("texto") for x in a.get("titles") or []

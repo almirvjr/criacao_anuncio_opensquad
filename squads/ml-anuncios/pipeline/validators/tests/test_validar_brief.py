@@ -226,3 +226,26 @@ class TestSemFotos(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestFaltaDeInformacaoNaoELimitacao(unittest.TestCase):
+    """Almir 05/11/2026 (pedido 1323): o que nao sabemos vai em pendencias, nunca em limitacoes."""
+
+    def _codigos(self, lim):
+        b = brief_valido()
+        b["limitacoes"] = [lim]
+        return [e[0] for e in validate_brief(b)]
+
+    def test_pedido_1323_reprova(self):
+        lim = {"texto": "O fornecedor nao informa se pode ir ao micro-ondas, a lava-loucas ou ao freezer: nao indicamos esse uso.",
+               "fonte": "dados_produto.uso_micro_ondas_lava_loucas pendente (nenhuma fonte nossa)"}
+        self.assertIn("LIMITACAO_E_FALTA_DE_INFORMACAO", self._codigos(lim))
+
+    def test_limitacao_de_verdade_passa(self):
+        lim = {"texto": "E melamina, nao porcelana: mais leve e com cara de louca", "fonte": "Olist: material"}
+        self.assertNotIn("LIMITACAO_E_FALTA_DE_INFORMACAO", self._codigos(lim))
+
+    def test_brinox_fato_do_fornecedor_passa(self):
+        # BRI-coza18-PAI: o fornecedor diz micro-ondas e lava-loucas, nao forno = limitacao de verdade
+        lim = {"texto": "Sem indicação de uso em forno convencional (só micro-ondas e lava-louças)", "fonte": "ficha Brinox"}
+        self.assertNotIn("LIMITACAO_E_FALTA_DE_INFORMACAO", self._codigos(lim))
