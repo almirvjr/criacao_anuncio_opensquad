@@ -82,6 +82,7 @@ ENCHIMENTO = {"n/a", "na", "-", "nenhum", "nao informado", "não informado", "se
 
 
 PENDENTE_MAGALU = "PENDENTE: obrigatório no Magalu — preencher na ficha"
+TETO_CAMPO_MAGALU = 120  # o Portal do Magalu recusa campo de texto da ficha acima disso (06/11/2026; a API aceita calada)
 
 
 def _analise_magalu(lote, pai, anuncio):
@@ -136,6 +137,8 @@ def _analise_magalu(lote, pai, anuncio):
         elif valor:
             if norm(valor) in ENCHIMENTO:
                 erros.append(f"{c.get('nome')}: valor de enchimento ({valor})")
+            elif len(valor) > TETO_CAMPO_MAGALU:
+                erros.append(f"{c.get('nome')}: {len(valor)} letras (o Magalu aceita {TETO_CAMPO_MAGALU}; encurte)")
         elif em_todas(k):
             continue  # valor em todas as variacoes = atendido
         elif c.get("obrigatorio"):
@@ -152,6 +155,8 @@ def _analise_magalu(lote, pai, anuncio):
         for y in ((por_var.get(s) or {}).get("magalu") or []):
             if isinstance(y, dict):
                 vals_var.setdefault(norm(y.get("nome")), {})[s] = norm(y.get("valor"))
+            if isinstance(y, dict) and len(str(y.get("valor") or "").strip()) > TETO_CAMPO_MAGALU:
+                erros.append(f"{y.get('nome')} de {s}: {len(str(y.get('valor')).strip())} letras (o Magalu aceita {TETO_CAMPO_MAGALU}; encurte)")
     for d in mg.get("decisoes") or []:
         if str(d.get("categoria_id")) != str(f.get("categoria_id")):
             continue

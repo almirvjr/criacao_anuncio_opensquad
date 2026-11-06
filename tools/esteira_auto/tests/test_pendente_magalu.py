@@ -123,3 +123,20 @@ def test_decisao_do_almir_diferente_em_uma_variacao_reprova(tmp_path):
     lote = _lote(tmp_path, BASE + [{"nome": "Tamanho", "motivo": "muda por variacao: ver cada SKU"}],
                  _var("52x28,5cm", "43x21cm"), decisoes=dec)
     assert "contra a decisao do Almir" in (_ficha(lote) or "")
+
+
+def test_campo_acima_de_120_letras_reprova(tmp_path):
+    """O Portal do Magalu recusa campo de texto com mais de 120 letras (ROJ-2001-28311-KT12-BR, 06/11/2026: 168)."""
+    longo = ("Pratos rasos para servir as refeições do dia a dia e as festas, na cozinha, na sala de jantar ou na varanda. "
+             "Pode ir à lava-louças e ao freezer; não use no micro-ondas.")
+    assert len(longo) > 120
+    lote = _lote(tmp_path, BASE + [{"nome": "Tamanho", "motivo": "muda por variacao"}], _var())
+    an = lote / "copywriting" / f"anuncio-{PAI}.yaml"
+    d = yaml.safe_load(an.read_text(encoding="utf-8"))
+    d["ficha_magalu"]["campos"][2] = {"nome": "Material", "valor": longo}
+    an.write_text(yaml.safe_dump(d, allow_unicode=True), encoding="utf-8")
+    assert f"Material: {len(longo)} letras (o Magalu aceita 120" in _ficha(lote)
+    d["ficha_magalu"]["campos"][2] = {"nome": "Material", "valor": "Porcelana"}
+    d["por_variacao"][SKUS[0]]["magalu"][1]["valor"] = longo
+    an.write_text(yaml.safe_dump(d, allow_unicode=True), encoding="utf-8")
+    assert f"Tamanho de {SKUS[0]}: {len(longo)} letras" in _ficha(lote)
