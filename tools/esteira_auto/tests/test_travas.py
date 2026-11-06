@@ -241,3 +241,27 @@ def test_cauda_comprida_ou_nao_se_aplica_passa(tmp_path):
 
 def test_motivo_de_verdade_nao_e_so_completar():
     assert not travas.so_completar("texto inventou balde")
+
+
+def _magalu_kit(tmp_path, cands, escolhida, nome="KIT 06 PRATOS RASO DE MELAMINA BAMBU BRANCO 27CM", fixa=False):
+    (tmp_path / "anuncios-entrada.json").write_text(json.dumps({"anuncios": [
+        {"pai_sku": "A", "nome_base": nome, "magalu": {"candidatas": cands, "fixa": fixa,
+                                                       "termos": ["Kit Pratos Raso", "Kit Pratos", "Kit"], "decisoes": []}}]}),
+        encoding="utf-8")
+    (tmp_path / "copywriting").mkdir(exist_ok=True)
+    an = tmp_path / "copywriting" / "anuncio-A.yaml"
+    an.write_text(yaml.safe_dump({"status_copy": "ok", "ficha_magalu": {"categoria_id": escolhida, "campos": []}}), encoding="utf-8")
+    return travas._ficha_magalu(tmp_path, "A", an)
+
+
+def test_categoria_magalu_que_nao_tem_a_ver_com_o_produto(tmp_path):
+    # caso real 06/11/2026 (pedido 1325): so vieram categorias "Kit ..."
+    abridor = {"id": "4383", "nome": "Kit Abridor de Garrafas e Porta Chaves", "campos": []}
+    varal = {"id": "735b", "nome": "Kit Acessórios para Varal", "campos": []}
+    prato = {"id": "bc2b", "nome": "Prato", "campos": []}
+    assert "peca de novo no hub" in _magalu_kit(tmp_path, [abridor, varal], "4383")
+    erro = _magalu_kit(tmp_path, [abridor, prato], "4383")
+    assert "nao tem a ver" in erro and "Prato = bc2b" in erro
+    assert _magalu_kit(tmp_path, [abridor, prato], "bc2b") is None          # Pratos (plural) bate com Prato
+    assert _magalu_kit(tmp_path, [abridor], "4383", fixa=True) is None      # fixa (conferida/irmas) passa
+    assert _magalu_kit(tmp_path, [dict(abridor, aprendida=True)], "4383") is None

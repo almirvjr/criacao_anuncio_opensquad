@@ -337,7 +337,7 @@ def test_magalu_entra_no_anuncio_e_a_ficha_volta_no_resultado(tmp_path):
     lt = _lote_pedido(tmp_path, dict(PEDIDO, magalu={"candidatas": [CAND], "fixa": False}, decisoes_magalu=dec))
     P.montar_entrada(lt, ler_cubagem=lambda c: {})
     a = json.loads((lt / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]
-    assert a["magalu"] == {"candidatas": [CAND], "fixa": False, "decisoes": dec}
+    assert a["magalu"] == {"candidatas": [CAND], "fixa": False, "termos": [], "decisoes": dec}
     ficha = {"categoria_id": "bc2b", "campos": [{"nome": "Marca", "valor": "Coza"}]}
     (lt / "copywriting").mkdir()
     (lt / "copywriting" / "anuncio-BRI-coza18-PAI.yaml").write_text(

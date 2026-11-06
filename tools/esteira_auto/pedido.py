@@ -70,7 +70,7 @@ def montar_entrada(lote, cubagem=precheck.CUBAGEM, ler_cubagem=tte.carregar_cuba
     if "magalu" in (pedido.get("canais") or []):
         lido = pedido.get("magalu") or {}
         magalu = {"candidatas": lido.get("candidatas") or [], "fixa": bool(lido.get("fixa")),
-                  "decisoes": pedido.get("decisoes_magalu") or []}
+                  "termos": lido.get("termos") or [], "decisoes": pedido.get("decisoes_magalu") or []}
     # grade do Olist de cada SKU (cor, tamanho...) e por onde a familia varia (hub, 25/10/2026): variacao que nao e
     # de cor pede titulo do ML por variacao e o campo de variacao certo no Magalu
     grades = {f.get("sku"): dict(f.get("grade") or {}) for f in (pedido.get("olist") or {}).get("variacoes") or []}

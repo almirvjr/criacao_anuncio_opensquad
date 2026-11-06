@@ -106,6 +106,9 @@ def _analise_magalu(lote, pai, anuncio):
     if not cat:
         return "ficha_magalu: categoria_id tem que ser uma das candidatas (" + ", ".join(
             f"{c.get('nome')} = {i}" for i, c in cands.items()) + ")", []
+    longe = _categoria_longe(ea, mg, cat)
+    if longe:
+        return longe, []
     norm = lambda v: " ".join(str(v or "").split()).casefold()
     dados, erros, pendentes = {}, [], []
     for x in f.get("campos") or []:
@@ -163,6 +166,41 @@ def _analise_magalu(lote, pai, anuncio):
         return (f"ficha do Magalu ({cat.get('nome')}): " + "; ".join(erros[:15])
                 + (f" (+{len(erros) - 15})" if len(erros) > 15 else "")), pendentes
     return None, pendentes
+
+
+# Categoria do Magalu que nao tem a ver com o produto (06/11/2026): o KT06 do prato Rojemac foi para "Kit Abridor de
+# Garrafas e Porta Chaves" porque a busca so achou categorias "Kit ..." e a esteira pegou a primeira. Categoria fixa
+# (conferida ou das irmas) ou aprendida (ja deu certo para essa categoria do ML) passa sem conferir; as outras precisam
+# de uma palavra do produto no nome (sem contar kit/jogo/conjunto, que todo kit tem).
+_FRACAS = {"kit", "jogo", "conjunto", "para", "com", "peca", "pecas", "unidade", "unidades"}
+
+
+def _palavras(texto):
+    import unicodedata
+    t = unicodedata.normalize("NFD", str(texto or "")).encode("ascii", "ignore").decode().casefold()
+    out = set()
+    for w in "".join(ch if ch.isalpha() else " " for ch in t).split():
+        if len(w) > 4 and w.endswith("s") and not w.endswith("ss"):
+            w = w[:-1]
+        if len(w) >= 4 and w not in _FRACAS:
+            out.add(w)
+    return out
+
+
+def _categoria_longe(ea, mg, cat):
+    if mg.get("fixa") or cat.get("aprendida"):
+        return None
+    base = _palavras(ea.get("nome_base"))
+    for t in mg.get("termos") or []:
+        base |= _palavras(t)
+    if not base or _palavras(cat.get("nome")) & base:
+        return None
+    boas = [c for c in mg.get("candidatas") or [] if c.get("aprendida") or _palavras(c.get("nome")) & base]
+    if boas:
+        return (f"ficha_magalu: a categoria \"{cat.get('nome')}\" nao tem a ver com o produto; escolha uma que descreva o "
+                "produto (" + ", ".join(f"{c.get('nome')} = {c.get('id')}" for c in boas) + ")")
+    return (f"nenhuma categoria do Magalu que o hub achou descreve o produto ({', '.join(str(c.get('nome')) for c in mg.get('candidatas') or [])}): "
+            "peca de novo no hub para buscar outra vez")
 
 
 def _ficha_magalu(lote, pai, anuncio):
