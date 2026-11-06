@@ -289,8 +289,8 @@ def conferir(lote, pai, anuncio):
     # nenhum (Almir 05/11/2026, pedido 1323: "lave a mao" virou "nao vai a lava-loucas" no plugin, e melamina vai)
     neutro = uso_sem_fonte(lote, pai, a)
     if neutro:
-        textos = [desc] + [str(c.get("valor")) for c in ((a.get("ficha_magalu") or {}).get("campos") or [])
-                           if isinstance(c, dict) and c.get("valor")]
+        textos = [desc] + [str(c.get("valor")) for k in ("ficha_magalu", "ficha_shopee")
+                           for c in ((a.get(k) or {}).get("campos") or []) if isinstance(c, dict) and c.get("valor")]
         achados = sorted({m.group(0).lower() for t in textos for rx in neutro.values() for m in rx.finditer(t)})
         if achados:
             erros.append(f"texto fala de uso que nenhuma fonte nossa informa ({', '.join(sorted(neutro))}): "

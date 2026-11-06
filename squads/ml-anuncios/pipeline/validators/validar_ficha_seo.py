@@ -267,7 +267,7 @@ def _folhas(x):
 
 
 def valores_da_ficha(doc):
-    """Todos os valores de atributo: attributes, por_variacao.*.attributes/magalu e ficha_magalu."""
+    """Todos os valores de atributo: attributes, por_variacao.*.attributes/magalu, ficha_magalu e ficha_shopee."""
     out = {"attributes": " | ".join(_folhas(doc.get("attributes")))}
     pv = " | ".join(_folhas([(x or {}).get("attributes") for x in (doc.get("por_variacao") or {}).values()
                              if isinstance(x, dict)] +
@@ -275,6 +275,7 @@ def valores_da_ficha(doc):
                              if isinstance(x, dict)]))
     out["por_variacao"] = pv
     out["ficha_magalu"] = " | ".join(_folhas(doc.get("ficha_magalu")))
+    out["ficha_shopee"] = " | ".join(_folhas(doc.get("ficha_shopee")))
     return {k: v for k, v in out.items() if v}
 
 

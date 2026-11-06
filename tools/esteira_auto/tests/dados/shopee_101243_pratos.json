@@ -1,0 +1,658 @@
+{
+ "id": "101243",
+ "nome": "Pratos",
+ "caminho": "Casa e Decoração > Louça > Pratos",
+ "de": "aprendida",
+ "campos": [
+  {
+   "id": 100016,
+   "nome": "Dimensões do Produto",
+   "obrigatorio": false,
+   "tipo": 1,
+   "numero": false,
+   "unidades": [],
+   "valores": [
+    {
+     "id": 358,
+     "nome": "Pacotes Múltiplos"
+    },
+    {
+     "id": 394,
+     "nome": "Único"
+    }
+   ]
+  },
+  {
+   "id": 100037,
+   "nome": "País de Origem",
+   "obrigatorio": false,
+   "tipo": 2,
+   "numero": false,
+   "unidades": [],
+   "valores": [
+    {
+     "id": 1,
+     "nome": "Japão"
+    },
+    {
+     "id": 35,
+     "nome": "China"
+    },
+    {
+     "id": 48,
+     "nome": "Coreia"
+    },
+    {
+     "id": 68,
+     "nome": "Indonésia"
+    },
+    {
+     "id": 93,
+     "nome": "Outros"
+    },
+    {
+     "id": 110,
+     "nome": "América"
+    },
+    {
+     "id": 112,
+     "nome": "Taiwan"
+    },
+    {
+     "id": 129,
+     "nome": "Tailândia"
+    },
+    {
+     "id": 136,
+     "nome": "Vietnã"
+    },
+    {
+     "id": 154,
+     "nome": "Índia"
+    },
+    {
+     "id": 171,
+     "nome": "Bangladesh"
+    },
+    {
+     "id": 6737,
+     "nome": "Brasil"
+    },
+    {
+     "id": 6738,
+     "nome": "Colombia"
+    },
+    {
+     "id": 6739,
+     "nome": "Chile"
+    },
+    {
+     "id": 6740,
+     "nome": "Argentina"
+    },
+    {
+     "id": 6741,
+     "nome": "México"
+    }
+   ]
+  },
+  {
+   "id": 100121,
+   "nome": "Duração da Garantia",
+   "obrigatorio": false,
+   "tipo": 2,
+   "numero": false,
+   "unidades": [],
+   "valores": [
+    {
+     "id": 776,
+     "nome": "1 Mês"
+    },
+    {
+     "id": 789,
+     "nome": "2 Meses"
+    },
+    {
+     "id": 799,
+     "nome": "3 Meses"
+    },
+    {
+     "id": 810,
+     "nome": "6 Meses"
+    },
+    {
+     "id": 822,
+     "nome": "12 Meses"
+    },
+    {
+     "id": 831,
+     "nome": "24 Meses"
+    },
+    {
+     "id": 5577,
+     "nome": "Sem garantia"
+    }
+   ]
+  },
+  {
+   "id": 100130,
+   "nome": "Funcionalidades",
+   "obrigatorio": false,
+   "tipo": 5,
+   "numero": false,
+   "unidades": [],
+   "valores": [
+    {
+     "id": 1134,
+     "nome": "Livre de BPA"
+    },
+    {
+     "id": 11607,
+     "nome": "Durável"
+    },
+    {
+     "id": 14082,
+     "nome": "Resistente à corrosão"
+    },
+    {
+     "id": 14084,
+     "nome": "Resistente"
+    },
+    {
+     "id": 14193,
+     "nome": "Resistente a arranhões"
+    },
+    {
+     "id": 14194,
+     "nome": "Grosso"
+    },
+    {
+     "id": 14279,
+     "nome": "Látex Livre"
+    },
+    {
+     "id": 14280,
+     "nome": "Sem Nitrosamina"
+    },
+    {
+     "id": 14281,
+     "nome": "Livre de ftalatos"
+    },
+    {
+     "id": 14282,
+     "nome": "Livre de PVC"
+    },
+    {
+     "id": 14283,
+     "nome": "Vedação Hermética"
+    },
+    {
+     "id": 14284,
+     "nome": "Pode ser usado na lava-louças"
+    },
+    {
+     "id": 14285,
+     "nome": "Seguro na geladeira"
+    },
+    {
+     "id": 14286,
+     "nome": "Seguro para micro-ondas"
+    },
+    {
+     "id": 14287,
+     "nome": "Pode ser empilhado"
+    },
+    {
+     "id": 14288,
+     "nome": "Com Capa"
+    }
+   ]
+  },
+  {
+   "id": 100134,
+   "nome": "Material",
+   "obrigatorio": false,
+   "tipo": 5,
+   "numero": false,
+   "unidades": [],
+   "valores": [
+    {
+     "id": 1207,
+     "nome": "Plástico"
+    },
+    {
+     "id": 1218,
+     "nome": "Vidro"
+    },
+    {
+     "id": 1223,
+     "nome": "Metal"
+    },
+    {
+     "id": 1257,
+     "nome": "Outros"
+    },
+    {
+     "id": 1481,
+     "nome": "Cerâmica"
+    },
+    {
+     "id": 1801,
+     "nome": "Porcelana"
+    },
+    {
+     "id": 1925,
+     "nome": "Porcelana a Base de Ossos"
+    },
+    {
+     "id": 1942,
+     "nome": "Earthernware"
+    },
+    {
+     "id": 1955,
+     "nome": "Porcelana"
+    },
+    {
+     "id": 1965,
+     "nome": "Grés"
+    }
+   ]
+  },
+  {
+   "id": 100162,
+   "nome": "Estampa",
+   "obrigatorio": false,
+   "tipo": 5,
+   "numero": false,
+   "unidades": [],
+   "valores": [
+    {
+     "id": 1439,
+     "nome": "Xadrez / Quadriculada"
+    },
+    {
+     "id": 1447,
+     "nome": "Floral"
+    },
+    {
+     "id": 1474,
+     "nome": "Bolinhas"
+    },
+    {
+     "id": 1495,
+     "nome": "Listrada"
+    },
+    {
+     "id": 1508,
+     "nome": "Camuflagem"
+    },
+    {
+     "id": 1609,
+     "nome": "Animal Print"
+    },
+    {
+     "id": 1628,
+     "nome": "Desenho"
+    },
+    {
+     "id": 11593,
+     "nome": "Slogan"
+    },
+    {
+     "id": 11594,
+     "nome": "Figure"
+    },
+    {
+     "id": 11595,
+     "nome": "Plants"
+    },
+    {
+     "id": 11626,
+     "nome": "Geometric"
+    },
+    {
+     "id": 11673,
+     "nome": "Letters"
+    },
+    {
+     "id": 11674,
+     "nome": "Watercolor"
+    },
+    {
+     "id": 11675,
+     "nome": "Gingham"
+    },
+    {
+     "id": 11676,
+     "nome": "Patchwork"
+    },
+    {
+     "id": 11696,
+     "nome": "Solid"
+    }
+   ]
+  },
+  {
+   "id": 100169,
+   "nome": "Estilo",
+   "obrigatorio": false,
+   "tipo": 5,
+   "numero": false,
+   "unidades": [],
+   "valores": [
+    {
+     "id": 1559,
+     "nome": "Retrô"
+    },
+    {
+     "id": 1625,
+     "nome": "Vintage"
+    },
+    {
+     "id": 11679,
+     "nome": "Modern"
+    },
+    {
+     "id": 11719,
+     "nome": "Japanese"
+    },
+    {
+     "id": 11757,
+     "nome": "Classic"
+    },
+    {
+     "id": 12533,
+     "nome": "Antique"
+    },
+    {
+     "id": 12534,
+     "nome": "Asian"
+    },
+    {
+     "id": 12535,
+     "nome": "French Country"
+    },
+    {
+     "id": 12536,
+     "nome": "Garden"
+    },
+    {
+     "id": 12537,
+     "nome": "Glam"
+    },
+    {
+     "id": 12538,
+     "nome": "Industrial"
+    },
+    {
+     "id": 12539,
+     "nome": "Rustic"
+    },
+    {
+     "id": 12540,
+     "nome": "Southeast Asian"
+    },
+    {
+     "id": 12541,
+     "nome": "Traditional"
+    },
+    {
+     "id": 12542,
+     "nome": "Tropical"
+    }
+   ]
+  },
+  {
+   "id": 100370,
+   "nome": "Tipo de Garantia",
+   "obrigatorio": false,
+   "tipo": 2,
+   "numero": false,
+   "unidades": [],
+   "valores": [
+    {
+     "id": 2397,
+     "nome": "Garantia Internacional"
+    },
+    {
+     "id": 2419,
+     "nome": "Garantia do Fabricante"
+    },
+    {
+     "id": 2437,
+     "nome": "Garantia do Fornecedor"
+    },
+    {
+     "id": 5576,
+     "nome": "Sem Garantia"
+    }
+   ]
+  },
+  {
+   "id": 100666,
+   "nome": "Diâmetro",
+   "obrigatorio": false,
+   "tipo": 5,
+   "numero": true,
+   "unidades": [
+    "cm",
+    "inches"
+   ],
+   "valores": []
+  },
+  {
+   "id": 100729,
+   "nome": "Coleção de Antiguidade",
+   "obrigatorio": false,
+   "tipo": 1,
+   "numero": false,
+   "unidades": [],
+   "valores": [
+    {
+     "id": 3803,
+     "nome": "Não"
+    },
+    {
+     "id": 3819,
+     "nome": "Sim"
+    }
+   ]
+  },
+  {
+   "id": 100809,
+   "nome": "Tipo de Prato",
+   "obrigatorio": false,
+   "tipo": 2,
+   "numero": false,
+   "unidades": [],
+   "valores": [
+    {
+     "id": 4163,
+     "nome": "Prato de Pão e Manteiga"
+    },
+    {
+     "id": 4174,
+     "nome": "Prato de Jantar"
+    },
+    {
+     "id": 4187,
+     "nome": "Prato de Sobremesa"
+    },
+    {
+     "id": 4199,
+     "nome": "Outros"
+    },
+    {
+     "id": 4212,
+     "nome": "Pires"
+    },
+    {
+     "id": 4225,
+     "nome": "Prato de Atendimento"
+    },
+    {
+     "id": 4250,
+     "nome": "Prato Especializado"
+    }
+   ]
+  },
+  {
+   "id": 100955,
+   "nome": "Número de Pedaços",
+   "obrigatorio": false,
+   "tipo": 2,
+   "numero": false,
+   "unidades": [],
+   "valores": [
+    {
+     "id": 5026,
+     "nome": "1"
+    },
+    {
+     "id": 5041,
+     "nome": "2"
+    },
+    {
+     "id": 5050,
+     "nome": "3"
+    },
+    {
+     "id": 5057,
+     "nome": "4"
+    },
+    {
+     "id": 5058,
+     "nome": "6"
+    },
+    {
+     "id": 5065,
+     "nome": "10"
+    },
+    {
+     "id": 5069,
+     "nome": "12"
+    },
+    {
+     "id": 5070,
+     "nome": "8"
+    }
+   ]
+  },
+  {
+   "id": 100999,
+   "nome": "Quantidade da embalagem",
+   "obrigatorio": false,
+   "tipo": 3,
+   "numero": false,
+   "unidades": [],
+   "valores": []
+  },
+  {
+   "id": 101029,
+   "nome": "Tamanho Do Pacote",
+   "obrigatorio": false,
+   "tipo": 3,
+   "numero": true,
+   "unidades": [
+    "ML",
+    "L",
+    "MG",
+    "G/GR",
+    "KG",
+    "CM",
+    "M",
+    "Dozen",
+    "Piece",
+    "Pack",
+    "Set",
+    "Box"
+   ],
+   "valores": []
+  },
+  {
+   "id": 101219,
+   "nome": "Produto personalizado",
+   "obrigatorio": false,
+   "tipo": 1,
+   "numero": false,
+   "unidades": [],
+   "valores": [
+    {
+     "id": 7221,
+     "nome": "Sim"
+    },
+    {
+     "id": 7222,
+     "nome": "Não"
+    }
+   ]
+  },
+  {
+   "id": 101306,
+   "nome": "Quantidade por Pacote",
+   "obrigatorio": false,
+   "tipo": 2,
+   "numero": false,
+   "unidades": [],
+   "valores": [
+    {
+     "id": 11855,
+     "nome": "1"
+    },
+    {
+     "id": 11856,
+     "nome": "2"
+    },
+    {
+     "id": 11857,
+     "nome": "3"
+    },
+    {
+     "id": 11858,
+     "nome": "4"
+    },
+    {
+     "id": 11859,
+     "nome": "5"
+    },
+    {
+     "id": 11860,
+     "nome": "6"
+    },
+    {
+     "id": 11861,
+     "nome": "7"
+    },
+    {
+     "id": 11862,
+     "nome": "8"
+    },
+    {
+     "id": 11863,
+     "nome": "9"
+    },
+    {
+     "id": 11864,
+     "nome": "10"
+    },
+    {
+     "id": 11865,
+     "nome": "11"
+    },
+    {
+     "id": 11866,
+     "nome": "12"
+    }
+   ]
+  },
+  {
+   "id": 101545,
+   "nome": "BPA Free",
+   "obrigatorio": false,
+   "tipo": 1,
+   "numero": false,
+   "unidades": [],
+   "valores": []
+  }
+ ]
+}

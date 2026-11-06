@@ -17,7 +17,7 @@ import tiny_to_esteira as tte  # noqa: E402
 from esteira_auto import precheck  # noqa: E402
 from esteira_auto import precos as precos_mod  # noqa: E402
 from esteira_auto import variacoes as variacoes_mod  # noqa: E402
-from esteira_auto.travas import PENDENTE_MAGALU, pendentes_magalu  # noqa: E402
+from esteira_auto.travas import PENDENTE_MAGALU, PENDENTE_SHOPEE, pendentes_magalu, pendentes_shopee  # noqa: E402
 
 
 def _cor(grade):
@@ -71,6 +71,13 @@ def montar_entrada(lote, cubagem=precheck.CUBAGEM, ler_cubagem=tte.carregar_cuba
         lido = pedido.get("magalu") or {}
         magalu = {"candidatas": lido.get("candidatas") or [], "fixa": bool(lido.get("fixa")),
                   "termos": lido.get("termos") or [], "decisoes": pedido.get("decisoes_magalu") or []}
+    # Shopee (hub, PLANO-SHOPEE etapa 2, 06/11/2026): candidatas que o hub leu na Shopee (mig 283 / hub-ler-pedido v20),
+    # com todos os campos de cada uma. A leitura mora em olist_lido.shopee; o pegar_pedido ainda a manda dentro de `olist`.
+    shopee = None
+    if "shopee" in (pedido.get("canais") or []):
+        lido = pedido.get("shopee") or (pedido.get("olist") or {}).get("shopee") or {}
+        shopee = {"candidatas": [{**c, "aprendida": c.get("de") == "aprendida"} for c in lido.get("candidatas") or []],
+                  "fixa": bool(lido.get("conferida")), "termos": [], "decisoes": pedido.get("decisoes_shopee") or []}
     # grade do Olist de cada SKU (cor, tamanho...) e por onde a familia varia (hub, 25/10/2026): variacao que nao e
     # de cor pede titulo do ML por variacao e o campo de variacao certo no Magalu
     grades = {f.get("sku"): dict(f.get("grade") or {}) for f in (pedido.get("olist") or {}).get("variacoes") or []}
@@ -90,6 +97,8 @@ def montar_entrada(lote, cubagem=precheck.CUBAGEM, ler_cubagem=tte.carregar_cuba
         a["recado_almir"] = recado
         if magalu is not None:
             a["magalu"] = magalu
+        if shopee is not None:
+            a["shopee"] = shopee
     out["origem"] = f"pedido {pedido['pedido_id']} do hub"
     saida = Path(lote) / "anuncios-entrada.json"
     tmp = saida.with_name(saida.name + ".novo")
@@ -164,7 +173,7 @@ def _avisar_sem_opinioes(brief):
     return brief
 
 
-def _marcar_pendentes(ficha, pendentes):
+def _marcar_pendentes(ficha, pendentes, rotulo=PENDENTE_MAGALU):
     """{categoria_id, campos: [{nome, valor|motivo}]}: obrigatorio sem valor em nivel nenhum sai com o motivo
     "PENDENTE: ..." (o hub mostra em vermelho e nao aprova o Magalu com ele vazio). Campo que nem veio entra."""
     if not pendentes:
@@ -174,12 +183,12 @@ def _marcar_pendentes(ficha, pendentes):
     for nome in pendentes:
         x = next((c for c in campos if norm(c.get("nome")) == norm(nome)), None)
         if x is None:
-            campos.append({"nome": nome, "motivo": PENDENTE_MAGALU})
+            campos.append({"nome": nome, "motivo": rotulo})
             continue
         antes = str(x.get("motivo") or "").strip()
         x.pop("valor", None)
         if not antes.startswith("PENDENTE:"):
-            x["motivo"] = PENDENTE_MAGALU + (f" ({antes})" if antes else "")
+            x["motivo"] = rotulo + (f" ({antes})" if antes else "")
     return {**ficha, "campos": campos}
 
 
@@ -202,6 +211,8 @@ def resultado(lote, ler_precos=precos_mod.ler_para_lote):
         canais = {}
         if a.get("magalu") is not None and isinstance(anuncio.get("ficha_magalu"), dict):
             canais["magalu"] = _marcar_pendentes(anuncio.pop("ficha_magalu"), pendentes_magalu(lote, pai))
+        if a.get("shopee") is not None and isinstance(anuncio.get("ficha_shopee"), dict):
+            canais["shopee"] = _marcar_pendentes(anuncio.pop("ficha_shopee"), pendentes_shopee(lote, pai), PENDENTE_SHOPEE)
         cat = cats.get(pai)
         lista = lote / "categorizacao" / f"campos-{pai}.json"
         if cat is not None and lista.is_file():  # campos da categoria do ML (com os ocultos) para a tela do hub

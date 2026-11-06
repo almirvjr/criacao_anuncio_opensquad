@@ -217,6 +217,111 @@ def pendentes_magalu(lote, pai):
     return _analise_magalu(lote, pai, lote / "copywriting" / f"anuncio-{pai}.yaml")[1]
 
 
+PENDENTE_SHOPEE = "PENDENTE: obrigatório na Shopee — preencher na ficha"
+_NUMERO = __import__("re").compile(r"^\d+([.,]\d+)?$")
+
+
+def _analise_shopee(lote, pai, anuncio):
+    """(erro, pendentes) da ficha da Shopee (hub, PLANO-SHOPEE etapa 2, 06/11/2026; molde = Magalu). Categoria = uma das
+    candidatas que o hub leu na Shopee (conferida pelo Almir = fixa; aprendida = ja deu certo para essa categoria do ML;
+    sugerida = a Shopee sugeriu pelo nome). TODO campo dela com `valor` OU `motivo` (Almir 06/11: "todos os campos que
+    der"). Lista fechada (tipo 1 e 4) = valor da lista; tipo 4 e 5 aceitam varios (lista YAML); campo de numero =
+    so o numero + `unidade` da lista da Shopee. Os campos da Shopee valem para o anuncio inteiro (as variacoes so mudam
+    pela cor/tamanho, que o publicador monta): campo que muda por SKU fica com motivo. Obrigatorio sem valor = pendencia
+    para o Almir (nao reprova). Sem Shopee no pedido: nao cobra."""
+    entrada = lote / "anuncios-entrada.json"
+    if not (anuncio.is_file() and entrada.is_file()):
+        return None, []
+    ent = json.loads(entrada.read_text(encoding="utf-8"))
+    ea = next((x for x in ent.get("anuncios", []) if x.get("pai_sku") == pai), {}) or {}
+    sp = ea.get("shopee")
+    if not sp or not sp.get("candidatas"):
+        return None, []
+    a = yaml.safe_load(anuncio.read_text(encoding="utf-8")) or {}
+    if a.get("status_copy") in ("aprovado", "tirado"):
+        return None, []
+    f = a.get("ficha_shopee")
+    if not isinstance(f, dict):
+        return "falta a ficha da Shopee (ficha_shopee: categoria_id + todos os campos da categoria escolhida)", []
+    cands = {str(c.get("id")): c for c in sp["candidatas"]}
+    cat = cands.get(str(f.get("categoria_id")))
+    if not cat:
+        return "ficha_shopee: categoria_id tem que ser uma das candidatas (" + ", ".join(
+            f"{c.get('nome')} = {i}" for i, c in cands.items()) + ")", []
+    longe = _categoria_longe(ea, sp, cat)
+    if longe:
+        return longe.replace("ficha_magalu", "ficha_shopee").replace("do Magalu", "da Shopee"), []
+    norm = lambda v: " ".join(str(v or "").split()).casefold()
+    dados, erros, pendentes = {}, [], []
+    for x in f.get("campos") or []:
+        k = norm((x or {}).get("nome"))
+        if k in dados:
+            erros.append(f"{x.get('nome')}: repetido")
+        dados[k] = x or {}
+    da_categoria = {norm(c.get("nome")) for c in cat.get("campos") or []}
+    for c in cat.get("campos") or []:
+        nome = c.get("nome")
+        x = dados.get(norm(nome))
+        bruto = (x or {}).get("valor")
+        valores = [str(v).strip() for v in (bruto if isinstance(bruto, list) else [bruto]) if str(v or "").strip()]
+        motivo = str((x or {}).get("motivo") or "").strip()
+        if valores and motivo:
+            erros.append(f"{nome}: precisa de valor OU de motivo (nunca os dois, nunca nenhum)")
+            continue
+        if not valores:
+            if c.get("obrigatorio"):
+                pendentes.append(nome)  # o Almir preenche na ficha do hub
+            elif x is None:
+                erros.append(f"{nome}: sem resposta")
+            elif not motivo:
+                erros.append(f"{nome}: precisa de valor OU de motivo (nunca os dois, nunca nenhum)")
+            continue
+        tipo = int(c.get("tipo") or 0)
+        if len(valores) > 1 and tipo not in (4, 5):
+            erros.append(f"{nome}: so aceita um valor")
+        enchimento = [v for v in valores if norm(v) in ENCHIMENTO]
+        if enchimento:
+            erros.append(f"{nome}: valor de enchimento ({enchimento[0]})")
+            continue
+        if c.get("numero"):
+            un = [str(u) for u in c.get("unidades") or []]
+            if any(not _NUMERO.match(v) for v in valores):
+                erros.append(f"{nome}: so o numero em `valor` (ex.: \"25,7\"), a unidade vai em `unidade`")
+            elif un and str((x or {}).get("unidade") or "") not in un:
+                erros.append(f"{nome}: `unidade` tem que ser uma de {', '.join(un)}")
+            continue
+        lista = {norm(v.get("nome")) for v in c.get("valores") or [] if isinstance(v, dict)}
+        if tipo in (1, 4) and not lista:
+            # lista fechada sem opcao nenhuma ("BPA Free" em Pratos, 06/11/2026): a Shopee nao aceita valor
+            erros.append(f"{nome}: a Shopee nao deu opcoes para este campo; deixe com motivo")
+        elif tipo in (1, 4) and not c.get("valores_cortados"):
+            fora = [v for v in valores if norm(v) not in lista]
+            if fora:
+                ex = ", ".join(str(v.get("nome")) for v in (c.get("valores") or [])[:12])
+                erros.append(f"{nome}: \"{fora[0]}\" nao esta na lista da Shopee (ex.: {ex})")
+    erros += [f"{x.get('nome')}: nao existe na categoria" for k, x in dados.items() if k not in da_categoria]
+    for d in sp.get("decisoes") or []:
+        if str(d.get("categoria_id")) != str(f.get("categoria_id")):
+            continue
+        x = dados.get(norm(d.get("campo"))) or {}
+        if norm(x.get("valor")) != norm(d.get("valor")) or (not d.get("valor") and not x.get("motivo")):
+            erros.append(f"{d.get('campo')}: contra a decisao do Almir ({d.get('valor') or 'em branco: ' + str(d.get('motivo'))})")
+    if erros:
+        return (f"ficha da Shopee ({cat.get('nome')}): " + "; ".join(erros[:15])
+                + (f" (+{len(erros) - 15})" if len(erros) > 15 else "")), pendentes
+    return None, pendentes
+
+
+def _ficha_shopee(lote, pai, anuncio):
+    return _analise_shopee(Path(lote), pai, Path(anuncio))[0]
+
+
+def pendentes_shopee(lote, pai):
+    """Campos obrigatorios da Shopee que ficaram sem valor (o Almir preenche na ficha do hub)."""
+    lote = Path(lote)
+    return _analise_shopee(lote, pai, lote / "copywriting" / f"anuncio-{pai}.yaml")[1]
+
+
 BUSCA = ("MODEL", "LINE", "MATERIAL", "MAIN_MATERIAL")  # campos que no ML levam palavra de busca (step-05, passo 5)
 # aceitos em atributos_reais sem ser cobrados: MATERIALS (categoria Bowl; pedidos 90 e 947 pararam por ter o valor real dele)
 REAL_ACEITO = BUSCA + ("MATERIALS",)
@@ -331,7 +436,8 @@ def conferir(etapa, lote, pais, rodar=subprocess.run):
                     break
             else:
                 motivo = (_titulos_longos(anuncio) or _decisoes_almir(lote, p, anuncio, campos)
-                          or _ficha_magalu(lote, p, anuncio) or _atributos_reais(anuncio)
+                          or _ficha_magalu(lote, p, anuncio) or _ficha_shopee(lote, p, anuncio)
+                          or _atributos_reais(anuncio)
                           or variacoes_mod.conferir(lote, p, anuncio) or _cauda_curta(anuncio))
                 if motivo:
                     ruins[p] = motivo

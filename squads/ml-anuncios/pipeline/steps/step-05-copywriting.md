@@ -77,6 +77,12 @@ Para cada **anuncio** em `anuncios-entrada.json` com brief `confianca ≥ media`
    - **Modelo, Linha e Material = só a informação real** (Modelo "Cozy 10570", Material "Polipropileno"). A palavra de busca nesses campos é só do ML (passo 5, `attributes`).
    - `magalu.decisoes` da entrada (categoria_id + campo + valor ou motivo) já foi decidido pelo Almir: use igual.
 
+5c. **Ficha da Shopee (`ficha_shopee`)** — só quando o anúncio da entrada tem `shopee.candidatas` (hub, Almir 06/11/2026: "todos os campos que der"):
+   - `categoria_id`: o `id` de UMA das `candidatas` (`fixa: true` = conferida pelo Almir, só há uma; `aprendida` = já deu certo para esse tipo de produto; `sugerida` = a Shopee sugeriu pelo nome). Mesma regra do Magalu: tem que ter a ver com o produto (olhe o `caminho`).
+   - `campos`: TODOS os campos da categoria, cada um com **`valor`** ou **`motivo`** (nunca os dois, nunca nenhum; nunca chute). `tipo` 1 ou 4 = só valor da lista `valores` (escrito igual); 2 ou 5 = da lista ou texto curto; 4 e 5 aceitam vários (lista). `numero: true` = `valor` só o número + `unidade` (uma das `unidades`).
+   - Os campos valem para o anúncio inteiro: o que muda por SKU fica com `motivo` "muda por variacao". Obrigatório sem fonte = `motivo` (pendência para o Almir). Modelo/Material = só a informação real. A marca da Shopee não entra aqui.
+   - `shopee.decisoes` da entrada: decidido pelo Almir, use igual.
+
 6. **Marcar `status_copy`**:
    - `ok`: todos os checks passam.
    - `warning`: algum critério no limite (ex: 1 atributo opcional ausente do dossie).
@@ -141,6 +147,16 @@ anuncios:
       campos:                          # TODOS os campos da categoria: valor OU motivo
         - nome: "<nome do campo no Magalu>"
           valor: "<informação real>"
+        - nome: "<nome do campo>"
+          motivo: "<por que fica em branco>"
+    ficha_shopee:                      # só com shopee.candidatas na entrada (passo 5c)
+      categoria_id: "<id de uma das candidatas>"
+      campos:                          # TODOS os campos da categoria: valor OU motivo
+        - nome: "<nome do campo na Shopee>"
+          valor: "<valor da lista, ou texto>"   # tipo 4/5: lista
+        - nome: "<campo de número>"
+          valor: "25,7"
+          unidade: "cm"
         - nome: "<nome do campo>"
           motivo: "<por que fica em branco>"
     keywords_seo_aplicadas: ["<string>", ...]
