@@ -304,12 +304,20 @@ def _analise_shopee(lote, pai, anuncio):
         if str(d.get("categoria_id")) != str(f.get("categoria_id")):
             continue
         x = dados.get(norm(d.get("campo"))) or {}
-        if norm(x.get("valor")) != norm(d.get("valor")) or (not d.get("valor") and not x.get("motivo")):
+        if norm(valor_shopee_hub(x)) != norm(d.get("valor")) or (not d.get("valor") and not x.get("motivo")):
             erros.append(f"{d.get('campo')}: contra a decisao do Almir ({d.get('valor') or 'em branco: ' + str(d.get('motivo'))})")
     if erros:
         return (f"ficha da Shopee ({cat.get('nome')}): " + "; ".join(erros[:15])
                 + (f" (+{len(erros) - 15})" if len(erros) > 15 else "")), pendentes
     return None, pendentes
+
+
+def valor_shopee_hub(x):
+    """Valor do campo como o hub guarda (mig 284): varios = "A | B"; numero com unidade = "25,7 cm"."""
+    v = (x or {}).get("valor")
+    v = " | ".join(str(i).strip() for i in v if str(i or "").strip()) if isinstance(v, list) else str(v or "").strip()
+    un = str((x or {}).get("unidade") or "").strip()
+    return f"{v} {un}" if v and un else v
 
 
 def _ficha_shopee(lote, pai, anuncio):

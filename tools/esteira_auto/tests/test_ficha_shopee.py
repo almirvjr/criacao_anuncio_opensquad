@@ -163,3 +163,16 @@ def test_categoria_real_pratos(tmp_path):
     ruim[9] = {"nome": "Coleção de Antiguidade", "valor": "Talvez"}
     e = _erro(_lote(tmp_path, {"categoria_id": "101243", "campos": ruim}, candidatas=(PRATOS_REAL,)))
     assert "BPA Free: a Shopee nao deu opcoes" in e and "Coleção de Antiguidade: \"Talvez\" nao esta na lista" in e
+
+
+def test_decisao_do_almir_no_formato_do_hub(tmp_path):
+    """O hub manda a decisao como guarda (mig 284): varios = "A | B", numero = "25,7 cm"."""
+    lote = _lote(tmp_path, {"categoria_id": "101267", "campos": BOA})
+    ent = json.loads((lote / "anuncios-entrada.json").read_text(encoding="utf-8"))
+    ent["anuncios"][0]["shopee"]["decisoes"] = [
+        {"categoria_id": "101267", "campo": "Usos", "valor": "Micro-ondas | Lava-louças"},
+        {"categoria_id": "101267", "campo": "Diâmetro", "valor": "30 cm"}]
+    (lote / "anuncios-entrada.json").write_text(json.dumps(ent), encoding="utf-8")
+    e = _erro(lote)
+    assert "Diâmetro: contra a decisao do Almir (30 cm)" in e and "Usos" not in e
+    assert travas.valor_shopee_hub({"valor": "30", "unidade": "cm"}) == "30 cm"
