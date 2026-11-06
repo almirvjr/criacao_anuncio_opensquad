@@ -5,7 +5,10 @@ Fonte: G:\\Meu Drive\\TERRA CASA DECOR\\TABELAS DE PRECIFICACAO\\Precificacao - 
 do pedido e o Almir confere (e preenche o que faltar) na aprovacao da ficha, no site do hub.
 SKU que nao esta na aba, ou com preco vazio/zero = fica de fora (em branco na tela). Arredonda em centavos.
 A planilha e copiada do Drive para a pasta do lote antes de ler (ler o G: direto pode travar sem erro); copia que
-demora ou falha = sem preco, a esteira segue (o Almir preenche a mao)."""
+demora ou falha = sem preco, a esteira segue (o Almir preenche a mao).
+
+MESMA REGRA no botao "Atualizar preco" do hub (reposicao: supabase/functions/hub-atualizar-preco/regras.ts, 06/11/2026;
+paridade conferida na planilha real: 64 SKUs ML + 384 Magalu, 0 diferencas). Mudou aqui, muda la."""
 import shutil
 import threading
 import unicodedata
