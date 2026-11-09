@@ -360,3 +360,19 @@ def test_kit_com_itens_aprovados_leva_os_dados_dos_itens(tmp_path):
     vs = {v["sku"]: v for v in json.loads((lt / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]["variacoes"]}
     assert vs["BRI-coza18-10570_0007-BR"]["itens_kit"] == itens
     assert "itens_kit" not in vs["BRI-coza18-10570_0008-PT"]
+    assert "caixa_do_fornecedor" not in vs["BRI-coza18-10570_0007-BR"]
+
+
+def test_pecas_da_caixa_do_fornecedor_vao_como_itens_sem_sku(tmp_path):
+    # Almir 09/11/2026 (mig 291): faqueiro ROJ-2002, SKU simples no Tiny; as pecas vem na caixa do fornecedor
+    itens = [{"sku": None, "nome": "Garfo", "quantidade": 6, "titulo_ml": None, "atributos": None,
+              "medidas": {"fonte": "medidas informadas pelo Almir no hub (peça que vem na caixa do fornecedor)",
+                          "comprimento_cm": 20.3, "largura_cm": 2.5}}]
+    ped = dict(PEDIDO, itens_kit=[{"sku_kit": "BRI-coza18-10570_0007-BR", "completo": True, "faltam": [],
+                                   "caixa_do_fornecedor": True, "itens": itens}])
+    lt = _lote_pedido(tmp_path, ped)
+    P.montar_entrada(lt, ler_cubagem=lambda c: {})
+    vs = {v["sku"]: v for v in json.loads((lt / "anuncios-entrada.json").read_text(encoding="utf-8"))["anuncios"][0]["variacoes"]}
+    assert vs["BRI-coza18-10570_0007-BR"]["itens_kit"] == itens
+    assert vs["BRI-coza18-10570_0007-BR"]["caixa_do_fornecedor"] is True
+    assert "caixa_do_fornecedor" not in vs["BRI-coza18-10570_0008-PT"]
