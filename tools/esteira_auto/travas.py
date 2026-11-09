@@ -370,6 +370,60 @@ def _atributos_reais(anuncio):
     return ("valor real de Modelo/Linha/Material: " + "; ".join(erros)) if erros else None
 
 
+# Ficha unica (hub, Almir 09/11/2026): a mesma medida tem o mesmo numero em todos os canais. So medida reprova (numero
+# diferente = um dos dois esta errado; a conversao de 09/11 achou altura 2 cm no ML x 2,7 cm no Magalu); palavra diferente
+# (lista da Shopee x texto do ML) aparece em amarelo na tela do hub, sem travar a esteira.
+MEDIDAS_IGUAIS = {
+    "Diâmetro": (("DIAMETER",), ("diâmetro", "diametro"), ("diâmetro", "diametro")),
+    "Altura": (("HEIGHT",), ("altura do produto", "altura"), ("altura",)),
+    "Capacidade": (("VOLUME_CAPACITY", "CAPACITY"), ("capacidade",), ("capacidade de volume", "capacidade")),
+}
+_PARA_BASE = {"mm": ("cm", 0.1), "cm": ("cm", 1.0), "m": ("cm", 100.0), "ml": ("l", 0.001), "l": ("l", 1.0), "lt": ("l", 1.0)}
+
+
+def _numero_com_unidade(v):
+    import re as _re
+    m = _re.match(r"^\s*([0-9]+(?:[.,][0-9]+)?)\s*([a-zA-Z]*)\s*$", str(v or ""))
+    if not m or not m.group(2):
+        return None
+    base = _PARA_BASE.get(m.group(2).lower())
+    if not base:
+        return None
+    return base[0], float(m.group(1).replace(",", ".")) * base[1]
+
+
+def _medidas_iguais(anuncio):
+    """Mesma medida (diametro, altura, capacidade) com numeros diferentes entre ML, Magalu e Shopee = reprova."""
+    if not anuncio.is_file():
+        return None
+    a = yaml.safe_load(anuncio.read_text(encoding="utf-8")) or {}
+    if a.get("status_copy") in ("aprovado", "tirado"):
+        return None
+    norm = lambda v: " ".join(str(v or "").split()).casefold()
+    attrs = a.get("attributes") or {}
+    def do_canal(ficha, nomes):
+        for x in ((ficha or {}).get("campos") or []) if isinstance(ficha, dict) else []:
+            if isinstance(x, dict) and norm(x.get("nome")) in nomes and str(x.get("valor") or "").strip():
+                return str(x.get("valor")).strip()
+        return None
+    erros = []
+    for rotulo, (ids_ml, nomes_mg, nomes_sp) in MEDIDAS_IGUAIS.items():
+        vals = {"Mercado Livre": next((str(attrs[i]) for i in ids_ml if str(attrs.get(i) or "").strip()), None),
+                "Magalu": do_canal(a.get("ficha_magalu"), nomes_mg), "Shopee": do_canal(a.get("ficha_shopee"), nomes_sp)}
+        lidos = {c: _numero_com_unidade(v) for c, v in vals.items() if v}
+        lidos = {c: x for c, x in lidos.items() if x}
+        unidades = {x[0] for x in lidos.values()}
+        if len(lidos) < 2 or len(unidades) > 1:
+            continue
+        nums = [x[1] for x in lidos.values()]
+        if max(nums) - min(nums) > 0.05 * max(1.0, max(nums)) and max(nums) - min(nums) > 0.05:
+            erros.append(f"{rotulo}: " + ", ".join(f"{c} {vals[c]}" for c in lidos))
+    if erros:
+        return ("a mesma medida esta com numero diferente entre os canais (ficha unica: escreva o numero certo e use o "
+                "mesmo em todos): " + "; ".join(erros))
+    return None
+
+
 PISO_BUSCA = 25  # Modelo/Material do ML: alvo ~30 letras; abaixo disto a redatora completa (Almir 05/11/2026)
 COMPLETAR = "completar palavras de busca"
 
@@ -454,7 +508,7 @@ def conferir(etapa, lote, pais, rodar=subprocess.run):
             else:
                 motivo = (_titulos_longos(anuncio) or _decisoes_almir(lote, p, anuncio, campos)
                           or _ficha_magalu(lote, p, anuncio) or _ficha_shopee(lote, p, anuncio)
-                          or _atributos_reais(anuncio)
+                          or _atributos_reais(anuncio) or _medidas_iguais(anuncio)
                           or variacoes_mod.conferir(lote, p, anuncio) or _cauda_curta(anuncio))
                 if motivo:
                     ruins[p] = motivo
