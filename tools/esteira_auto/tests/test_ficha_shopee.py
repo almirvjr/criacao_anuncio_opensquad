@@ -176,3 +176,15 @@ def test_decisao_do_almir_no_formato_do_hub(tmp_path):
     e = _erro(lote)
     assert "Diâmetro: contra a decisao do Almir (30 cm)" in e and "Usos" not in e
     assert travas.valor_shopee_hub({"valor": "30", "unidade": "cm"}) == "30 cm"
+
+
+def test_faqueiro_aceita_talheres(tmp_path):
+    # 09/11/2026, pedido 1450: faqueiro ROJ-2002 parou porque "Talheres" nao divide palavra com "Faqueiro"
+    talheres = {**TRAVESSAS, "id": "101244", "nome": "Talheres", "de": "sugerida"}
+    abridor = {**TRAVESSAS, "id": "5", "nome": "Abridor de Garrafas", "de": "sugerida"}
+    lote = _lote(tmp_path, {"categoria_id": "101244", "campos": BOA}, candidatas=(talheres, abridor),
+                 nome="Faqueiro 24 Pecas de Aco Inox Positano")
+    assert _erro(lote) is None
+    lote = _lote(tmp_path, {"categoria_id": "5", "campos": BOA}, candidatas=(talheres, abridor),
+                 nome="Faqueiro 24 Pecas de Aco Inox Positano")
+    assert "Talheres = 101244" in _erro(lote)

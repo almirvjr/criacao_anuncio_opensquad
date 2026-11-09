@@ -178,6 +178,9 @@ def _analise_magalu(lote, pai, anuncio):
 # (conferida ou das irmas) ou aprendida (ja deu certo para essa categoria do ML) passa sem conferir; as outras precisam
 # de uma palavra do produto no nome (sem contar kit/jogo/conjunto, que todo kit tem).
 _FRACAS = {"kit", "jogo", "conjunto", "para", "com", "peca", "pecas", "unidade", "unidades"}
+# Palavras que querem dizer o mesmo produto sem dividir letra (09/11/2026: o faqueiro ROJ-2002 parou porque nenhuma
+# categoria da Shopee tinha "faqueiro" no nome; a certa era "Talheres"). Ja na forma de _palavras (sem acento, singular).
+_PARENTES = {"faqueiro": {"talhere", "talher"}, "talhere": {"faqueiro"}, "talher": {"faqueiro"}}
 
 
 def _palavras(texto):
@@ -189,6 +192,7 @@ def _palavras(texto):
             w = w[:-1]
         if len(w) >= 4 and w not in _FRACAS:
             out.add(w)
+            out |= _PARENTES.get(w, set())
     return out
 
 
