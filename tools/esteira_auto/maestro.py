@@ -390,6 +390,9 @@ def main_fila(lotes=LOTES, fila=None, rodar=None, agora=datetime.now, vagas=vaga
         print("Outra rodada da fila esta trabalhando.")
         return 0
     vaga_mod.ATUAL = vaga  # Chrome e navegador do claude -p desta vaga (global do processo)
+    livre = vaga_mod.memoria_livre_gb()
+    if livre is not None:
+        print(f"Vaga {vaga} (memoria livre {livre:.1f} GB).")  # calibrar o MIN_LIVRE_GB da vaga 3 (11/11)
     try:
         return _main_fila(lotes, fila, rodar, agora, vaga, so_terminar=vaga > vagas, reaproveitar=reaproveitar)
     finally:
