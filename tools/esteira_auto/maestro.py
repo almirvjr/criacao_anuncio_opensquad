@@ -357,9 +357,13 @@ def _pegar_trava(lotes, vaga=1):
 
 def _escolher_vaga(lotes, vagas):
     """Primeira vaga livre (1, 2...). Vaga acima de `vagas` (desligada com --vagas 1) so entra para terminar o lote
-    que ela ja tinha comecado; pedido novo nela, nunca. Devolve (vaga, trava) ou (None, None)."""
+    que ela ja tinha comecado; pedido novo nela, nunca. Vaga 3: pedido novo so com memoria livre (vaga.memoria_permite);
+    lote que ela ja comecou termina sempre. Devolve (vaga, trava) ou (None, None)."""
     for v in range(1, vaga_mod.MAXIMO + 1):
-        if v > vagas and L.lote_aberto(lotes, de_pedido=True, vaga=v) is None:
+        aberto = L.lote_aberto(lotes, de_pedido=True, vaga=v)
+        if v > vagas and aberto is None:
+            continue
+        if aberto is None and not vaga_mod.memoria_permite(v):  # pedido novo na vaga 3 so com memoria livre
             continue
         trava = _pegar_trava(lotes, v)
         if trava is not None:

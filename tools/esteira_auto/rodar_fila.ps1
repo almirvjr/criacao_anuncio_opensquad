@@ -1,6 +1,6 @@
 # rodar_fila.ps1 - tarefa agendada "Esteira - fila do hub" (de 5 em 5 min, escondida pelo run-hidden.vbs do hub-meta).
-# Cada disparo faz no maximo UM pedido da fila do hub (maestro.py --fila), na primeira vaga livre: com --vagas 2
-# ate 2 pedidos ao mesmo tempo (a tarefa permite instancias em paralelo). Volta-atras = trocar para --vagas 1.
+# Cada disparo faz no maximo UM pedido da fila do hub (maestro.py --fila), na primeira vaga livre: com --vagas 3
+# ate 3 pedidos ao mesmo tempo (a 3a so com 3 GB de memoria livre) (a tarefa permite instancias em paralelo). Volta-atras = trocar para --vagas 1.
 # Sem pedido = sai na hora.
 # Registro em squads/ml-anuncios/output/lotes/fila.log (so o que o maestro imprime: nunca senha).
 $ErrorActionPreference = 'Continue'
@@ -11,7 +11,7 @@ $raiz = Split-Path -Parent (Split-Path -Parent $aqui)
 $lotes = Join-Path $raiz 'squads\ml-anuncios\output\lotes'
 New-Item -ItemType Directory -Force $lotes | Out-Null
 $log = Join-Path $lotes 'fila.log'
-$saida = & python (Join-Path $aqui 'maestro.py') --fila --vagas 2 2>&1 | Out-String
+$saida = & python (Join-Path $aqui 'maestro.py') --fila --vagas 3 2>&1 | Out-String
 $codigo = $LASTEXITCODE
 if ($saida.Trim() -ne 'Nenhum pedido na fila do hub.' -and $saida.Trim() -ne 'Outra rodada da fila esta trabalhando.') {
     Add-Content -Path $log -Encoding utf8 -Value ("=== {0:yyyy-MM-dd HH:mm} (saida {1})`r`n{2}" -f (Get-Date), $codigo, $saida.Trim())

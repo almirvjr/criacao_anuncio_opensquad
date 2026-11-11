@@ -1,4 +1,5 @@
-"""Vaga = uma das rodadas da fila que podem trabalhar ao mesmo tempo neste PC (teto 2: RAM do PC, 04/11/2026).
+"""Vaga = uma das rodadas da fila que podem trabalhar ao mesmo tempo neste PC (teto 2 em 04/11 pela RAM; 3 desde 11/11,
+com a vaga 3 so pegando pedido NOVO se houver pelo menos MIN_LIVRE_GB de memoria livre - Almir pediu 3 em paralelo).
 
 Cada vaga tem a propria trava, os proprios lotes (andamento.json guarda a vaga) e o proprio navegador:
 - Chrome da coleta de opinioes: porta e perfil proprios (dois Chromes no mesmo perfil = o 2o nao abre).
@@ -16,11 +17,12 @@ import os
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
-MAXIMO = 2
+MAXIMO = 3
 PADRAO = 2
 ATUAL = 1
 
-_PORTAS = {1: 9336, 2: 9337}
+_PORTAS = {1: 9336, 2: 9337, 3: 9338}
+MIN_LIVRE_GB = 3.0  # vaga 3 so abre pedido novo com isto de memoria livre (cada vaga = claude -p + 2 navegadores)
 
 
 def _sufixo(v):
@@ -53,6 +55,36 @@ def env_claude(v=None):
     env = dict(os.environ)
     env["PLAYWRIGHT_MCP_USER_DATA_DIR"] = str(RAIZ / perfil_navegador_rel(v))
     return env
+
+
+def memoria_livre_gb():
+    """Memoria fisica livre agora, em GB (Windows). Fora do Windows ou se falhar: None (nao barra)."""
+    if os.name != "nt":
+        return None
+    try:
+        import ctypes
+
+        class _Estado(ctypes.Structure):
+            _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong),
+                        ("ullTotalPhys", ctypes.c_ulonglong), ("ullAvailPhys", ctypes.c_ulonglong),
+                        ("ullTotalPageFile", ctypes.c_ulonglong), ("ullAvailPageFile", ctypes.c_ulonglong),
+                        ("ullTotalVirtual", ctypes.c_ulonglong), ("ullAvailVirtual", ctypes.c_ulonglong),
+                        ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+        e = _Estado()
+        e.dwLength = ctypes.sizeof(_Estado)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(e)):
+            return None
+        return e.ullAvailPhys / (1024 ** 3)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def memoria_permite(v, livre=None):
+    """Vagas 1 e 2 sempre; da 3 em diante so com MIN_LIVRE_GB livres (sem leitura = deixa)."""
+    if v <= 2:
+        return True
+    livre = memoria_livre_gb() if livre is None else livre
+    return livre is None or livre >= MIN_LIVRE_GB
 
 
 def ler_vagas(argv, environ=os.environ):

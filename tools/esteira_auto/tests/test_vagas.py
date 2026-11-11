@@ -223,8 +223,77 @@ def test_claude_da_vaga_2_usa_outro_perfil_do_navegador(tmp_path):
 
 
 @pytest.mark.parametrize("argv,env,esperado", [
-    ([], {}, 2), (["--fila", "--vagas", "1"], {}, 1), (["--vagas", "5"], {}, 2), (["--vagas", "0"], {}, 1),
+    ([], {}, 2), (["--fila", "--vagas", "1"], {}, 1), (["--vagas", "5"], {}, 3), (["--vagas", "3"], {}, 3), (["--vagas", "0"], {}, 1),
     (["--vagas", "x"], {}, 2), ([], {"ESTEIRA_VAGAS": "1"}, 1), (["--vagas", "2"], {"ESTEIRA_VAGAS": "1"}, 2),
 ])
 def test_ler_vagas(argv, env, esperado):
     assert V.ler_vagas(argv, env) == esperado
+
+
+# ── vaga 3 com trava de memoria (11/11/2026) ─────────────────────────────────────────────────────────────────────
+def test_vaga_3_tem_porta_e_perfis_proprios():
+    assert V.porta_chrome(3) == 9338
+    assert V.perfil_opinioes(3).name == "_perfil_opinioes_3"
+    assert V.perfil_navegador_rel(3) == "_opensquad/_browser_profile_3"
+    assert "Read(_opensquad/_browser_profile_3/**)" in CC.NEGADAS
+
+
+def test_memoria_permite():
+    assert V.memoria_permite(1, livre=0.5) and V.memoria_permite(2, livre=0.5)  # 1 e 2 nunca barram
+    assert V.memoria_permite(3, livre=V.MIN_LIVRE_GB)
+    assert not V.memoria_permite(3, livre=V.MIN_LIVRE_GB - 0.1)
+
+
+def test_memoria_livre_responde_no_windows():
+    livre = V.memoria_livre_gb()
+    if os.name == "nt":
+        assert livre is not None and livre > 0
+
+
+def _ocupar(lotes, n):
+    """Ocupa as vagas 1..n em processos filhos; devolve os filhos (matar = soltar)."""
+    pega = f"v, t = M._escolher_vaga({str(lotes)!r}, 3); print(v, flush=True)"
+    filhos = []
+    for esperado in range(1, n + 1):
+        f = _filho(pega)
+        filhos.append(f)
+        assert f.stdout.readline().strip() == str(esperado)
+    return filhos
+
+
+def test_terceiro_pedido_entra_na_vaga_3_com_memoria(tmp_path, monkeypatch):
+    lotes = tmp_path / "lotes"
+    monkeypatch.setattr(V, "memoria_livre_gb", lambda: V.MIN_LIVRE_GB + 1)
+    filhos = _ocupar(lotes, 2)
+    try:
+        v, t = M._escolher_vaga(lotes, 3)
+        assert v == 3
+        t.close()
+    finally:
+        for f in filhos:
+            f.kill(); f.wait()
+
+
+def test_terceiro_pedido_espera_sem_memoria(tmp_path, monkeypatch):
+    lotes = tmp_path / "lotes"
+    monkeypatch.setattr(V, "memoria_livre_gb", lambda: V.MIN_LIVRE_GB - 1)
+    filhos = _ocupar(lotes, 2)
+    try:
+        assert M._escolher_vaga(lotes, 3) == (None, None)
+    finally:
+        for f in filhos:
+            f.kill(); f.wait()
+
+
+def test_lote_comecado_na_vaga_3_termina_mesmo_sem_memoria(tmp_path, monkeypatch):
+    lotes = tmp_path / "lotes"
+    _lote_pedido(lotes, "2026-11-11-pedido90", 90, vaga=3)
+    monkeypatch.setattr(V, "memoria_livre_gb", lambda: 0.5)
+    filhos = _ocupar(lotes, 2)
+    try:
+        v, t = M._escolher_vaga(lotes, 3)
+        assert v == 3
+        t.close()
+    finally:
+        for f in filhos:
+            f.kill(); f.wait()
