@@ -11,12 +11,12 @@ Depois: título longo e decisões do Almir na esteira (pedidos 19 e 21, HISTORIC
 **Como ficou a esteira:** aprovação do texto na tela (`tools/aprovacao/`, botão `2 - Aprovar anuncios` em `G:\Meu Drive\TERRA CASA DECOR\ANUNCIOS`); publicação no **modelo novo do ML** (um anúncio por cor, `family_name`, preta primeiro, descrição e Flex em 2º envio) — ver `DECISOES.md` 2026-10-08 e step-10.
 **Botão `1 - Criar anuncios` construído em 09/10/2026** (`tools/esteira_auto/`, ver DECISOES 2026-10-09): falta o ensaio real com a boleira Brinox `BRI-coza34-40652_3009` até a tela e a 1ª publicação com o Almir.
 **1ª publicação pelo botão FEITA em 16/10/2026:** boleira `MLB7828103466` (HISTORICO 16/10).
-**PRÓXIMO PASSO:** (1) melhorias da tela vistas na boleira (HISTORICO 16/10); (1b) levar a publicação (`ML Publicar`) do n8n para o Supabase (regra do hub de 09/10; virada com volta-atrás); (2) planilha de preços definitivos por canal (o preço do Tiny é simbólico, R$ 10); (3) minors adiados da tela (ver spec/plano 2026-10-08); (4) o `ML Publicar` ainda manda a descrição junto (ignorada) — poderia gravar ele mesmo no 2º envio.
+**PRÓXIMO PASSO:** (1) melhorias da tela vistas na boleira (HISTORICO 16/10); (1b) ~~levar o `ML Publicar` ao Supabase~~ APOSENTADO 17/11 (publicar = hub); (2) planilha de preços definitivos por canal (o preço do Tiny é simbólico, R$ 10); (3) minors adiados da tela (ver spec/plano 2026-10-08); (4) o `ML Publicar` ainda manda a descrição junto (ignorada) — poderia gravar ele mesmo no 2º envio.
 
 ## 4. Pendências
 - Branch `esteira-sem-fotos` **no GitHub desde 15/10** (varrida sem segredo; repo PÚBLICO — conferir de novo a cada push). Fica fora do `main` enquanto o Almir testa.
 - **Revisão de segurança 15/10 — falta o item 3:** `tools/esteira_auto/maestro.py` apontado como "dá pra pular a trava de aprovação" (decide pelo código de saída da tela). Confirmar se é real antes de mexer. Itens 1 (tela) e 2 (capas) corrigidos.
-- **`ML Publicar`** (`0rzNJ7RLqLzMbKnf`) **LIGADO em 16/10/2026** (1ª publicação da boleira). Levar para o Supabase continua pendente.
+- **`ML Publicar`** (`0rzNJ7RLqLzMbKnf`) **APOSENTADO em 17/11/2026** (sem uso desde 16/10; quem publica no ML é o hub, Edge `hub-publicar-ml`). O botão antigo responde "aposentado". Apagar ≥17/12; volta-atrás = religar.
 
 ## 5. Ficha técnica dos anúncios NO AR — `tools/auditoria_ficha/`
 371 campos preenchidos em 146 anúncios (06-10/08). Nada alterou preço/fotos/estoque/variações.
